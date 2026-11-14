@@ -80,6 +80,8 @@ export function createLightPool(): Mesh<PlaneGeometry, ShaderMaterial> {
     uniforms: {
       uIntensity: { value: 0 },
       uColor: { value: new Color(0xffa43a) },
+      /** The light's colour toward its edge (the scene's twilight, twilight.ts); the same warm colour by default. */
+      uEdge: { value: new Color(0xffa43a) },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -90,11 +92,13 @@ export function createLightPool(): Mesh<PlaneGeometry, ShaderMaterial> {
     fragmentShader: /* glsl */ `
       uniform float uIntensity;
       uniform vec3 uColor;
+      uniform vec3 uEdge;
       varying vec2 vUv;
       void main() {
         float d = length((vUv - 0.5) * 2.0);
         float a = 1.0 - smoothstep(0.25, 1.0, d);
-        gl_FragColor = vec4(uColor * a * a * uIntensity, 0.0);
+        vec3 c = mix(uColor, uEdge, smoothstep(0.15, 0.75, d));
+        gl_FragColor = vec4(c * a * a * uIntensity, 0.0);
       }`,
   });
   const pool = new Mesh(unitPlane, material);
