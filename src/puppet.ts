@@ -115,6 +115,10 @@ export class PuppetSystem extends createSystem({
         if (state === PuppetStates.Alive) {
           playChime(obj.position);
           stageRuntime.wakeFlare = 1;
+          obj.getWorldPosition(stageRuntime.wakeAt);
+          stageRuntime.wakeColour = rt.colour.getHex();
+          stageRuntime.wakeShape = entity.getValue(ShadowPuppet, 'shape') ?? '';
+          stageRuntime.wakes++;
         }
         rt.lastState = state;
       }

@@ -39,6 +39,11 @@ export const stageRuntime = {
   anchorMaxFixCm: 0,
   /** A creature just woke: the lamp light swells (1) and settles back (0) over about a second. */
   wakeFlare: 0,
+  /** Every wake, counted, with where the creature was (world) and its colour: fireflies, sounds. */
+  wakes: 0,
+  wakeAt: new Vector3(),
+  wakeColour: 0xffb45a,
+  wakeShape: '',
   /**
    * Automation only (emulator tests): when set, stage placement sees these
    * planes instead of the headset's detected planes.

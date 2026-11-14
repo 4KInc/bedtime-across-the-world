@@ -20,6 +20,7 @@ import type { Performance } from './performance/format.js';
 import { toWire } from './performance/sharing.js';
 import { gazeRuntime } from './gaze-dwell.js';
 import { coachRuntime } from './mo-coach.js';
+import { fireflyRuntime } from './fireflies.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
@@ -207,6 +208,7 @@ export class AutomationSystem extends createSystem({
           gaze: { ...gazeRuntime, on: accessRuntime.gazeDwell },
           voice: { state: accessRuntime.voiceState, heard: accessRuntime.voiceHeard },
           coach: { ...coachRuntime },
+          fireflies: { ...fireflyRuntime },
           dream: { ...dreamRuntime },
           shadowOpacity: (scene.getObjectByName('shadow-surface') as import('@iwsdk/core').Mesh<import('@iwsdk/core').BufferGeometry, import('@iwsdk/core').ShadowMaterial> | undefined)?.material.opacity ?? null,
           desk: stageRuntime.desk,
