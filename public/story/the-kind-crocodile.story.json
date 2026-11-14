@@ -1,0 +1,233 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Kind Crocodile",
+  "beats": [
+    {
+      "id": "kind-title",
+      "type": "chapter",
+      "chapter": "The Kind Crocodile",
+      "text": "The Kind Crocodile"
+    },
+    {
+      "id": "kind-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "kind-hello",
+      "type": "narrate",
+      "text": "This is a story about a crocodile, {child|little one}. Don't worry. This one is very kind."
+    },
+    {
+      "id": "kind-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "kind-river",
+      "type": "scenery",
+      "set": "river"
+    },
+    {
+      "id": "kind-mo-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.4,
+      "restV": 0.05
+    },
+    {
+      "id": "kind-text",
+      "type": "narrate",
+      "text": "Every night, Mo flies down to the river to say goodnight to her friends."
+    },
+    {
+      "id": "kind-want-fish",
+      "type": "request",
+      "shape": "fish",
+      "alt": "dog",
+      "outlineU": 0,
+      "outlineV": -0.18,
+      "text": "Make a fish: a flat hand, fingers together, thumb tucked along the side."
+    },
+    {
+      "id": "kind-fish-yes",
+      "type": "narrate",
+      "text": "A little fish! It has lost its way home in the dark water."
+    },
+    {
+      "id": "kind-fish-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "kind-fish-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Swim, swim, follow the light."
+    },
+    {
+      "id": "kind-fish-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.42,
+      "restV": 0.04
+    },
+    {
+      "id": "kind-fish-bows",
+      "type": "release",
+      "text": "The fish finds its family, and they blow sleepy bubbles."
+    },
+    {
+      "id": "kind-dim1",
+      "type": "lamp",
+      "level": 0.8
+    },
+    {
+      "id": "kind-croc-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.42,
+      "restV": 0.05
+    },
+    {
+      "id": "kind-croc-text",
+      "type": "narrate",
+      "text": "Then the water ripples. Two eyes. A long, long smile."
+    },
+    {
+      "id": "kind-want-croc",
+      "type": "request",
+      "shape": "crocodile",
+      "text": "Make a crocodile: two flat hands, one on top of the other, like a long snappy mouth."
+    },
+    {
+      "id": "kind-croc-yes",
+      "type": "narrate",
+      "text": "It is the crocodile! Snap, snap. But the crocodile only wants to help."
+    },
+    {
+      "id": "kind-croc-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "kind-croc-carry",
+      "type": "carry",
+      "toU": 0.32,
+      "text": "Ride across the river. Gently now."
+    },
+    {
+      "id": "kind-croc-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.42,
+      "restV": 0.05
+    },
+    {
+      "id": "kind-croc-bows",
+      "type": "release",
+      "text": "The crocodile sinks down, smiling, and closes its eyes."
+    },
+    {
+      "id": "kind-dim2",
+      "type": "lamp",
+      "level": 0.65
+    },
+    {
+      "id": "kind-swan-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.42,
+      "restV": 0.06
+    },
+    {
+      "id": "kind-swan-text",
+      "type": "narrate",
+      "text": "On the far bank, a swan is waiting to tuck Mo in."
+    },
+    {
+      "id": "kind-want-swan",
+      "type": "request",
+      "shape": "swan",
+      "text": "Make a swan: a flat hand, bent down at the wrist, like a long neck and a beak."
+    },
+    {
+      "id": "kind-swan-yes",
+      "type": "narrate",
+      "text": "A swan, smooth and white, with a soft feather blanket."
+    },
+    {
+      "id": "kind-swan-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "kind-swan-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Glide home along the river."
+    },
+    {
+      "id": "kind-swan-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.3,
+      "restV": 0.1
+    },
+    {
+      "id": "kind-swan-bows",
+      "type": "release",
+      "text": "The swan folds her neck and floats away into the reeds."
+    },
+    {
+      "id": "kind-home",
+      "type": "scenery",
+      "set": "none"
+    },
+    {
+      "id": "kind-dim3",
+      "type": "lamp",
+      "level": 0.5
+    },
+    {
+      "id": "kind-mo-centre",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0,
+      "restV": 0.12
+    },
+    {
+      "id": "kind-lesson",
+      "type": "narrate",
+      "text": "Sometimes the ones who look the scariest have the kindest hearts."
+    },
+    {
+      "id": "kind-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "kind-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, river. Goodnight, kind crocodile. Goodnight, {child|little one}."
+    },
+    {
+      "id": "kind-mo-glow",
+      "type": "moth",
+      "mode": "hovering",
+      "restU": 0.12,
+      "restV": 0.18
+    },
+    {
+      "id": "kind-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "kind-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}
