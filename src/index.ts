@@ -10,6 +10,7 @@ import { CaptionSystem } from './captions.js';
 import { FreeStageSystem } from './free-stage.js';
 import { HandCasterSystem } from './hand-caster.js';
 import { FireflySystem } from './fireflies.js';
+import { TwilightSystem } from './twilight.js';
 import { MoCoachSystem } from './mo-coach.js';
 import { MothSystem } from './moth.js';
 import { NarrationSystem } from './narration.js';
@@ -57,6 +58,7 @@ World.create(
     .registerSystem(CaptionSystem)
     .registerSystem(MoCoachSystem)
     .registerSystem(FireflySystem)
+    .registerSystem(TwilightSystem)
     .registerSystem(AudioSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
