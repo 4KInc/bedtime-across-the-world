@@ -1,0 +1,245 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Night Garden",
+  "beats": [
+    {
+      "id": "garden-title",
+      "type": "chapter",
+      "chapter": "The Night Garden",
+      "text": "The Night Garden"
+    },
+    {
+      "id": "garden-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "garden-hello",
+      "type": "narrate",
+      "text": "Shh, {child|little one}. The garden is going to sleep. Let's tiptoe through it with Mo."
+    },
+    {
+      "id": "garden-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "garden-follow",
+      "type": "follow",
+      "seconds": 3,
+      "text": "Hold up your hand. Mo will follow your finger through the flowers."
+    },
+    {
+      "id": "garden-field",
+      "type": "scenery",
+      "set": "field"
+    },
+    {
+      "id": "garden-mo-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.4,
+      "restV": 0.04
+    },
+    {
+      "id": "garden-rabbit-text",
+      "type": "narrate",
+      "text": "A little rabbit is still awake. She cannot find her burrow in the dark."
+    },
+    {
+      "id": "garden-want-rabbit",
+      "type": "request",
+      "shape": "rabbit",
+      "alt": "ears",
+      "text": "Make a rabbit with your hand, and hold it in the light."
+    },
+    {
+      "id": "garden-rabbit-yes",
+      "type": "narrate",
+      "text": "There she is! Mo knows the way. Hop on, Mo."
+    },
+    {
+      "id": "garden-rabbit-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "garden-rabbit-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Hop, hop, hop, home through the grass."
+    },
+    {
+      "id": "garden-rabbit-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.42,
+      "restV": 0.04
+    },
+    {
+      "id": "garden-rabbit-bows",
+      "type": "release",
+      "text": "The rabbit curls up in her burrow, nose to tail."
+    },
+    {
+      "id": "garden-dim1",
+      "type": "lamp",
+      "level": 0.8
+    },
+    {
+      "id": "garden-forest",
+      "type": "scenery",
+      "set": "forest"
+    },
+    {
+      "id": "garden-forest-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.42,
+      "restV": 0.03
+    },
+    {
+      "id": "garden-snail-text",
+      "type": "narrate",
+      "text": "Under a leaf, a snail is counting raindrops. One. Two. Three."
+    },
+    {
+      "id": "garden-want-snail",
+      "type": "request",
+      "shape": "snail",
+      "text": "Make a snail: a fist for the shell, and two fingers poking forward for its eyes."
+    },
+    {
+      "id": "garden-snail-yes",
+      "type": "narrate",
+      "text": "Hello, snail. Slow and sleepy. Mo will keep you company."
+    },
+    {
+      "id": "garden-snail-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "garden-snail-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Along the leaf, slowly, slowly."
+    },
+    {
+      "id": "garden-snail-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.42,
+      "restV": 0.03
+    },
+    {
+      "id": "garden-snail-bows",
+      "type": "release",
+      "text": "The snail tucks into its shell. Goodnight, snail."
+    },
+    {
+      "id": "garden-dim2",
+      "type": "lamp",
+      "level": 0.65
+    },
+    {
+      "id": "garden-deer-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.42,
+      "restV": 0.05
+    },
+    {
+      "id": "garden-deer-text",
+      "type": "narrate",
+      "text": "At the edge of the garden, a deer is listening to the night."
+    },
+    {
+      "id": "garden-want-deer",
+      "type": "request",
+      "shape": "deer",
+      "text": "Make a deer: wrists together, fingers up and spread, like antlers."
+    },
+    {
+      "id": "garden-deer-yes",
+      "type": "narrate",
+      "text": "A deer, soft and quiet. She bows her head to say goodnight."
+    },
+    {
+      "id": "garden-deer-bows",
+      "type": "release",
+      "text": "The deer steps back into the trees."
+    },
+    {
+      "id": "garden-home",
+      "type": "scenery",
+      "set": "none"
+    },
+    {
+      "id": "garden-dim3",
+      "type": "lamp",
+      "level": 0.5
+    },
+    {
+      "id": "garden-mo-centre",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0,
+      "restV": 0.1
+    },
+    {
+      "id": "garden-flower",
+      "type": "narrate",
+      "text": "One flower is still open. It has saved a little light, just for you."
+    },
+    {
+      "id": "garden-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, to hold the light."
+    },
+    {
+      "id": "garden-holds",
+      "type": "narrate",
+      "text": "Warm, isn't it? That is the garden saying goodnight."
+    },
+    {
+      "id": "garden-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let the light float up."
+    },
+    {
+      "id": "garden-free",
+      "type": "release",
+      "text": "Up it goes, over the garden..."
+    },
+    {
+      "id": "garden-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "garden-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, garden. Goodnight, Mo. Goodnight, {child|little one}."
+    },
+    {
+      "id": "garden-mo-glow",
+      "type": "moth",
+      "mode": "hovering",
+      "restU": 0.12,
+      "restV": 0.18
+    },
+    {
+      "id": "garden-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "garden-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

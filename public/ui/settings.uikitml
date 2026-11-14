@@ -282,9 +282,14 @@
   </div>
 
   <div class="label">Stage</div>
-  <button id="replace-stage-button" class="toggle">
-    <span class="toggle-text">Move stage here</span>
-  </button>
+  <div class="row">
+    <button id="replace-stage-button" class="toggle half">
+      <span class="toggle-text">Move stage here</span>
+    </button>
+    <button id="music-toggle" class="toggle half">
+      <span id="music-label" class="toggle-text">Music: On</span>
+    </button>
+  </div>
   <div class="story-blurb">Pinch, then look where you want the stage.</div>
 
   <button id="replay-button" class="replay">Replay story from the beginning</button>

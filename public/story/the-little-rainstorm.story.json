@@ -1,0 +1,200 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Little Rainstorm",
+  "beats": [
+    {
+      "id": "rain-title",
+      "type": "chapter",
+      "chapter": "The Little Rainstorm",
+      "text": "The Little Rainstorm"
+    },
+    {
+      "id": "rain-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "rain-hello",
+      "type": "narrate",
+      "text": "Listen, {child|little one}. Pitter, patter. A little rainstorm has come to visit."
+    },
+    {
+      "id": "rain-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "rain-storm",
+      "type": "scenery",
+      "set": "storm"
+    },
+    {
+      "id": "rain-mo-buffeted",
+      "type": "moth",
+      "mode": "buffeted",
+      "restU": -0.36,
+      "restV": 0.0
+    },
+    {
+      "id": "rain-text",
+      "type": "narrate",
+      "text": "Mo has wet wings, and the wind is pushing her about. She needs somewhere warm."
+    },
+    {
+      "id": "rain-want-dog",
+      "type": "request",
+      "shape": "dog",
+      "alt": "rabbit",
+      "text": "Make a dog: a flat hand, thumb up for an ear, and your little finger down for its mouth."
+    },
+    {
+      "id": "rain-dog-yes",
+      "type": "narrate",
+      "text": "A friendly dog, with a warm, dry kennel. Come on, Mo."
+    },
+    {
+      "id": "rain-dog-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rain-dog-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Run, run, through the puddles."
+    },
+    {
+      "id": "rain-dog-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.42,
+      "restV": 0.04
+    },
+    {
+      "id": "rain-dog-bows",
+      "type": "release",
+      "text": "The dog shakes off the rain, splish, splash, and lies down by the door."
+    },
+    {
+      "id": "rain-dim1",
+      "type": "lamp",
+      "level": 0.8
+    },
+    {
+      "id": "rain-field",
+      "type": "scenery",
+      "set": "field"
+    },
+    {
+      "id": "rain-field-rest",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.4,
+      "restV": 0.05
+    },
+    {
+      "id": "rain-clear-text",
+      "type": "narrate",
+      "text": "Now the rain is getting smaller. Plip. Plop. And the clouds are drifting away."
+    },
+    {
+      "id": "rain-want-bird",
+      "type": "request",
+      "shape": "bird",
+      "text": "Make a bird with two hands, side by side. Fly up to see if the sky is clear."
+    },
+    {
+      "id": "rain-bird-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rain-bird-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "minV": 0.12,
+      "text": "Up, up, above the last little cloud."
+    },
+    {
+      "id": "rain-bird-sees",
+      "type": "narrate",
+      "text": "The sky is clean and shining, and the stars are coming out to dry."
+    },
+    {
+      "id": "rain-bird-bows",
+      "type": "release",
+      "text": "The bird shakes the last drop from its wing, and tucks in."
+    },
+    {
+      "id": "rain-dim2",
+      "type": "lamp",
+      "level": 0.6
+    },
+    {
+      "id": "rain-home",
+      "type": "scenery",
+      "set": "none"
+    },
+    {
+      "id": "rain-mo-centre",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0,
+      "restV": 0.1
+    },
+    {
+      "id": "rain-drop",
+      "type": "narrate",
+      "text": "Oh! One last raindrop is falling. It's sparkling like a tiny star."
+    },
+    {
+      "id": "rain-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, to catch it."
+    },
+    {
+      "id": "rain-holds",
+      "type": "narrate",
+      "text": "You caught it. The very last raindrop of the storm."
+    },
+    {
+      "id": "rain-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and give it back to the sky."
+    },
+    {
+      "id": "rain-free",
+      "type": "release",
+      "text": "Up it goes, to make a rainbow tomorrow..."
+    },
+    {
+      "id": "rain-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "rain-goodnight",
+      "type": "narrate",
+      "text": "The storm is over, {child|little one}. Everything is quiet, and warm, and dry. Goodnight."
+    },
+    {
+      "id": "rain-mo-glow",
+      "type": "moth",
+      "mode": "hovering",
+      "restU": 0.12,
+      "restV": 0.18
+    },
+    {
+      "id": "rain-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "rain-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

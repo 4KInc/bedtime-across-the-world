@@ -1,0 +1,19 @@
+{
+  "name": "Shadowplay: Bedtime Across the World",
+  "short_name": "Shadowplay",
+  "description": "Bedtime stories told with your hands, for a child far away.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0d0a14",
+  "theme_color": "#0d0a14",
+  "categories": ["entertainment", "kids", "education"],
+  "icons": [
+    { "src": "icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

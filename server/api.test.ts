@@ -19,6 +19,7 @@ writeFileSync(join(app, 'index.html'), '<!doctype html><title>Shadowplay</title>
 writeFileSync(join(app, 'assets', 'index-abc123.js'), APP_JS);
 mkdirSync(join(app, 'story'));
 writeFileSync(join(app, 'story', 'library.json'), JSON.stringify({ stories: [] }));
+writeFileSync(join(app, 'manifest.webmanifest'), JSON.stringify({ name: 'Shadowplay', start_url: './' }));
 let server: ChildProcess;
 
 /** A stand-in for Cloud Speech-to-Text: records what it was sent, answers "the bird". */
@@ -206,6 +207,19 @@ test('goodnights arriving together each get their own slot, up to five', async (
   assert.equal(new Set(list.replies.map((r) => r.id)).size, 5);
 });
 
+test("a goodnight's gifts: Mo's colours and a drawing, checked", async () => {
+  const c = as();
+  const { code } = (await (await c.post('/api/stories', story())).json()) as { code: string };
+  const drawing = btoa(String.fromCharCode(10, 20, 30, 40, 255));
+  const ok = await as().post(`/api/stories/${code}/replies`, story({ id: 'gift-1', performer: 'Mia', mo: 'rose', drawing }));
+  assert.equal(ok.status, 201);
+  const list = (await (await c.get(`/api/stories/${code}/replies`)).json()) as { replies: { mo?: string; drawing?: string }[] };
+  assert.equal(list.replies[0].mo, 'rose');
+  assert.equal(list.replies[0].drawing, drawing);
+  assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'gift-2', mo: '#ff00ff' }))).status, 400);
+  assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'gift-3', drawing: 'A'.repeat(9000) }))).status, 400);
+});
+
 test('static files cannot escape the app folder', async () => {
   for (const path of ['/../package.json', '/%2e%2e/package.json', '/..%2fserver/main.ts']) {
     const text = await (await fetch(BASE + path)).text();
@@ -373,6 +387,11 @@ test('static files: compressed, cached by kind, and HEAD works', async () => {
   const plain = await fetch(`${BASE}/story/library.json`, { headers: { 'Accept-Encoding': 'identity' } });
   assert.equal(plain.headers.get('content-encoding'), null);
   assert.equal(plain.headers.get('cache-control'), 'no-cache');
+  // The web app manifest (for installing as an app) with its own type.
+  const manifest = await fetch(`${BASE}/manifest.webmanifest`);
+  assert.equal(manifest.status, 200);
+  assert.match(manifest.headers.get('content-type') ?? '', /^application\/manifest\+json/);
+  assert.equal((await manifest.json()).name, 'Shadowplay');
   const head = await fetch(`${BASE}/assets/index-abc123.js`, { method: 'HEAD', headers: { 'Accept-Encoding': 'br' } });
   assert.equal(head.status, 200);
   assert.ok(Number(head.headers.get('content-length')) > 0);

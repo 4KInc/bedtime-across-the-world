@@ -4,6 +4,8 @@ import { family } from './family.js';
 import { seedSamples } from './performance/samples.js';
 import { RoleLoaderSystem } from './roles/loader.js';
 import { viewerMode } from './viewer-mode.js';
+import { loadReceivedGifts } from './gifts-received.js';
+import { isInstalledPwa, pwaRuntime } from './pwa.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AudioSystem } from './audio.js';
 import { CaptionSystem } from './captions.js';
@@ -11,6 +13,10 @@ import { FreeStageSystem } from './free-stage.js';
 import { HandCasterSystem } from './hand-caster.js';
 import { FireflySystem } from './fireflies.js';
 import { TwilightSystem } from './twilight.js';
+import { WallWindowSystem } from './wall-window.js';
+import { ChildDrawingSystem } from './child-drawing.js';
+import { LanternSystem } from './lanterns.js';
+import { KeepsakeSystem } from './keepsakes.js';
 import { MoVisitSystem } from './mo-visit.js';
 import { MoCoachSystem } from './mo-coach.js';
 import { MothSystem } from './moth.js';
@@ -60,13 +66,18 @@ World.create(
     .registerSystem(MoCoachSystem)
     .registerSystem(FireflySystem)
     .registerSystem(TwilightSystem)
+    .registerSystem(WallWindowSystem)
     .registerSystem(MoVisitSystem)
+    .registerSystem(KeepsakeSystem)
+    .registerSystem(LanternSystem)
+    .registerSystem(ChildDrawingSystem)
     .registerSystem(AudioSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
     .registerSystem(PerformanceRecorderSystem)
     .registerSystem(RoleLoaderSystem);
   void family.load();
+  void loadReceivedGifts();
   void seedSamples(viewerMode.on ? 'viewer' : 'headset');
   if (automationEnabled) {
     world.registerSystem(AutomationSystem);
@@ -83,6 +94,14 @@ World.create(
   }
 
   hideLoading();
+
+  // Installed from the Store (a WebXR PWA): open straight into the headset view, like
+  // any other app. Launching the app icon counts as the gesture. In the browser
+  // the first screen and the Enter XR button stay as they are.
+  if (isInstalledPwa() && !viewerMode.on) {
+    pwaRuntime.autoEnter = true;
+    world.launchXR();
+  }
 
   // Development only: webcam-driven hands for testing recognition without a headset.
   if (import.meta.env.DEV) {

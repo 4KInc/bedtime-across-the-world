@@ -93,6 +93,7 @@ export interface StoredSettings {
   highContrast?: boolean;
   gazeDwell?: boolean;
   voiceCommands?: boolean;
+  music?: boolean;
   placeholderVoice?: boolean;
 }
 
@@ -153,6 +154,40 @@ export async function loadUnlocks(): Promise<Unlocks> {
 
 export async function saveUnlocks(unlocks: Unlocks): Promise<void> {
   await run(PROGRESS, 'readwrite', (s) => s.put(unlocks, 'unlocks'));
+}
+
+/** A star kept for each story told to the end (the jar on the desk). */
+export interface Keepsake {
+  title: string;
+  /** When it was told (ms since 1970). */
+  at: number;
+  /** The colour of the last creature woken in it. */
+  colour: number;
+}
+
+export async function loadKeepsakes(): Promise<Keepsake[]> {
+  return (await run<Keepsake[]>(PROGRESS, 'readonly', (s) => s.get('keepsakes') as IDBRequest<Keepsake[]>)) ?? [];
+}
+
+export async function saveKeepsakes(stars: Keepsake[]): Promise<void> {
+  await run(PROGRESS, 'readwrite', (s) => s.put(stars, 'keepsakes'));
+}
+
+/** The latest gifts from the child (child-gifts.ts): Mo's colours and a drawn creature, with who sent them. */
+export interface StoredGifts {
+  mo?: string;
+  moFrom?: string;
+  drawing?: string;
+  drawingFrom?: string;
+  drawingAt?: number;
+}
+
+export async function loadGifts(): Promise<StoredGifts> {
+  return (await run<StoredGifts>(PROGRESS, 'readonly', (s) => s.get('gifts') as IDBRequest<StoredGifts>)) ?? {};
+}
+
+export async function saveGifts(gifts: StoredGifts): Promise<void> {
+  await run(PROGRESS, 'readwrite', (s) => s.put(gifts, 'gifts'));
 }
 
 /** Recognition-lab trials (device gate testing), kept so testers' data pools across sessions. */

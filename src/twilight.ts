@@ -15,7 +15,7 @@ import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 
 /** Sky colours per scene (top of the stage, bottom of the stage): light added to the wall, like coloured gels. */
-const SKIES: Readonly<Record<string, readonly [number, number]>> = {
+export const SKIES: Readonly<Record<string, readonly [number, number]>> = {
   [ScenerySets.None]: [0x3d3ab0, 0xff8a5c], // indigo night to peach
   [ScenerySets.Field]: [0x5b49d6, 0xffb36b], // violet dusk over a golden field
   [ScenerySets.River]: [0x2f6fd6, 0x9fd4ff], // moonlit blue to silver

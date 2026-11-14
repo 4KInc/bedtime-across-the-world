@@ -35,6 +35,30 @@
       "script": "story/counting-stars.story.json",
       "minutes": 3,
       "blurb": "A calm count to five, for the littlest ones."
+    },
+    {
+      "id": "the-night-garden",
+      "title": "The Night Garden",
+      "script": "story/the-night-garden.story.json",
+      "minutes": 4,
+      "blurb": "Tiptoe through a sleepy garden: a rabbit, a snail and a deer.",
+      "narrator": "bf_emma"
+    },
+    {
+      "id": "the-kind-crocodile",
+      "title": "The Kind Crocodile",
+      "script": "story/the-kind-crocodile.story.json",
+      "minutes": 4,
+      "blurb": "Across the river with a crocodile who only wants to help.",
+      "narrator": "bm_george"
+    },
+    {
+      "id": "the-little-rainstorm",
+      "title": "The Little Rainstorm",
+      "script": "story/the-little-rainstorm.story.json",
+      "minutes": 4,
+      "blurb": "Pitter, patter: a dog, a bird and the very last raindrop.",
+      "narrator": "af_bella"
     }
   ]
 }

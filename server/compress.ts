@@ -8,7 +8,7 @@ import { brotliCompress, constants, gzip } from 'node:zlib';
  * the server runs, so each file is compressed once, kept in memory (a few MB)
  * and warmed at startup so the first visitor does not wait.
  */
-const COMPRESSIBLE = new Set(['.js', '.css', '.html', '.json', '.uikitml', '.md', '.svg', '.wasm', '.txt']);
+const COMPRESSIBLE = new Set(['.js', '.css', '.html', '.json', '.webmanifest', '.uikitml', '.md', '.svg', '.wasm', '.txt']);
 const brotli = promisify(brotliCompress);
 const gz = promisify(gzip);
 
