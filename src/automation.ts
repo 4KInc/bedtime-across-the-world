@@ -124,6 +124,11 @@ export class AutomationSystem extends createSystem({
         const o = this.world.scene.getObjectByName(name);
         return o ? o.getWorldPosition(new Vector3()).toArray() : null;
       },
+      /** A named mesh's colour (hex) and opacity, or null (creature colour tests). */
+      colourOf: (name: string) => {
+        const o = this.world.scene.getObjectByName(name) as (import('@iwsdk/core').Mesh & { material: import('@iwsdk/core').MeshBasicMaterial }) | undefined;
+        return o?.material?.color ? { hex: o.material.color.getHexString(), opacity: Math.round(o.material.opacity * 100) / 100, visible: o.visible } : null;
+      },
       /** Room tests: stage placement sees these planes instead of the headset's (null restores them). */
       room: (planes: RoomPlane[] | null) => {
         stageRuntime.testPlanes = planes;
