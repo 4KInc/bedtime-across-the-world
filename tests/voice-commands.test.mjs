@@ -17,6 +17,9 @@ test('the longest phrase wins', () => {
   assert.deepEqual(parseCommand('next'), { kind: 'next' });
   assert.deepEqual(parseCommand('one-hand mode off'), { kind: 'setting', which: 'oneHand', on: false });
   assert.deepEqual(parseCommand('One hand mode'), { kind: 'setting', which: 'oneHand', on: null });
+  assert.deepEqual(parseCommand('music off'), { kind: 'setting', which: 'music', on: false });
+  assert.deepEqual(parseCommand('No music please'), { kind: 'setting', which: 'music', on: false });
+  assert.deepEqual(parseCommand('music on'), { kind: 'setting', which: 'music', on: true });
 });
 
 test('panel buttons, the lamp and movement beats', () => {

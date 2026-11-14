@@ -2,7 +2,7 @@ import { CanvasTexture, Color, createSystem, Entity, Mesh, MeshBasicMaterial, Pl
 import { family } from './family.js';
 import { creatureColour } from './creature-colours.js';
 import { buildPuppetRig, PuppetRig } from './puppet-rigs.js';
-import { playChime } from './sfx.js';
+import { playChime, playCreature } from './sfx.js';
 import {
   Hands,
   LiveSession,
@@ -57,6 +57,8 @@ interface PuppetRuntime {
   ownColour: number;
   /** Woken by the child in a live story (Take turns), and its name label (made when first needed). */
   byChild: boolean;
+  /** Seconds until it next makes its little sound while awake. */
+  voiceIn: number;
   label: { mesh: Mesh<PlaneGeometry, MeshBasicMaterial>; canvas: HTMLCanvasElement; texture: CanvasTexture } | null;
 }
 
@@ -111,7 +113,7 @@ export class PuppetSystem extends createSystem({
       lostFor: 0, fade: 0, alive: 0, blinkIn: 2.5, hop: 0,
       lastState: PuppetStates.Hidden, twoHanded: false,
       colour: new Color(creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK), bloom: 0,
-      ownColour: creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK, byChild: false, label: null,
+      ownColour: creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK, byChild: false, label: null, voiceIn: 5,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -135,6 +137,8 @@ export class PuppetSystem extends createSystem({
         if (state === PuppetStates.Alive) {
           this.markWaker(entity, rt);
           playChime(obj.position);
+          playCreature(entity.getValue(ShadowPuppet, 'shape') ?? '', obj.position);
+          rt.voiceIn = 4 + Math.random() * 3;
           stageRuntime.wakeFlare = 1;
           obj.getWorldPosition(stageRuntime.wakeAt);
           stageRuntime.wakeColour = rt.colour.getHex();
@@ -145,7 +149,15 @@ export class PuppetSystem extends createSystem({
       }
       let features: Float32Array | null = null;
       if (state === PuppetStates.Outline) this.updateOutline(entity, rt, recognizer, delta);
-      else if (state === PuppetStates.Alive) features = this.updateAlive(entity, rt, recognizer, delta);
+      else if (state === PuppetStates.Alive) {
+        features = this.updateAlive(entity, rt, recognizer, delta);
+        // Now and then, a little sound from where it is.
+        rt.voiceIn -= delta;
+        if (rt.voiceIn <= 0) {
+          rt.voiceIn = 5 + Math.random() * 4;
+          playCreature(entity.getValue(ShadowPuppet, 'shape') ?? '', obj.position, true);
+        }
+      }
       else if (state === PuppetStates.Releasing) this.updateReleasing(entity, rt, recognizer, delta);
       else {
         rt.fill.opacity = Math.max(0, rt.fill.opacity - delta * 1.5);

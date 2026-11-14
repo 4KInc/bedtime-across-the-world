@@ -93,6 +93,7 @@ export interface StoredSettings {
   highContrast?: boolean;
   gazeDwell?: boolean;
   voiceCommands?: boolean;
+  music?: boolean;
   placeholderVoice?: boolean;
 }
 

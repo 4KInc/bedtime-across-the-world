@@ -1,23 +1,44 @@
-import { createSystem, Vector3 } from '@iwsdk/core';
-import { audioRunning, Hum, setListener, startLampHum } from './sfx.js';
-import { Stage } from './shadowplay-components.js';
+import { createSystem, Vector3, VisibilityState } from '@iwsdk/core';
+import { audioRunning, Hum, Lullaby, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
+import { LiveSession, PerformanceRecorder, Settings, Stage, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
+
+/** Lullaby level under the narrator's (or a recorded storyteller's) voice, and while paused. */
+const UNDER_VOICE = 0.35;
+const PAUSED = 0.5;
 
 /**
  * Spatial audio upkeep: keeps the Web Audio listener on the viewer's head so
- * placed sounds come from the wall or the desk, and runs the lamp's faint hum
- * at the bulb, following its brightness (silent when switched off).
+ * placed sounds come from the wall or the desk, runs the lamp's faint hum at
+ * the bulb, following its brightness (silent when switched off), and sets the
+ * lullaby's level: under the story, lower under a voice and while paused, and
+ * silent whenever the microphone is in use (recording with voice, or Talk) so
+ * it never ends up in a recording. Off with Music off in Settings.
  */
 export class AudioSystem extends createSystem({
   stages: { required: [Stage] },
+  settings: { required: [Settings] },
+  stories: { required: [StoryState] },
+  recorders: { required: [PerformanceRecorder] },
+  lives: { required: [LiveSession] },
 }) {
   private head = new Vector3();
   private forward = new Vector3();
   private up = new Vector3();
   private hum: Hum | null = null;
+  private lullaby: Lullaby | null = null;
+  private retry = 0;
 
-  update(): void {
-    if (!audioRunning()) return;
+  update(delta: number): void {
+    if (!audioRunning()) {
+      // Entering XR counts as the gesture: start the context then, not at the first sound effect.
+      this.retry -= delta;
+      if (this.retry <= 0 && this.world.visibilityState.peek() !== VisibilityState.NonImmersive) {
+        this.retry = 1;
+        wakeAudio();
+      }
+      return;
+    }
     const headObj = this.player.head;
     headObj.updateWorldMatrix(true, false);
     this.head.setFromMatrixPosition(headObj.matrixWorld);
@@ -27,11 +48,31 @@ export class AudioSystem extends createSystem({
     setListener(this.head, this.forward, this.up);
 
     this.hum ??= startLampHum();
-    if (!this.hum) return;
     const stage = this.queries.stages.entities.values().next().value;
-    const on = stage?.getValue(Stage, 'lampOn') ?? false;
-    const level = stage?.getValue(Stage, 'lampLevel') ?? 0;
-    this.hum.setPosition(stageRuntime.bulb);
-    this.hum.setLevel(stageRuntime.ready && on ? level : 0);
+    if (this.hum) {
+      const on = stage?.getValue(Stage, 'lampOn') ?? false;
+      const level = stage?.getValue(Stage, 'lampLevel') ?? 0;
+      this.hum.setPosition(stageRuntime.bulb);
+      this.hum.setLevel(stageRuntime.ready && on ? level : 0);
+    }
+
+    this.lullaby ??= startLullaby();
+    this.lullaby?.setLevel(this.lullabyLevel());
+  }
+
+  private lullabyLevel(): number {
+    const settings = this.queries.settings.entities.values().next().value;
+    const story = this.queries.stories.entities.values().next().value;
+    if (!settings?.getValue(Settings, 'music') || !story || !stageRuntime.ready) return 0;
+    const status = story.getValue(StoryState, 'status');
+    if (status !== StoryStatuses.Playing && status !== StoryStatuses.Paused) return 0;
+    // The microphone is open: keep the music out of the recording or the call.
+    for (const r of this.queries.recorders.entities) {
+      if (r.getValue(PerformanceRecorder, 'recording') && r.getValue(PerformanceRecorder, 'withVoice')) return 0;
+    }
+    for (const l of this.queries.lives.entities) if (l.getValue(LiveSession, 'talk')) return 0;
+    if (status === StoryStatuses.Paused) return PAUSED;
+    const speaking = story.getValue(StoryState, 'voiceBeat') === story.getValue(StoryState, 'beatId') && !story.getValue(StoryState, 'voiceDone');
+    return speaking || story.getValue(StoryState, 'followMode') ? UNDER_VOICE : 1;
   }
 }
