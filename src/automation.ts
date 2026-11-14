@@ -125,6 +125,16 @@ export class AutomationSystem extends createSystem({
         const o = this.world.scene.getObjectByName(name);
         return o ? o.getWorldPosition(new Vector3()).toArray() : null;
       },
+      /** A named object's world size (metres) and world scale, or null (layout tests). */
+      sizeOf: (name: string) => {
+        const o = this.world.scene.getObjectByName(name);
+        if (!o) return null;
+        o.updateWorldMatrix(true, true);
+        const size = new Box3().setFromObject(o).getSize(new Vector3());
+        const scale = o.getWorldScale(new Vector3());
+        const r = (v: number) => Math.round(v * 1000) / 1000;
+        return { w: r(size.x), h: r(size.y), d: r(size.z), scale: [r(scale.x), r(scale.y), r(scale.z)], parent: o.parent?.name ?? '' };
+      },
       /** A named mesh's colour (hex) and opacity, or null (creature colour tests). */
       colourOf: (name: string) => {
         const o = this.world.scene.getObjectByName(name) as (import('@iwsdk/core').Mesh & { material: import('@iwsdk/core').MeshBasicMaterial }) | undefined;

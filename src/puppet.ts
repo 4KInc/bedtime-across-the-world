@@ -1,9 +1,11 @@
-import { Color, createSystem, Entity, MeshBasicMaterial, Quaternion, Vector3 } from '@iwsdk/core';
+import { CanvasTexture, Color, createSystem, Entity, Mesh, MeshBasicMaterial, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from '@iwsdk/core';
+import { family } from './family.js';
 import { creatureColour } from './creature-colours.js';
 import { buildPuppetRig, PuppetRig } from './puppet-rigs.js';
 import { playChime } from './sfx.js';
 import {
   Hands,
+  LiveSession,
   PuppetStates,
   ShadowPuppet,
   ShapeIds,
@@ -27,6 +29,12 @@ const INK = 0x0a0810;
 /** How long a woken creature takes to bloom into its colour (seconds). */
 const BLOOM_SECONDS = 0.7;
 const INK_COLOUR = new Color(INK);
+/** In a live story with Take turns, the child's creatures wake in this colour (unlike any creature's own), with their name. */
+const CHILD_COLOUR = 0xc026d3;
+const LABEL_W = 512;
+const LABEL_H = 128;
+/** What a creature is called on its label. */
+const CREATURE_NAME: Readonly<Record<string, string>> = { ears: 'rabbit', open: 'creature' };
 
 interface PuppetRuntime {
   rig: PuppetRig;
@@ -45,6 +53,11 @@ interface PuppetRuntime {
   /** Its waking colour (creature-colours.ts), and how far it has bloomed (0 shadow, 1 colour). */
   colour: Color;
   bloom: number;
+  /** Its own colour (`colour` becomes the child's colour while the child's creature is awake). */
+  ownColour: number;
+  /** Woken by the child in a live story (Take turns), and its name label (made when first needed). */
+  byChild: boolean;
+  label: { mesh: Mesh<PlaneGeometry, MeshBasicMaterial>; canvas: HTMLCanvasElement; texture: CanvasTexture } | null;
 }
 
 /**
@@ -56,6 +69,7 @@ interface PuppetRuntime {
 export class PuppetSystem extends createSystem({
   puppets: { required: [ShadowPuppet] },
   recognizers: { required: [ShapeRecognizer] },
+  sessions: { required: [LiveSession] },
 }) {
   private runtimes = new Map<Entity, PuppetRuntime>();
   private palm = new Vector3();
@@ -73,6 +87,11 @@ export class PuppetSystem extends createSystem({
           rt.rig.root.removeFromParent();
           rt.fill.dispose();
           rt.eyeMat.dispose();
+          if (rt.label) {
+            rt.label.texture.dispose();
+            rt.label.mesh.material.dispose();
+            rt.label.mesh.geometry.dispose();
+          }
           this.runtimes.delete(entity);
         }
       }),
@@ -92,6 +111,7 @@ export class PuppetSystem extends createSystem({
       lostFor: 0, fade: 0, alive: 0, blinkIn: 2.5, hop: 0,
       lastState: PuppetStates.Hidden, twoHanded: false,
       colour: new Color(creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK), bloom: 0,
+      ownColour: creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK, byChild: false, label: null,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -113,6 +133,7 @@ export class PuppetSystem extends createSystem({
         // Entering Releasing from anywhere (e.g. the story's bow) starts the fade.
         if (state === PuppetStates.Releasing) rt.fade = Math.max(rt.fade, rt.fill.opacity / 0.92);
         if (state === PuppetStates.Alive) {
+          this.markWaker(entity, rt);
           playChime(obj.position);
           stageRuntime.wakeFlare = 1;
           obj.getWorldPosition(stageRuntime.wakeAt);
@@ -134,6 +155,12 @@ export class PuppetSystem extends createSystem({
       }
       // Fully faded characters are skipped entirely (no draw calls, no animation).
       rt.rig.root.visible = rt.fill.opacity > 0.002;
+      if (rt.label) {
+        rt.label.mesh.visible = rt.byChild && rt.rig.root.visible;
+        rt.label.mesh.material.opacity = Math.min(1, rt.fill.opacity * 1.1);
+        rt.label.mesh.position.set(0, -rt.scale * 0.62, 0.002);
+        rt.label.mesh.scale.setScalar(stageRuntime.width * 0.36);
+      }
       if (rt.rig.root.visible) rt.rig.animate(this.time, delta, features);
 
       obj.position.copy(rt.pos).addScaledVector(stageRuntime.normal, 0.01);
@@ -251,6 +278,48 @@ export class PuppetSystem extends createSystem({
       rt.fade = 1;
     }
     return features;
+  }
+
+  /**
+   * Who woke it: in a live story with Take turns, a creature that wakes on the
+   * child's turn is theirs, in the child's colour and with their name ("Mia's
+   * fish", or "Your fish" on the child's own screen when no name is set).
+   */
+  private markWaker(entity: Entity, rt: PuppetRuntime): void {
+    const session = this.queries.sessions.entities.values().next().value as Entity | undefined;
+    const role = session?.getValue(LiveSession, 'role') ?? 'off';
+    rt.byChild = role !== 'off' && session?.getValue(LiveSession, 'turn') === 'guest';
+    rt.colour.setHex(rt.byChild ? CHILD_COLOUR : rt.ownColour);
+    if (!rt.byChild) return;
+    const shape = entity.getValue(ShadowPuppet, 'shape') ?? '';
+    const creature = CREATURE_NAME[shape] ?? shape;
+    const child = family.current.child;
+    const text = child ? `${child}'s ${creature}` : role === 'guest' ? `Your ${creature}` : `Their ${creature}`;
+    if (!rt.label) {
+      const canvas = document.createElement('canvas');
+      canvas.width = LABEL_W;
+      canvas.height = LABEL_H;
+      const texture = new CanvasTexture(canvas);
+      texture.colorSpace = SRGBColorSpace;
+      const mesh = new Mesh(new PlaneGeometry(1, LABEL_H / LABEL_W), new MeshBasicMaterial({ map: texture, transparent: true, opacity: 0, depthWrite: false }));
+      mesh.name = 'child-creature-label';
+      mesh.renderOrder = 21;
+      entity.object3D?.add(mesh);
+      rt.label = { mesh, canvas, texture };
+    }
+    const g = rt.label.canvas.getContext('2d')!;
+    g.clearRect(0, 0, LABEL_W, LABEL_H);
+    g.font = 'italic 700 72px Georgia, "Times New Roman", serif';
+    const w = Math.min(LABEL_W - 8, g.measureText(text).width + 56);
+    g.fillStyle = 'rgba(192, 38, 211, 0.92)';
+    g.beginPath();
+    g.roundRect((LABEL_W - w) / 2, 8, w, LABEL_H - 16, (LABEL_H - 16) / 2);
+    g.fill();
+    g.fillStyle = '#ffffff';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, LABEL_W / 2, LABEL_H / 2 + 2);
+    rt.label.texture.needsUpdate = true;
   }
 
   /**
