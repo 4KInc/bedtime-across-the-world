@@ -4,6 +4,9 @@ import { Hands, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, requested, stepHold } from './recognition-rules.js';
 import { handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
 
+/** For device diagnostics: the two-hand measurements (wrist gap m, finger curl, thumb bend, in the light). */
+export const pairRuntime = { gap: 0, lCurl: 0, rCurl: 0, lThumb: 0, rThumb: 0, lLight: false, rLight: false };
+
 /** Player tolerance plus assist never goes beyond this. */
 const MAX_TOLERANCE = 0.6;
 /** "Almost": within this much of the acceptance score... */
@@ -65,7 +68,13 @@ export class ShapeMatchSystem extends createSystem({
         isHiddenPair(entity.getValue(ShapeRecognizer, 'altTarget')) ||
         isHiddenPair(entity.getValue(ShapeRecognizer, 'target2')) ||
         isHiddenPair(entity.getValue(ShapeRecognizer, 'altTarget2'));
-      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden);
+      const birdWanted =
+        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Bird ||
+        entity.getValue(ShapeRecognizer, 'altTarget') === ShapeIds.Bird ||
+        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Bird ||
+        entity.getValue(ShapeRecognizer, 'altTarget2') === ShapeIds.Bird;
+      const assist = entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0;
+      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist);
       const twoHanded = pair !== null;
       if (pair) this.left.shape = this.right.shape = pair;
       this.publish(entity);
@@ -193,10 +202,21 @@ export class ShapeMatchSystem extends createSystem({
   }
 
   /** Two-hand shapes (recognition-rules.ts), both hands tracked and in the light. */
-  private detectPair(hidden: boolean): string | null {
+  private detectPair(hidden: boolean, birdWanted: boolean, assist: number): string | null {
     const l = handRuntime.left;
     const r = handRuntime.right;
-    if (!l.tracked || !r.tracked || !this.left.inLight || !this.right.inLight) return null;
+    pairRuntime.lLight = this.left.inLight;
+    pairRuntime.rLight = this.right.inLight;
+    if (!l.tracked || !r.tracked) return null;
+    // For device diagnostics: what the two-hand rules see.
+    const lj = this.smoothL.joints;
+    const rj = this.smoothR.joints;
+    pairRuntime.gap = Math.hypot(lj[0] - rj[0], lj[1] - rj[1], lj[2] - rj[2]);
+    pairRuntime.lCurl = this.left.curl;
+    pairRuntime.rCurl = this.right.curl;
+    pairRuntime.lThumb = l.features[0];
+    pairRuntime.rThumb = r.features[0];
+    if (!this.left.inLight || !this.right.inLight) return null;
     this.pairL.joints = this.smoothL.joints;
     this.pairL.features = l.features;
     this.pairL.curl = this.left.curl;
@@ -207,7 +227,7 @@ export class ShapeMatchSystem extends createSystem({
     this.pairR.curl = this.right.curl;
     this.pairR.shape = this.right.shape;
     this.pairR.best = r.jointBest;
-    return classifyPair(this.pairL, this.pairR, hidden);
+    return classifyPair(this.pairL, this.pairR, hidden, birdWanted, assist);
   }
 
   private publish(entity: Entity): void {

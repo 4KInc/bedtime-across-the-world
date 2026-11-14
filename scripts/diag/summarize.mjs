@@ -77,6 +77,13 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
     const total = drops.reduce((n, d) => n + d.flickers, 0);
     console.log(`hand-tracking flickers: ${total} in ${drops.length} beats; worst ${[...drops].sort((a, b) => b.flickers / b.seconds - a.flickers / a.seconds).slice(0, 3).map((d) => `${d.beat} ${d.flickers} in ${d.seconds}s`).join(', ')}`);
   } else console.log('hand-tracking flickers: none');
+  // Two hands during requests (bird, cup, deer, crocodile): what the pair rules saw, both hands tracked.
+  const pairSnaps = snaps.filter((r) => r.pg !== undefined && r.lt && r.rt && /want|ask/.test(r.beat ?? ''));
+  if (pairSnaps.length) {
+    const med = (k) => { const v = pairSnaps.map((r) => r[k]).sort((a, b) => a - b); return v[Math.floor(v.length / 2)]; };
+    const lit = pairSnaps.filter((r) => r.pll && r.prl).length;
+    console.log(`two hands in requests (${pairSnaps.length} snaps): wrist gap median ${med('pg')} m (bird < 0.28)  curl L ${med('plc')} R ${med('prc')} (bird <= 0.3)  thumb L ${med('plt')} R ${med('prt')}  both in light ${lit}/${pairSnaps.length}`);
+  }
   const beats = ev('beat');
   console.log(`story: ${beats.length} beats, ${[...new Set(beats.map((b) => b.script))].join(', ') || '-'}; last ${beats.at(-1)?.beat ?? '-'}`);
   console.log(`visibility: ${ev('vis').map((v) => v.state).join(' > ') || '-'}   page: ${ev('page').map((v) => v.state).join(' > ') || '-'}`);

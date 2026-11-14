@@ -59,8 +59,12 @@ const FIRST_LAUNCH_SCRIPT = 'story/counting-stars.story.json';
 const ASSIST_AFTER = [20, 40, 60] as const;
 /** Extra recognition tolerance at assist levels 1 and 2. */
 const ASSIST_TOLERANCE = [0, 0.1, 0.2] as const;
-/** At level 3, a hand held this still in the light for this long counts as the request. */
-const STILL_SPEED = 0.15;
+/**
+ * At level 3, a hand held still in the light for this long counts as the request:
+ * its wrist stays within this distance (m) of where it settled. (Measured over the
+ * hold, not frame to frame: Quest tracking jitter alone is ~0.15 m/s per frame.)
+ */
+const STILL_RADIUS = 0.04;
 const STILL_SECONDS = 1.5;
 /** Look to press: beats that ask the hands to move finish after the gaze rests on the stage this long. */
 const GAZE_BEAT_SECONDS = 2.5;
@@ -112,6 +116,7 @@ export class StorySystem extends createSystem({
 
   private assistLevel = 0;
   private stillTime = { left: 0, right: 0 };
+  /** Where each hand settled (level 3 assist). */
   private lastWrist = { left: new Vector3(), right: new Vector3() };
   private wrist = new Vector3();
   /** Viewer's own beat when a replay began (restored to its chapter afterwards). */
@@ -714,9 +719,10 @@ export class StorySystem extends createSystem({
       const hand = handRuntime[side];
       const lit = stage.getValue(ShapeRecognizer, side === 'left' ? 'leftInLight' : 'rightInLight');
       this.wrist.fromArray(hand.joints, 0);
-      const speed = this.wrist.distanceTo(this.lastWrist[side]) / Math.max(delta, 1e-3);
-      this.lastWrist[side].copy(this.wrist);
-      this.stillTime[side] = hand.tracked && lit && speed < STILL_SPEED ? this.stillTime[side] + delta : 0;
+      // lastWrist is where the hand settled; moving away from it starts the count again.
+      const settled = this.stillTime[side] > 0 && this.wrist.distanceTo(this.lastWrist[side]) <= STILL_RADIUS;
+      if (!settled) this.lastWrist[side].copy(this.wrist);
+      this.stillTime[side] = hand.tracked && lit ? (settled ? this.stillTime[side] + delta : 1e-6) : 0;
       if (this.stillTime[side] >= STILL_SECONDS) {
         const shape = beat.type === 'request' ? beat.shape : beat.options[0].shape;
         stage.setValue(ShapeRecognizer, 'matchedHand', side);

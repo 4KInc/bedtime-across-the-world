@@ -120,7 +120,8 @@ class HandPipeline {
  * "cup your hands").
  */
 function twoHands(l: { shape: string; best: string; curl: number; features: Float32Array; joints: Float32Array }, r: typeof l, hidden: boolean, target: string): string {
-  const pair = classifyPair(l, r, hidden);
+  // As in the app: a requested bird gets the looser two-hand rule.
+  const pair = classifyPair(l, r, hidden, target === 'bird');
   if (pair) return pair;
   return r.shape === target || l.shape === target ? target : ShapeIds.None;
 }
@@ -302,6 +303,23 @@ for (const fx of pairFixtures) {
   }
   const line = `   ${fx.label.padEnd(10)} triggers ${ok}/${N} (pair)`;
   console.log(ok / N < TARGET_ACCURACY ? fail(line) : line);
+}
+// A real-hands bird (Quest 3, Nov 14): fingers a little relaxed and wrists a bit
+// further apart. The strict rule misses it; asked for, the bird rule takes it.
+{
+  const relaxed: HandPose = { fingers: [{ curl: 0.22 }, { curl: 0.22 }, { curl: 0.22 }, { curl: 0.22 }], spread: 14, thumb: 'out', roll: -90 };
+  const at: [[number, number], [number, number]] = [[0.12, 0], [-0.12, 0]];
+  let asked = 0;
+  let strict = 0;
+  for (let s = 0; s < N; s++) {
+    const salt = 90;
+    const rb = person(relaxed, 'right', s, salt, at[0]);
+    const lb = person(relaxed, 'left', s, salt + 9, at[1]);
+    if (triggerTime(pairFrames(rb, relaxed, at[0], lb, relaxed, at[1], cond, s, salt, false, 'bird'), 'bird') !== null) asked++;
+    if (triggerTime(pairFrames(rb, relaxed, at[0], lb, relaxed, at[1], cond, s, salt, false, 'none'), 'bird') !== null) strict++;
+  }
+  const line = `   relaxed bird (wrists 24 cm, fingers relaxed): asked for ${asked}/${N}, strict rule ${strict}/${N}`;
+  console.log(asked / N < TARGET_ACCURACY ? fail(line) : line);
 }
 let falseTriggers = 0;
 const falseBy: Record<string, number> = {};
