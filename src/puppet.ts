@@ -1,6 +1,6 @@
 import { CanvasTexture, Color, createSystem, Entity, Mesh, MeshBasicMaterial, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from '@iwsdk/core';
 import { family } from './family.js';
-import { creatureColour } from './creature-colours.js';
+import { CHILD_COLOUR, creatureColour } from './creature-colours.js';
 import { buildPuppetRig, PuppetRig } from './puppet-rigs.js';
 import { playChime, playCreature } from './sfx.js';
 import {
@@ -30,7 +30,6 @@ const INK = 0x0a0810;
 const BLOOM_SECONDS = 0.7;
 const INK_COLOUR = new Color(INK);
 /** In a live story with Take turns, the child's creatures wake in this colour (unlike any creature's own), with their name. */
-const CHILD_COLOUR = 0xc026d3;
 const LABEL_W = 512;
 const LABEL_H = 128;
 /** What a creature is called on its label. */

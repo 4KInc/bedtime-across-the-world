@@ -35,6 +35,9 @@ export interface Performance {
   shareCode?: string;
   /** A goodnight back from the family: the code of the story it answers. */
   replyTo?: string;
+  /** A goodnight's gifts (child-gifts.ts): Mo's colours (a palette id) and a drawn creature. */
+  mo?: string;
+  drawing?: string;
   /** Bundled example (first launch), so someone alone can see what families share. */
   sample?: boolean;
   createdAt: number;

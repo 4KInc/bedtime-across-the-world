@@ -15,7 +15,8 @@ import {
 } from '@iwsdk/core';
 import { buildMoth, MothRig } from './silhouettes.js';
 import { Moth, MothModes, PuppetStates, ShadowPuppet } from './shadowplay-components.js';
-import { handRuntime, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { moPalette } from './gifts-received.js';
 
 const INDEX_TIP = 9;
 /** Moth wingspan as a fraction of stage width. */
@@ -44,6 +45,9 @@ export class MothSystem extends createSystem({
   puppets: { required: [ShadowPuppet] },
 }) {
   private runtimes = new Map<Entity, MothRuntime>();
+  private wings = new Color();
+  private glowColour = new Color();
+  private haloColour = new Color();
   private tip = new Vector3();
   private hit = new Vector3();
   private quat = new Quaternion();
@@ -177,9 +181,11 @@ export class MothSystem extends createSystem({
       stageRuntime.moWall.copy(rt.pos);
       rt.fill.opacity += (visible * 0.92 - rt.fill.opacity) * Math.min(1, delta * 3);
       const glow = entity.getValue(Moth, 'glow') ?? 0;
-      rt.fill.color.copy(INK).lerp(GLOW, glow);
+      // In the child's colours when they sent some (plain ink and amber in high contrast).
+      const own = accessRuntime.highContrast ? null : moPalette();
+      rt.fill.color.copy(own ? this.wings.setHex(own.wings) : INK).lerp(own ? this.glowColour.setHex(own.glow) : GLOW, glow);
       const pulse = 0.85 + 0.15 * Math.sin(this.time * 3);
-      rt.haloMat.color.copy(HALO).multiplyScalar(0.45 * glow * pulse * (rt.fill.opacity / 0.92));
+      rt.haloMat.color.copy(own ? this.haloColour.setHex(own.halo) : HALO).multiplyScalar(0.45 * glow * pulse * (rt.fill.opacity / 0.92));
       rt.halo.visible = glow > 0.01;
       rt.rig.root.visible = rt.fill.opacity > 0.002;
       rt.halo.scale.setScalar(0.6 + 0.5 * glow);

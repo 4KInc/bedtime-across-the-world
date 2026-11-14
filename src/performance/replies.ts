@@ -5,6 +5,7 @@ import { FamilyInbox, LiveSession, PerformancePlayer, StoryState } from '../shad
 import type { Performance } from './format.js';
 import { seedSamples } from './samples.js';
 import { fetchReplies } from './sharing.js';
+import { receiveGifts } from '../gifts-received.js';
 
 /** Look for new goodnights this often (ms), only while the page is open. */
 const POLL_MS = 90_000;
@@ -99,6 +100,13 @@ export class FamilyInboxSystem extends createSystem({
           if (await loadRecording(reply.id)) continue;
           await saveRecording({ ...reply, watched: false });
         }
+      }
+      // The child's gifts (Mo's colours, a drawn creature) are taken as soon as the goodnight arrives.
+      const arrived = (await listRecordings<Performance & { giftsTaken?: boolean }>()).sort((a, b) => a.createdAt - b.createdAt);
+      for (const p of arrived) {
+        if (!p.replyTo || p.giftsTaken || (!p.mo && !p.drawing)) continue;
+        await receiveGifts(p);
+        await saveRecording({ ...p, giftsTaken: true });
       }
       const fresh = (await listRecordings<Performance & { watched?: boolean }>())
         .filter((p) => p.replyTo && !p.watched)

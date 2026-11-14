@@ -4,6 +4,7 @@ import { family } from './family.js';
 import { seedSamples } from './performance/samples.js';
 import { RoleLoaderSystem } from './roles/loader.js';
 import { viewerMode } from './viewer-mode.js';
+import { loadReceivedGifts } from './gifts-received.js';
 import { isInstalledPwa, pwaRuntime } from './pwa.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AudioSystem } from './audio.js';
@@ -13,6 +14,7 @@ import { HandCasterSystem } from './hand-caster.js';
 import { FireflySystem } from './fireflies.js';
 import { TwilightSystem } from './twilight.js';
 import { WallWindowSystem } from './wall-window.js';
+import { ChildDrawingSystem } from './child-drawing.js';
 import { LanternSystem } from './lanterns.js';
 import { KeepsakeSystem } from './keepsakes.js';
 import { MoVisitSystem } from './mo-visit.js';
@@ -68,12 +70,14 @@ World.create(
     .registerSystem(MoVisitSystem)
     .registerSystem(KeepsakeSystem)
     .registerSystem(LanternSystem)
+    .registerSystem(ChildDrawingSystem)
     .registerSystem(AudioSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
     .registerSystem(PerformanceRecorderSystem)
     .registerSystem(RoleLoaderSystem);
   void family.load();
+  void loadReceivedGifts();
   void seedSamples(viewerMode.on ? 'viewer' : 'headset');
   if (automationEnabled) {
     world.registerSystem(AutomationSystem);

@@ -173,6 +173,23 @@ export async function saveKeepsakes(stars: Keepsake[]): Promise<void> {
   await run(PROGRESS, 'readwrite', (s) => s.put(stars, 'keepsakes'));
 }
 
+/** The latest gifts from the child (child-gifts.ts): Mo's colours and a drawn creature, with who sent them. */
+export interface StoredGifts {
+  mo?: string;
+  moFrom?: string;
+  drawing?: string;
+  drawingFrom?: string;
+  drawingAt?: number;
+}
+
+export async function loadGifts(): Promise<StoredGifts> {
+  return (await run<StoredGifts>(PROGRESS, 'readonly', (s) => s.get('gifts') as IDBRequest<StoredGifts>)) ?? {};
+}
+
+export async function saveGifts(gifts: StoredGifts): Promise<void> {
+  await run(PROGRESS, 'readwrite', (s) => s.put(gifts, 'gifts'));
+}
+
 /** Recognition-lab trials (device gate testing), kept so testers' data pools across sessions. */
 export async function loadLabTrials<T>(): Promise<T[]> {
   return (await run<T[]>(PROGRESS, 'readonly', (s) => s.get('lab') as IDBRequest<T[]>)) ?? [];
