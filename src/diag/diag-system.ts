@@ -19,6 +19,7 @@ import { FrameStats } from './frame-stats.js';
 import { shadowMapSize } from '../quality-levels.js';
 import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
+import { pairRuntime } from '../shape-match.js';
 
 /** Snapshot to the server every SNAPSHOT_MS; events within EVENT_FLUSH_MS. */
 const SNAPSHOT_MS = 5000;
@@ -309,6 +310,9 @@ export class DiagSystem extends createSystem({
       worstMs: round(r.worst, 2),
       quality,
       shadowMap: shadowMapSize(quality),
+      // Two hands: wrist gap (m), finger curl and thumb bend each side, and whether each is in the light.
+      pg: round(pairRuntime.gap, 3), plc: round(pairRuntime.lCurl, 2), prc: round(pairRuntime.rCurl, 2),
+      plt: round(pairRuntime.lThumb, 2), prt: round(pairRuntime.rThumb, 2), pll: pairRuntime.lLight, prl: pairRuntime.rLight,
       lt: l.t, ls: l.shape, lsc: l.score, lsil: l.sil,
       rt: rt.t, rs: rt.shape, rsc: rt.score, rsil: rt.sil,
       ...(stage ? this.placement(stage) : {}),

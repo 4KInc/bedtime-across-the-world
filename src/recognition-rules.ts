@@ -19,6 +19,31 @@ export const BIRD_MAX_CURL = 0.25;
 /** ...and the thumb not bent across (an OK sign bends it to ~0.5). */
 const PAIR_MAX_THUMB = 0.35;
 
+/**
+ * When a story asks for the bird, real hands get more room: on a Quest 3 (Nov 14)
+ * a bird made with thumbs hooked and fingers a little relaxed read as two flat
+ * or slightly curled hands that missed the strict rule. Hooked thumbs bend the
+ * thumb, so a bent thumb is fine when the two thumb tips are together (that is
+ * what makes it a shadow bird). A resting hand (curl ~0.3, thumb half bent, not
+ * hooked to the other) still fails the thumb test.
+ */
+const BIRD_WANTED_GAP = 0.28;
+const BIRD_WANTED_CURL = 0.3;
+const THUMBS_TOGETHER = 0.07;
+/** ...and each thumb away from its own index fingertip (an OK sign touches it). */
+const OWN_PINCH_MIN = 0.04;
+const THUMB_TIP = 4;
+const INDEX_TIP = 9;
+
+function ownPinch(h: PairHand): number {
+  const t = THUMB_TIP * 3;
+  const i = INDEX_TIP * 3;
+  return Math.hypot(h.joints[t] - h.joints[i], h.joints[t + 1] - h.joints[i + 1], h.joints[t + 2] - h.joints[i + 2]);
+}
+/** Assist (the story has waited 40 s or more): any two hands near each other, side by side, are the bird. */
+const BIRD_ASSIST_GAP = 0.35;
+const BIRD_ASSIST_TOLERANCE = 0.2;
+
 /** Deer: hands may be further apart than the bird's (antlers either side of the head). */
 const DEER_WRIST_GAP = 0.4;
 const DEER_MIN_UP = 0.75;
@@ -89,9 +114,10 @@ export interface PairHand {
  * Two-hand shapes, both hands in the light. Most specific first: deer (open,
  * fingers up and spread), crocodile (flat hands stacked), bird (open, wrists
  * side by side), cup (both cupped, side by side). Deer and crocodile only when
- * `hidden` (Free Stage, or a story that asks for one).
+ * `hidden` (Free Stage, or a story that asks for one). `birdWanted`: a bird is
+ * asked for (more room for real hands); `assist`: the story's extra tolerance.
  */
-export function classifyPair(l: PairHand, r: PairHand, hidden: boolean): string | null {
+export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWanted = false, assist = 0): string | null {
   const dx = l.joints[0] - r.joints[0];
   const dy = l.joints[1] - r.joints[1];
   const dz = l.joints[2] - r.joints[2];
@@ -122,6 +148,16 @@ export function classifyPair(l: PairHand, r: PairHand, hidden: boolean): string 
     Math.abs(rf[8] - 0.5) <= CROC_LEVEL
   ) {
     return ShapeIds.Crocodile;
+  }
+  // A bird asked for: checked before the cup, with more room (and, after a long wait, any two hands side by side).
+  if (birdWanted && sideways >= Math.abs(dy)) {
+    if (assist >= BIRD_ASSIST_TOLERANCE && gap < BIRD_ASSIST_GAP) return ShapeIds.Bird;
+    const t = THUMB_TIP * 3;
+    const thumbs = Math.hypot(l.joints[t] - r.joints[t], l.joints[t + 1] - r.joints[t + 1], l.joints[t + 2] - r.joints[t + 2]);
+    const thumbsOk =
+      (lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB) ||
+      (thumbs <= THUMBS_TOGETHER && ownPinch(l) >= OWN_PINCH_MIN && ownPinch(r) >= OWN_PINCH_MIN);
+    if (gap < BIRD_WANTED_GAP && l.curl <= BIRD_WANTED_CURL && r.curl <= BIRD_WANTED_CURL && thumbsOk) return ShapeIds.Bird;
   }
   if (gap >= BIRD_WRIST_GAP) return null;
   // Wings sit side by side: stacked hands are not a bird.

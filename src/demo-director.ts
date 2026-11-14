@@ -244,6 +244,10 @@ export class DemoDirectorSystem extends createSystem({
       case 'wrong':
         if (this.beatTime < 12) t.fixture = this.fixture(asked === 'dog' ? 'rabbit' : 'dog');
         break;
+      case 'stuck':
+        // Never makes the shape (a fist, with a shaky hand): only the story's last assist can help.
+        t.fixture = this.fixture('fist');
+        break;
       case 'wanderer':
         // Gone (to fetch a teddy) for half a minute.
         if (this.beatTime < 30) t.fixture = null;
@@ -324,7 +328,7 @@ export class DemoDirectorSystem extends createSystem({
     };
     handOverride.right = place('right', cached.right, fx.rightAt);
     handOverride.left = place('left', cached.left, fx.leftAt);
-    if (this.persona === 'shaky') {
+    if (this.persona === 'shaky' || this.persona === 'stuck') {
       // A 6 Hz tremor of the whole hand (about 1 cm) plus a few millimetres of jitter per joint.
       const tremor = Math.sin(this.time * 2 * Math.PI * 6) * 0.01;
       for (const joints of [handOverride.right, handOverride.left]) {
