@@ -44,6 +44,11 @@ export const stageRuntime = {
   wakeAt: new Vector3(),
   wakeColour: 0xffb45a,
   wakeShape: '',
+  /** Mo on the wall (world point, moth.ts), and whether she is away visiting the storyteller's fingertip (mo-visit.ts). */
+  moWall: new Vector3(),
+  moAway: false,
+  /** The story has reached its last beat ("The End"), set by the story system. */
+  atEnd: false,
   /**
    * Automation only (emulator tests): when set, stage placement sees these
    * planes instead of the headset's detected planes.
