@@ -1,14 +1,17 @@
 import {
-  AdditiveBlending,
+  AddEquation,
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
   Color,
   createSystem,
+  CustomBlending,
   Entity,
+  OneFactor,
   Points,
   PointsMaterial,
   Vector3,
+  ZeroFactor,
 } from '@iwsdk/core';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 
@@ -35,10 +38,13 @@ function glowTexture(): CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const g = c.getContext('2d')!;
+  // The glow is in the colour (white fading to black), since it is added as light, not blended by alpha.
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, 64, 64);
   const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.25, 'rgba(255,255,255,0.75)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(0.25, '#bfbfbf');
+  grad.addColorStop(1, '#000');
   g.fillStyle = grad;
   g.fillRect(0, 0, 64, 64);
   return new CanvasTexture(c);
@@ -67,7 +73,14 @@ export class FireflySystem extends createSystem({}) {
     vertexColors: true,
     transparent: true,
     depthWrite: false,
-    blending: AdditiveBlending,
+    // Add light without touching alpha (like the lamp pool): in passthrough, writing
+    // alpha would cut see-through holes in the image instead of adding a glow.
+    blending: CustomBlending,
+    blendEquation: AddEquation,
+    blendSrc: OneFactor,
+    blendDst: OneFactor,
+    blendSrcAlpha: ZeroFactor,
+    blendDstAlpha: OneFactor,
   });
   private points = new Points(this.geometry, this.material);
   private entity: Entity | undefined;
