@@ -52,10 +52,12 @@ screen; if the stage lands somewhere odd, pinch the book on the desk, then
   paper screen when there is no usable wall, and **Move stage here** to put it
   where you look), with the room dimmed like a theatre and a lamp you can drag
   to sweep the light.
-- Five narrated stories, picked from the journal: *The Moth Who Borrowed Light*
+- Eight narrated stories, picked from the journal: *The Moth Who Borrowed Light*
   (twenty minutes in chapters, a branching wolf encounter, a lighthouse finale),
   *Goodnight Across the Sea*, *The Letter That Took the Slow Way*, *The Brave
-  Little Dog* and *Counting Stars* (three minutes, for the littlest ones).
+  Little Dog*, *Counting Stars* (three minutes, for the littlest ones), and
+  *The Night Garden*, *The Kind Crocodile* and *The Little Rainstorm*, each
+  read by its own narrator.
   Eleven hand shapes, from a rabbit to a two-handed crocodile; the story never
   fails: it shows a ghost hand, waits, and becomes more forgiving.
 - **Record a story** (hands, story and your voice) and **Send to family**: a
