@@ -204,11 +204,13 @@ export class StorySystem extends createSystem({
   private switchScript(story: Entity, stage: Entity, path: string): void {
     this.switching = true;
     storyRuntime.script = '';
+    storyRuntime.title = '';
     loadStoryScript(path)
       .then((script) => {
         this.script = script;
         this.scriptPath = path;
         storyRuntime.script = path;
+        storyRuntime.title = script.title;
         const following = Boolean(story.getValue(StoryState, 'followMode'));
         if (following) {
           // A replay or Live story drives the beats; nothing to restore afterwards in the old script.
@@ -238,6 +240,7 @@ export class StorySystem extends createSystem({
         this.script = script;
         this.scriptPath = path;
         storyRuntime.script = path;
+        storyRuntime.title = script.title;
         story.setValue(StoryState, 'script', path);
         for (const c of unlocks.chapters) this.unlocked.add(c);
         for (const e of unlocks.endings) this.endings.add(e);

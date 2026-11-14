@@ -53,7 +53,7 @@ export interface StoryScript {
 }
 
 /** The script the story system has loaded and is running (replays and Live wait for it). */
-export const storyRuntime = { script: '' };
+export const storyRuntime = { script: '', title: '' };
 
 /** Comfortable caption reading time: ~3 words per second plus a pause. */
 export function readingSeconds(text: string): number {

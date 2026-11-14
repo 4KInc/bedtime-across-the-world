@@ -156,6 +156,23 @@ export async function saveUnlocks(unlocks: Unlocks): Promise<void> {
   await run(PROGRESS, 'readwrite', (s) => s.put(unlocks, 'unlocks'));
 }
 
+/** A star kept for each story told to the end (the jar on the desk). */
+export interface Keepsake {
+  title: string;
+  /** When it was told (ms since 1970). */
+  at: number;
+  /** The colour of the last creature woken in it. */
+  colour: number;
+}
+
+export async function loadKeepsakes(): Promise<Keepsake[]> {
+  return (await run<Keepsake[]>(PROGRESS, 'readonly', (s) => s.get('keepsakes') as IDBRequest<Keepsake[]>)) ?? [];
+}
+
+export async function saveKeepsakes(stars: Keepsake[]): Promise<void> {
+  await run(PROGRESS, 'readwrite', (s) => s.put(stars, 'keepsakes'));
+}
+
 /** Recognition-lab trials (device gate testing), kept so testers' data pools across sessions. */
 export async function loadLabTrials<T>(): Promise<T[]> {
   return (await run<T[]>(PROGRESS, 'readonly', (s) => s.get('lab') as IDBRequest<T[]>)) ?? [];
