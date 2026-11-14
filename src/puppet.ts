@@ -1,4 +1,5 @@
-import { createSystem, Entity, MeshBasicMaterial, Quaternion, Vector3 } from '@iwsdk/core';
+import { Color, createSystem, Entity, MeshBasicMaterial, Quaternion, Vector3 } from '@iwsdk/core';
+import { creatureColour } from './creature-colours.js';
 import { buildPuppetRig, PuppetRig } from './puppet-rigs.js';
 import { playChime } from './sfx.js';
 import {
@@ -8,7 +9,7 @@ import {
   ShapeIds,
   ShapeRecognizer,
 } from './shadowplay-components.js';
-import { handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
 
 const HAND_LENGTH = 0.18;
 /** Characters read best a little smaller than the raw hand shadow. */
@@ -23,6 +24,9 @@ const RELEASE_OPEN_SECONDS = 0.25;
 const RELEASE_DARK_SECONDS = 1.0;
 const FADE_SECONDS = 0.8;
 const INK = 0x0a0810;
+/** How long a woken creature takes to bloom into its colour (seconds). */
+const BLOOM_SECONDS = 0.7;
+const INK_COLOUR = new Color(INK);
 
 interface PuppetRuntime {
   rig: PuppetRig;
@@ -38,6 +42,9 @@ interface PuppetRuntime {
   hop: number;
   lastState: string;
   twoHanded: boolean;
+  /** Its waking colour (creature-colours.ts), and how far it has bloomed (0 shadow, 1 colour). */
+  colour: Color;
+  bloom: number;
 }
 
 /**
@@ -84,6 +91,7 @@ export class PuppetSystem extends createSystem({
       rig, fill, eyeMat, pos: new Vector3(), scale: 0.3, facing: 1,
       lostFor: 0, fade: 0, alive: 0, blinkIn: 2.5, hop: 0,
       lastState: PuppetStates.Hidden, twoHanded: false,
+      colour: new Color(creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK), bloom: 0,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -136,6 +144,11 @@ export class PuppetSystem extends createSystem({
   }
 
   private updateOutline(entity: Entity, rt: PuppetRuntime, rec: Entity | undefined, delta: number): void {
+    // Being formed: a shadow (it blooms into colour only once it wakes).
+    if (rt.bloom > 0) {
+      rt.bloom = 0;
+      this.tint(rt);
+    }
     const u = entity.getValue(ShadowPuppet, 'outlineU') ?? 0;
     const v = entity.getValue(ShadowPuppet, 'outlineV') ?? 0;
     rt.pos
@@ -169,6 +182,7 @@ export class PuppetSystem extends createSystem({
       if (rt.twoHanded) handRuntime.left.hideCasters = handRuntime.right.hideCasters = true;
       rt.lostFor = 0;
       rt.alive = 0;
+      rt.bloom = 0;
       rt.pos.copy(stageRuntime.center);
     }
   }
@@ -184,6 +198,8 @@ export class PuppetSystem extends createSystem({
     rt.alive = Math.min(1, rt.alive + delta * 3);
     rt.fill.opacity = 0.92 * Math.min(1, rt.alive * 1.5);
     rt.eyeMat.opacity = rt.fill.opacity;
+    rt.bloom = Math.min(1, rt.bloom + delta / BLOOM_SECONDS);
+    this.tint(rt);
 
     const shapeId = entity.getValue(ShadowPuppet, 'shape');
     if (shapeId === ShapeIds.Bird || shapeId === ShapeIds.Cup) {
@@ -233,9 +249,21 @@ export class PuppetSystem extends createSystem({
     return features;
   }
 
+  /**
+   * The creature's colour for its bloom: a shadow at 0, its own colour at 1
+   * (eased). High contrast keeps every creature a solid shadow.
+   */
+  private tint(rt: PuppetRuntime): void {
+    const b = accessRuntime.highContrast ? 0 : rt.bloom * rt.bloom * (3 - 2 * rt.bloom);
+    rt.fill.color.copy(INK_COLOUR).lerp(rt.colour, b);
+  }
+
   private updateReleasing(entity: Entity, rt: PuppetRuntime, rec: Entity | undefined, delta: number): void {
     rt.fade -= delta / FADE_SECONDS;
     rt.fill.opacity = rt.eyeMat.opacity = Math.max(0, rt.fade) * 0.92;
+    // Back to a shadow in the first half of the bow, then gone.
+    rt.bloom = Math.min(rt.bloom, Math.max(0, rt.fade * 2 - 1));
+    this.tint(rt);
     rt.pos.addScaledVector(stageRuntime.up, delta * 0.05); // bow and drift
     if (rt.fade > 0) return;
     const side = entity.getValue(ShadowPuppet, 'hand') as 'left' | 'right' | 'none';
