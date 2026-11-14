@@ -94,6 +94,7 @@ export class SettingsSystem extends createSystem({
   private contrastLabel: UIKit.Text | undefined;
   private gazeLabel: UIKit.Text | undefined;
   private voiceCommandsLabel: UIKit.Text | undefined;
+  private musicLabel: UIKit.Text | undefined;
   private voiceLabel: UIKit.Text | undefined;
   private status: UIKit.Text | undefined;
   private loaded = false;
@@ -134,7 +135,8 @@ export class SettingsSystem extends createSystem({
     const highContrast = Boolean(settings.getValue(Settings, 'highContrast'));
     const gazeDwell = Boolean(settings.getValue(Settings, 'gazeDwell'));
     const voiceCommands = Boolean(settings.getValue(Settings, 'voiceCommands'));
-    const key = `${tolerance}|${hints}|${oneHand}|${voice}|${highContrast}|${gazeDwell}|${voiceCommands}`;
+    const music = Boolean(settings.getValue(Settings, 'music'));
+    const key = `${tolerance}|${hints}|${oneHand}|${voice}|${highContrast}|${gazeDwell}|${voiceCommands}|${music}`;
     if (key !== this.applied) {
       accessRuntime.highContrast = highContrast;
       accessRuntime.gazeDwell = gazeDwell;
@@ -142,7 +144,9 @@ export class SettingsSystem extends createSystem({
       this.apply(tolerance, hints, oneHand, voice, highContrast, gazeDwell);
       this.buttons.get('voice-commands-toggle')?.setProperties(voiceCommands ? palette().selected : palette().unselected);
       this.voiceCommandsLabel?.setProperties({ text: `Voice commands: ${voiceCommands ? 'On' : 'Off'}`, color: voiceCommands ? palette().ink : palette().cream });
-      if (this.applied) void saveSettings({ tolerance, hints, oneHand, highContrast, gazeDwell, voiceCommands, placeholderVoice: voice });
+      this.buttons.get('music-toggle')?.setProperties(music ? palette().selected : palette().unselected);
+      this.musicLabel?.setProperties({ text: `Music: ${music ? 'On' : 'Off'}`, color: music ? palette().ink : palette().cream });
+      if (this.applied) void saveSettings({ tolerance, hints, oneHand, highContrast, gazeDwell, voiceCommands, music, placeholderVoice: voice });
       this.applied = key;
     }
     if (dreamRuntime.request) {
@@ -301,6 +305,7 @@ export class SettingsSystem extends createSystem({
         settings.setValue(Settings, 'highContrast', Boolean(stored.highContrast));
         settings.setValue(Settings, 'gazeDwell', Boolean(stored.gazeDwell));
         settings.setValue(Settings, 'voiceCommands', Boolean(stored.voiceCommands));
+        settings.setValue(Settings, 'music', stored.music !== false);
         settings.setValue(Settings, 'placeholderVoice', Boolean(stored.placeholderVoice));
       }
       this.loaded = true;
@@ -335,6 +340,7 @@ export class SettingsSystem extends createSystem({
     on('contrast-toggle', () => settings.setValue(Settings, 'highContrast', !settings.getValue(Settings, 'highContrast')));
     on('gaze-toggle', () => settings.setValue(Settings, 'gazeDwell', !settings.getValue(Settings, 'gazeDwell')));
     on('voice-commands-toggle', () => settings.setValue(Settings, 'voiceCommands', !settings.getValue(Settings, 'voiceCommands')));
+    on('music-toggle', () => settings.setValue(Settings, 'music', !settings.getValue(Settings, 'music')));
     on('voice-toggle', () =>
       settings.setValue(Settings, 'placeholderVoice', !settings.getValue(Settings, 'placeholderVoice')),
     );
@@ -406,6 +412,8 @@ export class SettingsSystem extends createSystem({
     if (this.gazeLabel) this.gazeLabel.name = 'gaze-label';
     this.voiceCommandsLabel = panel.getElementById<UIKit.Text>('voice-commands-label') ?? undefined;
     if (this.voiceCommandsLabel) this.voiceCommandsLabel.name = 'voice-commands-label';
+    this.musicLabel = panel.getElementById<UIKit.Text>('music-label') ?? undefined;
+    if (this.musicLabel) this.musicLabel.name = 'music-label';
     this.voiceLabel = panel.getElementById<UIKit.Text>('voice-label') ?? undefined;
     if (this.voiceLabel) this.voiceLabel.name = 'voice-label';
     // The placeholder voice is a development aid only; production builds hide it.

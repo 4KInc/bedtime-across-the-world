@@ -20,7 +20,7 @@ export type VoiceCommand =
   /** Dream a new story: a place and shapes if named (the rest picked at random). */
   | { kind: 'dream'; theme: string; shapes: string[] }
   /** Turn a setting on or off (null: toggle). */
-  | { kind: 'setting'; which: 'oneHand' | 'highContrast' | 'gazeDwell' | 'forgiving' | 'voiceCommands'; on: boolean | null };
+  | { kind: 'setting'; which: 'oneHand' | 'highContrast' | 'gazeDwell' | 'forgiving' | 'voiceCommands' | 'music'; on: boolean | null };
 
 export const MAX_WORDS = 6;
 
@@ -90,6 +90,9 @@ const PHRASES: readonly [string, VoiceCommand][] = [
   ['forgiving shapes', { kind: 'setting', which: 'forgiving', on: true }],
   ['normal shapes', { kind: 'setting', which: 'forgiving', on: false }],
   ['voice commands off', { kind: 'setting', which: 'voiceCommands', on: false }],
+  ['music off', { kind: 'setting', which: 'music', on: false }],
+  ['music on', { kind: 'setting', which: 'music', on: true }],
+  ['no music', { kind: 'setting', which: 'music', on: false }],
   ['stop listening', { kind: 'setting', which: 'voiceCommands', on: false }],
 ];
 
@@ -172,6 +175,6 @@ export function describe(command: VoiceCommand): string {
     case 'press':
       return (PHRASES.find(([, c]) => c.kind === 'press' && c.id === command.id)?.[0]) ?? command.id;
     case 'setting':
-      return `${command.which === 'oneHand' ? 'one-hand mode' : command.which === 'highContrast' ? 'high contrast' : command.which === 'gazeDwell' ? 'look to press' : command.which === 'forgiving' ? 'forgiving shapes' : 'voice commands'}${command.on === null ? '' : command.on ? ' on' : ' off'}`;
+      return `${command.which === 'oneHand' ? 'one-hand mode' : command.which === 'highContrast' ? 'high contrast' : command.which === 'gazeDwell' ? 'look to press' : command.which === 'forgiving' ? 'forgiving shapes' : command.which === 'music' ? 'music' : 'voice commands'}${command.on === null ? '' : command.on ? ' on' : ' off'}`;
   }
 }

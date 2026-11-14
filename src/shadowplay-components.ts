@@ -278,6 +278,8 @@ export const Settings = createComponent('Settings', {
   gazeDwell: { type: Types.Boolean, default: false },
   /** Voice commands: spoken alternatives for the hand interactions (opens the microphone while on). */
   voiceCommands: { type: Types.Boolean, default: false },
+  /** The lullaby under the story (sfx.ts startLullaby). */
+  music: { type: Types.Boolean, default: true },
   /** Test-only: speak captions with an on-device synthetic voice until real narration exists. */
   placeholderVoice: { type: Types.Boolean, default: false },
   /** Set by the panel; the story system restarts from the Prologue and clears it. */

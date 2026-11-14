@@ -23,6 +23,7 @@ import { coachRuntime } from './mo-coach.js';
 import { fireflyRuntime } from './fireflies.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
+import { soundRuntime } from './sfx.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
@@ -223,6 +224,7 @@ export class AutomationSystem extends createSystem({
           fireflies: { ...fireflyRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
+          sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
           dream: { ...dreamRuntime },
           shadowOpacity: (scene.getObjectByName('shadow-surface') as import('@iwsdk/core').Mesh<import('@iwsdk/core').BufferGeometry, import('@iwsdk/core').ShadowMaterial> | undefined)?.material.opacity ?? null,
           desk: stageRuntime.desk,
