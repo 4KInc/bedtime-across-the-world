@@ -123,7 +123,8 @@ export class MothSystem extends createSystem({
       let follow = 4;
       let flapRate = 16;
       let flutter = 1;
-      let visible = 1;
+      // Away on the storyteller's fingertip (mo-visit.ts): the wall is empty until she flies back.
+      let visible = stageRuntime.moAway ? 0 : 1;
 
       switch (mode) {
         case MothModes.Hidden:
@@ -173,6 +174,7 @@ export class MothSystem extends createSystem({
       }
 
       rt.pos.lerp(rt.target, Math.min(1, delta * follow));
+      stageRuntime.moWall.copy(rt.pos);
       rt.fill.opacity += (visible * 0.92 - rt.fill.opacity) * Math.min(1, delta * 3);
       const glow = entity.getValue(Moth, 'glow') ?? 0;
       rt.fill.color.copy(INK).lerp(GLOW, glow);

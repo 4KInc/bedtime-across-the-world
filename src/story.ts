@@ -448,6 +448,7 @@ export class StorySystem extends createSystem({
     this.dropouts.reset();
     trackingRuntime.lightHint = false;
     const beat = this.script!.beats[index];
+    stageRuntime.atEnd = beat?.type === 'end';
     this.beatTime = 0;
     this.welcomeBack = false;
     this.holdTime = 0;
