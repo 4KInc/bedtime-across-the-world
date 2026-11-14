@@ -318,3 +318,23 @@ US$50-70 at list price; check the pricing calculator for your account.
   registry or a dedicated relay; one instance is plenty for the competition.
 - Rate limits are per instance and in memory.
 - Consider abuse reporting for shared codes and a takedown path.
+
+## Package for the Meta Horizon Store (PWA)
+
+The hosted app is ready to package as an immersive WebXR PWA:
+
+- `public/manifest.webmanifest` (linked from `index.html`): name, short name,
+  `start_url` and `scope` (relative, so they resolve against whichever URL
+  serves it), `display: standalone`, theme and background colours, and
+  192/512 icons (`any` and `maskable`) in `public/icons/`.
+- In the installed app, `src/pwa.ts` detects Meta's packaged-PWA environment
+  (`window.getDigitalGoodsService`) and `src/index.ts` calls
+  `world.launchXR()` once the stage is loaded, so it opens straight into the
+  headset view. Launching the app icon counts as the gesture. The browser tab
+  and the family viewer (`?viewer`) are unchanged.
+
+Package with Meta's Bubblewrap tooling in **immersive** mode against the
+production URL's manifest, following
+https://developers.meta.com/horizon/documentation/web/pwa-packaging (and
+https://developers.meta.com/horizon/documentation/web/pwa-webxr for the
+immersive launch). Test: `scripts/sim/pwa.mjs`.

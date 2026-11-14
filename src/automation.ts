@@ -24,6 +24,7 @@ import { fireflyRuntime } from './fireflies.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
 import { soundRuntime } from './sfx.js';
+import { pwaRuntime } from './pwa.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
@@ -224,6 +225,7 @@ export class AutomationSystem extends createSystem({
           fireflies: { ...fireflyRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
+          pwa: { ...pwaRuntime },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
           dream: { ...dreamRuntime },
           shadowOpacity: (scene.getObjectByName('shadow-surface') as import('@iwsdk/core').Mesh<import('@iwsdk/core').BufferGeometry, import('@iwsdk/core').ShadowMaterial> | undefined)?.material.opacity ?? null,

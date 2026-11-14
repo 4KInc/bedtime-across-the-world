@@ -19,6 +19,7 @@ writeFileSync(join(app, 'index.html'), '<!doctype html><title>Shadowplay</title>
 writeFileSync(join(app, 'assets', 'index-abc123.js'), APP_JS);
 mkdirSync(join(app, 'story'));
 writeFileSync(join(app, 'story', 'library.json'), JSON.stringify({ stories: [] }));
+writeFileSync(join(app, 'manifest.webmanifest'), JSON.stringify({ name: 'Shadowplay', start_url: './' }));
 let server: ChildProcess;
 
 /** A stand-in for Cloud Speech-to-Text: records what it was sent, answers "the bird". */
@@ -373,6 +374,11 @@ test('static files: compressed, cached by kind, and HEAD works', async () => {
   const plain = await fetch(`${BASE}/story/library.json`, { headers: { 'Accept-Encoding': 'identity' } });
   assert.equal(plain.headers.get('content-encoding'), null);
   assert.equal(plain.headers.get('cache-control'), 'no-cache');
+  // The web app manifest (for installing as an app) with its own type.
+  const manifest = await fetch(`${BASE}/manifest.webmanifest`);
+  assert.equal(manifest.status, 200);
+  assert.match(manifest.headers.get('content-type') ?? '', /^application\/manifest\+json/);
+  assert.equal((await manifest.json()).name, 'Shadowplay');
   const head = await fetch(`${BASE}/assets/index-abc123.js`, { method: 'HEAD', headers: { 'Accept-Encoding': 'br' } });
   assert.equal(head.status, 200);
   assert.ok(Number(head.headers.get('content-length')) > 0);
