@@ -133,7 +133,17 @@ export class PuppetSystem extends createSystem({
       const state = entity.getValue(ShadowPuppet, 'state') ?? PuppetStates.Hidden;
       if (state !== rt.lastState) {
         // Entering Releasing from anywhere (e.g. the story's bow) starts the fade.
-        if (state === PuppetStates.Releasing) rt.fade = Math.max(rt.fade, rt.fill.opacity / 0.92);
+        if (state === PuppetStates.Releasing) {
+          rt.fade = Math.max(rt.fade, rt.fill.opacity / 0.92);
+          // Let go after it was awake: it steps off the wall into the room (lanterns.ts).
+          if (rt.lastState === PuppetStates.Alive) {
+            obj.getWorldPosition(stageRuntime.releaseAt);
+            stageRuntime.releaseScale = rt.scale;
+            stageRuntime.releaseShape = entity.getValue(ShadowPuppet, 'shape') ?? '';
+            stageRuntime.releaseColour = rt.colour.getHex();
+            stageRuntime.releases++;
+          }
+        }
         if (state === PuppetStates.Alive) {
           this.markWaker(entity, rt);
           playChime(obj.position);

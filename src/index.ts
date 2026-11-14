@@ -13,6 +13,7 @@ import { HandCasterSystem } from './hand-caster.js';
 import { FireflySystem } from './fireflies.js';
 import { TwilightSystem } from './twilight.js';
 import { WallWindowSystem } from './wall-window.js';
+import { LanternSystem } from './lanterns.js';
 import { KeepsakeSystem } from './keepsakes.js';
 import { MoVisitSystem } from './mo-visit.js';
 import { MoCoachSystem } from './mo-coach.js';
@@ -66,6 +67,7 @@ World.create(
     .registerSystem(WallWindowSystem)
     .registerSystem(MoVisitSystem)
     .registerSystem(KeepsakeSystem)
+    .registerSystem(LanternSystem)
     .registerSystem(AudioSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
