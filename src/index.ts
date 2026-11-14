@@ -4,6 +4,7 @@ import { family } from './family.js';
 import { seedSamples } from './performance/samples.js';
 import { RoleLoaderSystem } from './roles/loader.js';
 import { viewerMode } from './viewer-mode.js';
+import { isInstalledPwa, pwaRuntime } from './pwa.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AudioSystem } from './audio.js';
 import { CaptionSystem } from './captions.js';
@@ -83,6 +84,14 @@ World.create(
   }
 
   hideLoading();
+
+  // Installed from the Store (a WebXR PWA): open straight into the headset view, like
+  // any other app. Launching the app icon counts as the gesture. In the browser
+  // the first screen and the Enter XR button stay as they are.
+  if (isInstalledPwa() && !viewerMode.on) {
+    pwaRuntime.autoEnter = true;
+    world.launchXR();
+  }
 
   // Development only: webcam-driven hands for testing recognition without a headset.
   if (import.meta.env.DEV) {
