@@ -49,6 +49,12 @@ export const stageRuntime = {
   moAway: false,
   /** The story has reached its last beat ("The End"), set by the story system. */
   atEnd: false,
+  /** Every creature let go after it was awake, counted, with where, how big (metres) and its colour: lanterns on the desk. */
+  releases: 0,
+  releaseAt: new Vector3(),
+  releaseScale: 0.3,
+  releaseShape: '',
+  releaseColour: 0xffb45a,
   /**
    * Automation only (emulator tests): when set, stage placement sees these
    * planes instead of the headset's detected planes.
