@@ -9,6 +9,7 @@ import { AudioSystem } from './audio.js';
 import { CaptionSystem } from './captions.js';
 import { FreeStageSystem } from './free-stage.js';
 import { HandCasterSystem } from './hand-caster.js';
+import { FireflySystem } from './fireflies.js';
 import { MoCoachSystem } from './mo-coach.js';
 import { MothSystem } from './moth.js';
 import { NarrationSystem } from './narration.js';
@@ -55,6 +56,7 @@ World.create(
     .registerSystem(HiddenPropSystem)
     .registerSystem(CaptionSystem)
     .registerSystem(MoCoachSystem)
+    .registerSystem(FireflySystem)
     .registerSystem(AudioSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
