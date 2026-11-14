@@ -12,6 +12,7 @@ import { FreeStageSystem } from './free-stage.js';
 import { HandCasterSystem } from './hand-caster.js';
 import { FireflySystem } from './fireflies.js';
 import { TwilightSystem } from './twilight.js';
+import { WallWindowSystem } from './wall-window.js';
 import { KeepsakeSystem } from './keepsakes.js';
 import { MoVisitSystem } from './mo-visit.js';
 import { MoCoachSystem } from './mo-coach.js';
@@ -62,6 +63,7 @@ World.create(
     .registerSystem(MoCoachSystem)
     .registerSystem(FireflySystem)
     .registerSystem(TwilightSystem)
+    .registerSystem(WallWindowSystem)
     .registerSystem(MoVisitSystem)
     .registerSystem(KeepsakeSystem)
     .registerSystem(AudioSystem)

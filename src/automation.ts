@@ -26,6 +26,7 @@ import { moVisitRuntime } from './mo-visit.js';
 import { soundRuntime } from './sfx.js';
 import { pwaRuntime } from './pwa.js';
 import { keepsakeRuntime } from './keepsakes.js';
+import { wallWindowRuntime } from './wall-window.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
@@ -227,6 +228,7 @@ export class AutomationSystem extends createSystem({
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
           pwa: { ...pwaRuntime },
+          wallWindow: { ...wallWindowRuntime },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
           dream: { ...dreamRuntime },
