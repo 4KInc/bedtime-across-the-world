@@ -15,7 +15,8 @@ import {
 } from '@iwsdk/core';
 import { buildMoth, MothRig } from './silhouettes.js';
 import { Moth, MothModes, StoryState, StoryStatuses } from './shadowplay-components.js';
-import { handRuntime, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, stageRuntime } from './stage-runtime.js';
+import { moPalette } from './gifts-received.js';
 
 const INDEX_TIP = 9;
 /** Mo in the room: about a real moth's size (wingspan, metres). */
@@ -41,8 +42,8 @@ function glowTexture(): CanvasTexture {
   g.fillStyle = '#000';
   g.fillRect(0, 0, 64, 64);
   const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, '#ffcf80');
-  grad.addColorStop(0.35, '#7a4a14');
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(0.35, '#6e6e6e');
   grad.addColorStop(1, '#000');
   g.fillStyle = grad;
   g.fillRect(0, 0, 64, 64);
@@ -178,7 +179,11 @@ export class MoVisitSystem extends createSystem({
     this.player.head.getWorldPosition(this.head);
     this.group.lookAt(this.head);
     this.fill.opacity = opacity;
-    this.glowMat.color.setScalar(0.9 * opacity * (0.85 + 0.15 * Math.sin(this.time * 3)));
+    // In the child's colours when they sent some (the glow texture is white; the colour tints it).
+    const own = accessRuntime.highContrast ? null : moPalette();
+    this.fill.color.setHex(own ? own.glow : 0xffc870);
+    this.glowMat.color.setHex(own ? own.halo : 0xffc070);
+    this.glowMat.color.multiplyScalar(0.9 * opacity * (0.85 + 0.15 * Math.sin(this.time * 3)));
     moVisitRuntime.phase = this.phase;
     moVisitRuntime.fromTip = Math.round(this.group.position.distanceTo(this.tip) * 1000) / 1000;
   }

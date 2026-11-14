@@ -23,3 +23,6 @@ export const CREATURE_COLOURS: Readonly<Record<string, number>> = {
 export function creatureColour(shape: string): number {
   return CREATURE_COLOURS[shape] ?? 0;
 }
+
+/** Creatures made by the child (woken in Live, or drawn and sent with a goodnight): one colour that is theirs. */
+export const CHILD_COLOUR = 0xc026d3;

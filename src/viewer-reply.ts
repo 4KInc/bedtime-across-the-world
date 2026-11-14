@@ -2,6 +2,7 @@ import type { Entity } from '@iwsdk/core';
 import { deleteRecording, loadRecording } from './journal-store.js';
 import type { Performance } from './performance/format.js';
 import { sendReply } from './performance/sharing.js';
+import { GiftPicker } from './viewer-gifts.js';
 import { PerformanceRecorder } from './shadowplay-components.js';
 
 /** A goodnight is short. */
@@ -26,6 +27,7 @@ export class ReplySheet {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tick: ReturnType<typeof setInterval> | null = null;
   private recordedId = '';
+  private gifts: GiftPicker | null = null;
   private wait: ReturnType<typeof setInterval> | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   /** Recorder while a goodnight is being recorded (so closing mid-way can stop it). */
@@ -136,12 +138,14 @@ export class ReplySheet {
   private showSend(): void {
     this.render(`
       <p class="sp-title">Send it to ${escape(this.to)}?</p>
+      <div data-gifts></div>
       <div class="sp-row">
         <button class="sp-btn on" data-act="send">Send</button>
         <button class="sp-btn" data-act="again">Try again</button>
         <button class="sp-btn" data-act="cancel">Cancel</button>
       </div>
       <div class="sp-note" aria-live="polite"></div>`);
+    this.gifts = new GiftPicker(this.sheet.querySelector<HTMLElement>('[data-gifts]')!, this.to);
     this.on('send', () => void this.send());
     this.on('again', () => {
       void deleteRecording(this.recordedId);
@@ -159,7 +163,8 @@ export class ReplySheet {
     try {
       const perf = await loadRecording<Performance>(this.recordedId);
       if (!perf) throw new Error('The goodnight was not saved.');
-      await sendReply(this.code, perf);
+      // With the child's gifts, if any: Mo's colours and a drawn creature.
+      await sendReply(this.code, { ...perf, ...this.gifts?.get() });
       // It was for them, not for this device's story list.
       await deleteRecording(this.recordedId);
       this.render(`<p class="sp-title">Sent! ${escape(this.to)} will see it on their wall. Goodnight.</p>`);

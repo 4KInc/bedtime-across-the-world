@@ -28,6 +28,9 @@ import { pwaRuntime } from './pwa.js';
 import { keepsakeRuntime } from './keepsakes.js';
 import { wallWindowRuntime } from './wall-window.js';
 import { lanternRuntime } from './lanterns.js';
+import { childDrawingRuntime } from './child-drawing.js';
+import { giftsRuntime } from './gifts-received.js';
+import { GiftPicker } from './viewer-gifts.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
@@ -127,6 +130,15 @@ export class AutomationSystem extends createSystem({
         return out;
       },
       frames: () => this.frames,
+      /** Tests: the goodnight's gift picker on its own (no recording, no camera), as window.__gifts. */
+      giftPicker: (to: string) => {
+        const host = document.createElement('div');
+        host.className = 'sp-sheet';
+        host.innerHTML = '<div class="sp-panel" data-test-gifts></div>';
+        document.body.appendChild(host);
+        (window as Window & { __gifts?: GiftPicker }).__gifts = new GiftPicker(host.querySelector('[data-test-gifts]')!, to);
+        return true;
+      },
       /** World position of a named object (UI elements are named by their id), or null. */
       where: (name: string) => {
         const o = this.world.scene.getObjectByName(name);
@@ -230,6 +242,7 @@ export class AutomationSystem extends createSystem({
           moVisit: { ...moVisitRuntime },
           pwa: { ...pwaRuntime },
           wallWindow: { ...wallWindowRuntime },
+          gifts: { mo: giftsRuntime.mo, moFrom: giftsRuntime.moFrom, drawingFrom: giftsRuntime.drawingFrom, loaded: giftsRuntime.loaded, drawn: { ...childDrawingRuntime } },
           lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
