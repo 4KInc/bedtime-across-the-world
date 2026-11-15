@@ -1,17 +1,13 @@
 # Deploying Shadowplay
 
-**Live:** https://shadowplay-1031148889398.us-central1.run.app (deployed 11 Oct 2026)
-
 | | |
 | --- | --- |
-| Project / region | `quick-catcher-470218-b0` / `us-central1` |
-| Service | Cloud Run `shadowplay` (max 1 instance, scales to zero, 3600 s timeout, session affinity) |
-| Service account | `shadowplay-run@quick-catcher-470218-b0.iam.gserviceaccount.com` (objectAdmin on the bucket only) |
-| Stories | `gs://quick-catcher-470218-b0-shadowplay-stories` (private, deleted after 30 days) |
-| Family viewer | `<url>/?viewer` |
+| App (Quest Browser) | https://shadowplay-1031148889398.us-central1.run.app |
+| Family viewer | https://shadowplay-1031148889398.us-central1.run.app/?viewer |
+| Headset test build | https://devtest---shadowplay-1031148889398.us-central1.run.app/?diag |
 
-To redeploy after changes, run the `gcloud run deploy` command below with
-`--service-account shadowplay-run@...` added.
+The commands below take your own Google Cloud project, region, service account
+and bucket as variables (`PROJECT`, `REGION`, `SA`, `BUCKET`).
 
 One container serves everything:
 
@@ -134,7 +130,7 @@ A test build for headset sessions, beside the public one: a new revision with
 **no traffic** and its own tagged URL, so the public URL never changes.
 
 ```sh
-PROJECT=quick-catcher-470218-b0
+PROJECT=<your-gcp-project>
 REGION=us-central1
 SA=shadowplay-run@$PROJECT.iam.gserviceaccount.com
 BUCKET=$PROJECT-shadowplay-stories
@@ -166,8 +162,8 @@ curl -s https://devtest---shadowplay-1031148889398.us-central1.run.app/api/voice
   from then on a plain `gcloud run deploy` no longer goes live by itself. To put
   a build live, use the freeze procedure below, or
   `gcloud run services update-traffic shadowplay --project $PROJECT --region $REGION --to-latest`.
-- After a session: `scripts/diag/pull.sh` (today and yesterday, UTC) or
-  `scripts/diag/pull.sh <UTC date> <session id>`.
+- After a session: `SHADOWPLAY_PROJECT=$PROJECT scripts/diag/pull.sh` (today
+  and yesterday, UTC) or `... scripts/diag/pull.sh <UTC date> <session id>`.
 
 Delete old devtest revisions (a tagged revision can't be deleted; the newest
 devtest deploy carries the tag, so the older ones are free):
@@ -212,7 +208,7 @@ video are never uploaded (`.gcloudignore`).
 ### 1-4. Freeze, deploy, pin, watch
 
 ```sh
-PROJECT=quick-catcher-470218-b0
+PROJECT=<your-gcp-project>
 REGION=us-central1
 SA=shadowplay-run@$PROJECT.iam.gserviceaccount.com
 BUCKET=$PROJECT-shadowplay-stories

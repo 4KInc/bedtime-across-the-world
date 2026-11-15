@@ -12,7 +12,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-PROJECT=quick-catcher-470218-b0
+# The Google Cloud project that holds the stories bucket (not kept in the repo).
+PROJECT="${SHADOWPLAY_PROJECT:?set SHADOWPLAY_PROJECT to the Google Cloud project}"
 BUCKET=gs://$PROJECT-shadowplay-stories
 OUT=.data/diag-pull
 
