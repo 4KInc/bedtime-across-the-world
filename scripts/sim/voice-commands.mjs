@@ -100,6 +100,16 @@ const browser = await chromium.launch({
   await say('the bird please', 1200);
   const after = await get('StoryState', 'beatId');
   check('a shape not asked for is refused; the asked one wakes the creature', stillAsking && /not now/.test(v.heard) && after !== 'stars-want-bird', { refused: v.heard, after });
+  // With no hand in the light, the spoken bird performs by itself: it stays awake and crosses the wall (Quest 3, Nov 15: it went straight to the desk).
+  const path = [];
+  for (let i = 0; i < 12; i++) {
+    path.push((await page.evaluate(() => __sp.puppets())).find((p) => p.shape === 'bird') ?? null);
+    await page.waitForTimeout(500);
+  }
+  const awake = path.filter((p) => p?.state === 'alive');
+  const us = awake.map((p) => p.u);
+  const carried = (await page.evaluate(() => __sp.beats())).some((x) => x.id === 'stars-bird-carry') && (await get('StoryState', 'beatId')) !== 'stars-bird-carry';
+  check('the spoken bird performs on the wall by itself, and carries Mo', awake.length >= 6 && Math.max(...us) - Math.min(...us) > 0.1 && carried, { carried, path: path.map((p) => p && `${p.state} ${p.u},${p.v}`) });
 
   await say('pause');
   const paused = await get('StoryState', 'status');

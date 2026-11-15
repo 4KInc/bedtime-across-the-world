@@ -282,6 +282,7 @@ export class VoiceControlSystem extends createSystem({
         stage.setValue(ShapeRecognizer, 'matchedHand', Hands.Right);
         stage.setValue(ShapeRecognizer, 'matchedShape', c.shape as never);
         stage.setValue(ShapeRecognizer, 'twoHanded', false);
+        accessRuntime.handsFreeWake = true;
         return true;
       }
       case 'journal': {

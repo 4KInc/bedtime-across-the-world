@@ -85,6 +85,11 @@ export const accessRuntime = {
   /** The last thing understood, shown on the stage for a moment ('' for nothing), and when (performance.now()). */
   voiceHeard: '',
   voiceHeardAt: 0,
+  /**
+   * Set with a shape woken without a hand (said aloud, or Look to press): its
+   * creature performs on the wall by itself (puppet.ts takes and clears it).
+   */
+  handsFreeWake: false,
   /** Set by a spoken "help": Mo the coach gives a tip now (mo-coach.ts clears it). */
   coachRequested: false,
 };

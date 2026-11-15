@@ -35,6 +35,15 @@ const RELEASE_LOST_SECONDS = 0.6;
 /** An open hand must stay out of the light this long before it lets go. */
 const RELEASE_OPEN_SECONDS = 0.25;
 const RELEASE_DARK_SECONDS = 1.0;
+/**
+ * A creature woken without a hand crosses the wall by itself: across and back
+ * (stage widths, radians per second), reaching every story's carry target
+ * (u up to 0.34; a flier also climbs to v 0.2), at about half the stage's height.
+ */
+const SELF_SWING = 0.36;
+const SELF_RATE = 0.4;
+const SELF_SIZE = 0.5;
+const FLIERS: ReadonlySet<string> = new Set([ShapeIds.Bird, ShapeIds.Swan]);
 const FADE_SECONDS = 0.8;
 const INK = 0x0a0810;
 /** How long a woken creature takes to bloom into its colour (seconds). */
@@ -69,6 +78,9 @@ interface PuppetRuntime {
   byChild: boolean;
   /** Seconds until it next makes its little sound while awake. */
   voiceIn: number;
+  /** Woken without a hand (said aloud, or Look to press): it performs by itself until a hand takes it over. */
+  selfDriven: boolean;
+  selfTime: number;
   label: { mesh: Mesh<PlaneGeometry, MeshBasicMaterial>; canvas: HTMLCanvasElement; texture: CanvasTexture } | null;
 }
 
@@ -125,6 +137,7 @@ export class PuppetSystem extends createSystem({
       lastState: PuppetStates.Hidden, twoHanded: false,
       colour: new Color(creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK), bloom: 0,
       ownColour: creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK, byChild: false, label: null, voiceIn: 5,
+      selfDriven: false, selfTime: 0,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -248,6 +261,9 @@ export class PuppetSystem extends createSystem({
       rt.alive = 0;
       rt.bloom = 0;
       rt.pos.copy(stageRuntime.center);
+      rt.selfDriven = accessRuntime.handsFreeWake;
+      rt.selfTime = 0;
+      accessRuntime.handsFreeWake = false;
     }
   }
 
@@ -277,6 +293,13 @@ export class PuppetSystem extends createSystem({
     let onStage = false;
     let released = false;
     let features: Float32Array | null = null;
+    // A hand in the light takes over a creature that was performing by itself.
+    if (rt.selfDriven && hand?.tracked && reachStage(this.palmOf(hand, this.palm), this.hit, 0.3) > 0) rt.selfDriven = false;
+    if (rt.selfDriven) {
+      this.performAlone(entity, rt, delta);
+      this.blink(rt, delta);
+      return null;
+    }
     if (hand?.tracked) {
       this.palmOf(hand, this.palm);
       const other = side === 'left' ? handRuntime.right : handRuntime.left;
@@ -314,6 +337,26 @@ export class PuppetSystem extends createSystem({
       rt.fade = 1;
     }
     return features;
+  }
+
+  /** A creature with no hand to follow: across the wall and back, hopping (or flying higher), at its own size. */
+  private performAlone(entity: Entity, rt: PuppetRuntime, delta: number): void {
+    rt.selfTime += delta;
+    const phase = rt.selfTime * SELF_RATE;
+    const u = SELF_SWING * Math.sin(phase);
+    const flier = FLIERS.has(entity.getValue(ShadowPuppet, 'shape') ?? '');
+    const v = flier ? 0.1 + 0.1 * Math.sin(phase) : 0;
+    rt.facing = Math.cos(phase) >= 0 ? 1 : -1;
+    rt.hop += delta * 6;
+    const k = Math.min(1, delta * 4);
+    this.v
+      .copy(stageRuntime.center)
+      .addScaledVector(stageRuntime.right, u * stageRuntime.width)
+      .addScaledVector(stageRuntime.up, v * stageRuntime.height);
+    rt.pos.lerp(this.v, k);
+    const size = Math.min(stageRuntime.width * MAX_SIZE, stageRuntime.height * SELF_SIZE);
+    rt.pos.addScaledVector(stageRuntime.up, Math.abs(Math.sin(rt.hop)) * size * (flier ? 0.04 : 0.1) * k);
+    rt.scale += (size - rt.scale) * k;
   }
 
   /**
