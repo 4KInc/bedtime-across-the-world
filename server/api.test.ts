@@ -253,6 +253,24 @@ test('speak: a dreamed line, spoken once and then from the cache; only plain sto
   assert.equal(ttsSeen.length, 1);
 });
 
+test("dream: each creature in a place it belongs (no fish in the forest), and the words are told so", async () => {
+  const res = await as().post('/api/dream', { theme: 'forest', shapes: ['fish', 'rabbit', 'bird'] });
+  assert.equal(res.status, 200);
+  const story = (await res.json()) as { beats: { id: string; type: string; set?: string; shape?: string }[] };
+  // The scenery in force at each request.
+  let here = '';
+  const at: Record<string, string> = {};
+  for (const b of story.beats) {
+    if (b.type === 'scenery') here = b.set!;
+    if (b.type === 'request') at[b.shape!] = here;
+  }
+  assert.deepEqual(at, { fish: 'river', rabbit: 'forest', bird: 'forest' });
+  assert.match(claudeSeen.at(-1)!.body.messages?.[0].content ?? '', /fish beside a river, rabbit in the forest, bird in the forest/);
+  // A sea story with a fish stays by the sea.
+  const sea = (await (await as().post('/api/dream', { theme: 'sea', shapes: ['fish', 'cup'] })).json()) as { beats: { type: string; set?: string }[] };
+  assert.deepEqual(sea.beats.filter((b) => b.type === 'scenery').map((b) => b.set), ['sea']);
+});
+
 test('static files cannot escape the app folder', async () => {
   for (const path of ['/../package.json', '/%2e%2e/package.json', '/..%2fserver/main.ts']) {
     const text = await (await fetch(BASE + path)).text();
