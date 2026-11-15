@@ -104,34 +104,57 @@ export class DiskDiagSink implements DiagSink {
  * Cloud Storage objects cannot be appended to, so each session's lines are
  * kept in memory and the whole object is rewritten at most every FLUSH_MS
  * (sessions are small: a line every 5 s). One server instance, so one writer.
+ * A session this instance has not seen yet (a page reopened after a deploy, or
+ * after the service scaled to zero) first reads what is already stored and
+ * continues it: rewriting from empty lost a 26-minute session to the next
+ * half minute (Quest 3, Nov 15).
  */
 export class BucketDiagSink implements DiagSink {
-  private sessions = new Map<string, { date: string; lines: string[]; dirty: boolean; touched: number }>();
+  private sessions = new Map<string, { date: string; lines: string[]; dirty: boolean; touched: number; loaded: boolean }>();
   private timer: NodeJS.Timeout;
   private put: (name: string, body: string) => Promise<void>;
+  private get: (name: string) => Promise<string | null>;
 
-  constructor(put: (name: string, body: string) => Promise<void>, flushMs = 15_000) {
+  constructor(put: (name: string, body: string) => Promise<void>, get: (name: string) => Promise<string | null>, flushMs = 15_000) {
     this.put = put;
+    this.get = get;
     this.timer = setInterval(() => void this.flush(), flushMs);
     this.timer.unref();
   }
 
   async append(batch: DiagBatch, date: string): Promise<void> {
-    const s = this.sessions.get(batch.session) ?? { date, lines: [], dirty: false, touched: 0 };
+    let s = this.sessions.get(batch.session);
+    if (!s) {
+      s = { date, lines: [], dirty: false, touched: 0, loaded: false };
+      this.sessions.set(batch.session, s);
+    }
     // A session that runs for hours keeps its newest lines.
     s.lines.push(...batch.lines);
     if (s.lines.length > 5000) s.lines.splice(0, s.lines.length - 5000);
     s.dirty = true;
     s.touched = Date.now();
-    this.sessions.set(batch.session, s);
   }
 
   async flush(): Promise<void> {
     const now = Date.now();
     for (const [id, s] of this.sessions) {
+      const name = `diag/${s.date}/${id}.jsonl`;
+      // First what is already stored (earlier instances' lines come first). Until that is
+      // read, nothing is written, so a failed read never overwrites it; retried next time.
+      if (!s.loaded) {
+        try {
+          const stored = await this.get(name);
+          if (stored) s.lines.unshift(...stored.split('\n').filter((l) => l.trim()));
+          s.loaded = true;
+          if (s.lines.length > 5000) s.lines.splice(0, s.lines.length - 5000);
+        } catch (e) {
+          console.error('[diag] read failed', (e as Error).message);
+          continue;
+        }
+      }
       if (s.dirty) {
         s.dirty = false;
-        await this.put(`diag/${s.date}/${id}.jsonl`, s.lines.join('\n') + '\n').catch((e) => {
+        await this.put(name, s.lines.join('\n') + '\n').catch((e) => {
           s.dirty = true;
           console.error('[diag] write failed', (e as Error).message);
         });

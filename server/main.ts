@@ -50,7 +50,7 @@ const BUCKET = process.env.STORY_BUCKET ?? '';
 const bucket = BUCKET ? new GcsStore(BUCKET, process.env.STORAGE_API ?? undefined, process.env.STORAGE_TOKEN_URL ?? undefined) : null;
 const store: StoryStore = bucket ?? new DiskStore(DATA_DIR);
 const diagSink: DiagSink = bucket
-  ? new BucketDiagSink((name, body) => bucket.putRaw(name, body))
+  ? new BucketDiagSink((name, body) => bucket.putRaw(name, body), (name) => bucket.getRaw(name))
   : new DiskDiagSink(process.env.DIAG_DIR ?? join(process.cwd(), '.data/diag'));
 const MAX_DIAG_BYTES = 32 * 1024;
 /** VOICE_STT=google: spoken commands through Cloud Speech-to-Text (voice.ts); otherwise unavailable. */
