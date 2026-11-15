@@ -55,6 +55,8 @@ await page.evaluate(() => __sp.set('DemoDirector', 'playing', false));
 await sleep(2500);
 const end = await lan();
 check('they stay on the desk to the end (at most three)', end.onDesk.length >= 1 && end.onDesk.length <= 3 && new Set(end.onDesk).size === end.onDesk.length, end);
+// Side by side, never touching (Quest 3, Nov 15: they overlapped).
+check('lanterns on the desk never touch (centres at least 15 cm apart)', end.onDesk.length >= 2 && end.gap >= 0.15, { gap: end.gap, onDesk: end.onDesk });
 
 const t = end.last;
 await page.evaluate((t) => IWER_DEVICE.remote.dispatch('look_at', { device: 'headset', target: { x: t[0], y: t[1], z: t[2] } }), t);

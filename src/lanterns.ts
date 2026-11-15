@@ -23,11 +23,19 @@ import { storyRuntime } from './story-script.js';
 
 /** Creatures that step into the room (the cup is a light, the open hand is not a creature). */
 const CREATURES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'swan', 'deer', 'crocodile']);
-/** Places on the desk, between the Shadow Journal (0) and the lamp's switch (1), a hand's width toward the wall. */
-const SLOTS = [0.3, 0.52, 0.74];
-const TOWARD_WALL = 0.11;
+/**
+ * Places on the desk: a gentle arc in front of the Shadow Journal and the lamp's
+ * switch, side by side (m from their midpoint, along the desk) and toward the
+ * wall (m), far enough apart that lanterns never touch (Quest 3, Nov 15: three
+ * places 8 cm apart for 14 cm lanterns overlapped).
+ */
+const SLOTS = [
+  { along: -0.19, toWall: 0.17 },
+  { along: 0, toWall: 0.22 },
+  { along: 0.19, toWall: 0.17 },
+] as const;
 /** A lantern creature's size on the desk (metres, like the wall puppets' scale). */
-const SIZE = 0.14;
+const SIZE = 0.12;
 /** Seconds for the hop from the wall to the desk. */
 const HOP = 1.8;
 /** How high the hop arcs above the straight line (metres). */
@@ -36,8 +44,8 @@ const PAPER = new Color(0xffe6bf);
 const WARM = new Color(0xffc477);
 const EYE = new MeshBasicMaterial({ color: 0x1b1822, side: DoubleSide });
 
-/** For tests: lantern creatures on the desk (by shape), hopping now, and where the last one stands. */
-export const lanternRuntime = { onDesk: [] as string[], hopping: 0, last: new Vector3(), deskY: 0 };
+/** For tests: lantern creatures on the desk (by shape), hopping now, where the last one stands, and the closest two (m apart). */
+export const lanternRuntime = { onDesk: [] as string[], hopping: 0, last: new Vector3(), deskY: 0, gap: -1 };
 
 interface Lantern {
   shape: string;
@@ -91,6 +99,7 @@ export class LanternSystem extends createSystem({
   private lamp = new Vector3();
   private book = new Vector3();
   private toWall = new Vector3();
+  private along = new Vector3();
   private target = new Vector3();
   private head = new Vector3();
   private landed = -1;
@@ -131,7 +140,11 @@ export class LanternSystem extends createSystem({
     this.player.head.getWorldPosition(this.head);
     let hopping = 0;
     for (const l of this.lanterns) {
-      this.target.lerpVectors(this.book, this.lamp, SLOTS[l.slot]).addScaledVector(this.toWall, TOWARD_WALL);
+      const slot = SLOTS[l.slot];
+      this.target
+        .lerpVectors(this.book, this.lamp, 0.5)
+        .addScaledVector(this.along.subVectors(this.lamp, this.book).setY(0).normalize(), slot.along)
+        .addScaledVector(this.toWall, slot.toWall);
       this.target.y = deskY + SIZE * 0.5;
       const g = l.group;
       if (l.t < HOP) {
@@ -161,11 +174,24 @@ export class LanternSystem extends createSystem({
     if (landed !== this.landed) {
       this.landed = landed;
       lanternRuntime.onDesk = this.lanterns.filter((l) => l.t >= HOP).map((l) => l.shape);
+      lanternRuntime.gap = this.closest();
     }
     lanternRuntime.hopping = hopping;
     lanternRuntime.deskY = Math.round(deskY * 1000) / 1000;
     const last = this.lanterns[this.lanterns.length - 1];
     if (last) lanternRuntime.last.copy(last.group.position);
+  }
+
+  /** The smallest distance between two lanterns on the desk (-1 with fewer than two). */
+  private closest(): number {
+    let best = -1;
+    for (let i = 0; i < this.lanterns.length; i++) {
+      for (let j = i + 1; j < this.lanterns.length; j++) {
+        const d = this.lanterns[i].group.position.distanceTo(this.lanterns[j].group.position);
+        if (best < 0 || d < best) best = d;
+      }
+    }
+    return Math.round(best * 1000) / 1000;
   }
 
   /** The creature just let go hops off the wall onto the desk (the same creature again just hops again). */
