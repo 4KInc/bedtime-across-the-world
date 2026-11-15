@@ -125,7 +125,13 @@ are private to the family and deleted after 30 days.
   server has AI enabled, Google's Gemini words Mo's tip from those; otherwise
   the app's own words are used. Nothing is stored.
 - A dreamed story: the app sends a theme and shape names only (never names or
-  anything typed or said), and keeps the story on the device.
+  anything typed or said), and keeps the story on the device. Its lines are
+  voiced by Google Cloud Text-to-Speech on the server; a line that names the
+  child sends that first name with it. Each spoken line is kept in the story
+  bucket by its words (not linked to any family) and deleted after 30 days.
+- A goodnight's gifts travel with it, under the story's private code: Mo's
+  colours as a palette name, and the child's drawing as finger strokes (a few
+  kilobytes), both checked by the server.
 - Live rooms hold one storyteller and one family member. The server relays only
   protocol messages and stores nothing.
 - Uploads are strictly validated; rate limits and room limits are per client.
@@ -148,9 +154,18 @@ Quest (WebXR, IWSDK)                                  Phone / tablet (same web a
   ahead (labelled walls first, clear of doors and windows) or a paper screen;
   adaptive quality steps down in four levels if frames are missed, judged
   against the headset's refresh rate.
+- **Light and reach** (`src/lamp-behind.ts`, `src/stage-runtime.ts`): the bulb
+  stands about 65 cm behind the eyes and is aimed once through the viewer's own
+  hands (modelled over natural hand positions: 80% throw their shadow on the
+  stage, against 2% from a desk lamp in front). A hand meets the stage where
+  its shadow falls, else where it is seen over the stage, else by its place in
+  a performance zone in front of the viewer.
 - **Recognition** (`src/hand-features.ts`, `src/recognition-rules.ts`): smoothed
   joint angles matched to per-shape templates, with pair rules for two-hand
-  shapes and a resting-hand reject; a shape must be held half a second.
+  shapes and a resting-hand reject; a shape must be held half a second. When a
+  story asks for a shape, a hand close to it counts even if a neighbouring
+  shape fits a little better (hooked-thumb birds, relaxed fish, tilted snails,
+  flat antlers).
 - **Performance stream** (`src/performance/`): both hands at 30 Hz in
   stage-relative millimetres, story beats, creature wakes and releases, lamp and
   staging events, plus voice. It replays on any stage, any size.
@@ -161,14 +176,19 @@ Quest (WebXR, IWSDK)                                  Phone / tablet (same web a
   app, the sharing API and Live rooms; stories live on disk locally or in a Cloud
   Storage bucket in production. See [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Narration** is generated with [Kokoro](https://github.com/hexgrad/kokoro)
-  (Apache-2.0), locally, by `scripts/narration/generate.py`; recorded clips can
-  replace it at any time.
+  (Apache-2.0), locally, by `scripts/narration/generate.py`, each story by its
+  own narrator (named in `public/story/library.json`); recorded clips can
+  replace it at any time. A line with no clip (a dreamed story) is spoken by
+  the server (`server/speak.ts`, Google Cloud Text-to-Speech), fetched a few
+  lines ahead.
+- **Installable**: a web app manifest and icons; installed as an app (a WebXR
+  PWA) it opens straight into the headset view.
 
 ## Credits and licences
 
-The stories, characters, shadow puppets, lamp, scenery and sound effects are
-original to Shadowplay (the sound is synthesised in the browser; the models are
-built in code). It uses:
+The stories, characters, shadow puppets, lamp, scenery, music and sound effects
+are original to Shadowplay (the sound is synthesised from simple waves, with no
+recordings; the models are built in code). It uses:
 
 | Work | Used for | Licence |
 | --- | --- | --- |
@@ -176,6 +196,7 @@ built in code). It uses:
 | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Google) | camera hands in the family viewer, on the device; see `public/models/NOTICE.md` | Apache-2.0 |
 | [Gemini API](https://ai.google.dev/gemini-api) (Google) | words Mo's tips and dreamed stories, on the server (only shape names and fixed hand facts are sent) | Gemini API Terms of Service |
 | [Cloud Speech-to-Text](https://cloud.google.com/speech-to-text) (Google) | voice commands when the headset browser has no speech recognition (short clips, not stored) | Google Cloud Terms of Service |
+| [Cloud Text-to-Speech](https://cloud.google.com/text-to-speech) (Google) | the narrator's voice for dreamed stories, on the server | Google Cloud Terms of Service |
 | [Inter](https://rsms.me/inter/) (The Inter Project Authors) | typeface of the headset panels (via `@pmndrs/msdfonts`) | SIL OFL 1.1 |
 | [Lucide](https://lucide.dev) (Lucide Contributors) | two interface icons | ISC |
 | [three.js](https://threejs.org) | 3D rendering | MIT |
@@ -207,16 +228,24 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/live-family.mjs` | A parent and a child in two browsers through a degraded network (delay, jitter, a dropout): story sync, hands, voice both ways, duet turns, reconnects |
 | `node scripts/sim/voice-lab.mjs` | Mouth-to-ear voice delay per network condition (56 ms on a clean line) |
 | `node scripts/sim/playtest.mjs` | Bot children (perfect, small hands, shaky, wrong shape first, slow, wanderer) play the whole story: no stalls, help arrives; fails if draw calls, triangles or shadow casters exceed the budget |
-| `node scripts/sim/rooms.mjs` | 17 room cases with fake planes: no planes, floor only, walls too close, too far or at a steep angle, doors and windows, late room data, recenter, Move stage here by pinch |
+| `node scripts/sim/rooms.mjs` | Room cases with fake planes: no planes, floor only, walls too close, too far or at a steep angle, doors and windows, a desk found or not, late room data, recenter, Move stage here by pinch |
 | `node scripts/sim/session-life.mjs` | First-screen options, Quest menu and headset off mid-line, the first ghost hand, continuing next launch |
 | `node scripts/sim/hands-only.mjs` | Every interaction with emulated hands and no controllers: journal and lamp switch by pinch, every panel button by hand ray |
 | `node scripts/sim/narration-stall.mjs` | A narration clip whose download stalls does not stall the story |
 | `node scripts/sim/first-minutes.mjs` | Time from Enter XR to the first creature on a first launch |
+| `node scripts/sim/comfortable-hands.mjs` | Hands held where people hold them (not in the lamp's beam): every story with a shape told to the end, each shape in under a second |
+| `node scripts/sim/lamp-behind.mjs` | The lamp behind the viewer, its switch on the desk, the light aimed through the viewer's hands |
+| `node scripts/sim/never-stuck.mjs` | A shaky hand that never makes the shape still gets the creature from the story's last help |
+| `node scripts/sim/new-stories.mjs`, `story-worlds.mjs` | The newer stories told to the end with their narration; choosing a story world |
+| `node scripts/sim/dream-stories.mjs`, `dream-voice.mjs`, `share-dreamed.mjs` | Dreaming a story (place and shapes), its narrator's voice with the child's name, recording and sending it |
+| `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
+| `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
+| `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
+| `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
-Peak load measured through a whole story at full quality: 72 draw calls, 41k
-triangles, about 0.6 ms of app work per frame (desktop), with a budget enforced
-by the playtest.
+Peak load measured through a whole story at full quality: about 95 draw calls
+and 38k triangles, with a budget enforced by the playtest.
 
 ### Device testing
 
