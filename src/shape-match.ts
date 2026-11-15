@@ -1,5 +1,5 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures, MatchResult, templateScore } from './hand-features.js';
+import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore } from './hand-features.js';
 import { Hands, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, requested, stepHold } from './recognition-rules.js';
 import { handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
@@ -41,6 +41,7 @@ export class ShapeMatchSystem extends createSystem({
   private hit = new Vector3();
   private hold: HoldState = { candidate: ShapeIds.None, sinceMatch: 0 };
   /** Per-hand smoothed joints for recognition (raw joints still drive the shadows). */
+  private best: MatchResult = { id: ShapeIds.None, score: 0 };
   private smoothL = new JointSmoother();
   private smoothR = new JointSmoother();
   private pairL: PairHand = { joints: new Float32Array(0), features: new Float32Array(0), curl: 1, shape: ShapeIds.None, best: ShapeIds.None };
@@ -73,8 +74,11 @@ export class ShapeMatchSystem extends createSystem({
         entity.getValue(ShapeRecognizer, 'altTarget') === ShapeIds.Bird ||
         entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Bird ||
         entity.getValue(ShapeRecognizer, 'altTarget2') === ShapeIds.Bird;
+      const deerWanted =
+        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Deer ||
+        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Deer;
       const assist = entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0;
-      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist);
+      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist, deerWanted);
       const twoHanded = pair !== null;
       if (pair) this.left.shape = this.right.shape = pair;
       this.publish(entity);
@@ -99,8 +103,13 @@ export class ShapeMatchSystem extends createSystem({
       const a1 = entity.getValue(ShapeRecognizer, 'altTarget') ?? ShapeIds.None;
       const a2 = entity.getValue(ShapeRecognizer, 'altTarget2') ?? ShapeIds.None;
       // A request is satisfied when either method (joint angles or silhouette) matches it.
-      const rightTarget = this.right.inLight ? this.satisfies(this.right, t1, a1, t2, a2, free, oneHand) : ShapeIds.None;
-      const leftTarget = this.left.inLight ? this.satisfies(this.left, t1, a1, t2, a2, free, oneHand) : ShapeIds.None;
+      let rightTarget = this.right.inLight ? this.satisfies(this.right, t1, a1, t2, a2, free, oneHand) : ShapeIds.None;
+      let leftTarget = this.left.inLight ? this.satisfies(this.left, t1, a1, t2, a2, free, oneHand) : ShapeIds.None;
+      // Real hands sit between shapes: the requested shape counts when close enough (hand-features.ts).
+      if (!free && !twoHanded && rightTarget === ShapeIds.None && leftTarget === ShapeIds.None) {
+        if (this.right.inLight) rightTarget = this.rescue(handRuntime.right, t1, a1, t2, a2, tolerance, assist);
+        if (rightTarget === ShapeIds.None && this.left.inLight) leftTarget = this.rescue(handRuntime.left, t1, a1, t2, a2, tolerance, assist);
+      }
       const target = rightTarget !== ShapeIds.None ? rightTarget : leftTarget;
 
       this.updateNudge(entity, t1, free, target !== ShapeIds.None, tolerance, delta);
@@ -148,6 +157,18 @@ export class ShapeMatchSystem extends createSystem({
       this.palm.set((j[0] + j[33]) * 0.5, (j[1] + j[34]) * 0.5, (j[2] + j[35]) * 0.5);
       out.inLight = projectToStage(this.palm, this.hit) > 0 && isOnStage(this.hit);
     }
+  }
+
+  /** The requested shape (or its alternative, as the request) when this hand is close enough to it. */
+  private rescue(hand: HandSample, t1: string, a1: string, t2: string, a2: string, tolerance: number, assist: number): string {
+    if (!hand.tracked || hand.jointBest === '') return ShapeIds.None;
+    this.best.id = hand.jointBest as never;
+    this.best.score = hand.jointScore;
+    if (rescuesRequested(hand.features, this.best, t1, tolerance, assist)) return t1;
+    if (a1 !== ShapeIds.None && rescuesRequested(hand.features, this.best, a1, tolerance, assist)) return t1;
+    if (rescuesRequested(hand.features, this.best, t2, tolerance, assist)) return t2;
+    if (a2 !== ShapeIds.None && rescuesRequested(hand.features, this.best, a2, tolerance, assist)) return t2;
+    return ShapeIds.None;
   }
 
   private satisfies(
@@ -202,7 +223,7 @@ export class ShapeMatchSystem extends createSystem({
   }
 
   /** Two-hand shapes (recognition-rules.ts), both hands tracked and in the light. */
-  private detectPair(hidden: boolean, birdWanted: boolean, assist: number): string | null {
+  private detectPair(hidden: boolean, birdWanted: boolean, assist: number, deerWanted: boolean): string | null {
     const l = handRuntime.left;
     const r = handRuntime.right;
     pairRuntime.lLight = this.left.inLight;
@@ -227,7 +248,7 @@ export class ShapeMatchSystem extends createSystem({
     this.pairR.curl = this.right.curl;
     this.pairR.shape = this.right.shape;
     this.pairR.best = r.jointBest;
-    return classifyPair(this.pairL, this.pairR, hidden, birdWanted, assist);
+    return classifyPair(this.pairL, this.pairR, hidden, birdWanted, assist, deerWanted);
   }
 
   private publish(entity: Entity): void {
