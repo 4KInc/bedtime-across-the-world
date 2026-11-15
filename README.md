@@ -292,7 +292,7 @@ flowchart LR
   through dropouts (the room waits 45 s for the storyteller).
 - **Server** (`server/`): one Node process (TypeScript run directly) serves the
   app, the sharing API and Live rooms; stories live on disk locally or in a Cloud
-  Storage bucket in production. See [docs/DEPLOY.md](docs/DEPLOY.md).
+  Storage bucket in production, on Google Cloud Run.
 - **Narration** is generated with [Kokoro](https://github.com/hexgrad/kokoro)
   (Apache-2.0), locally, by `scripts/narration/generate.py`, each story by its
   own narrator (named in `public/story/library.json`); recorded clips can
@@ -376,8 +376,7 @@ level, hands and recognition, room detection) and diagnostics sent to the
 server: numbers and short identifiers only, never audio, video or names. Without
 `?diag` none of it loads. After a session, `scripts/diag/pull.sh` fetches and
 summarizes it. Builds for headset sessions deploy beside the public one with
-their own URL (see [docs/DEPLOY.md](docs/DEPLOY.md)); the checklist is
-[docs/DEVICE-TEST.md](docs/DEVICE-TEST.md).
+their own URL; the checklist is [docs/DEVICE-TEST.md](docs/DEVICE-TEST.md).
 
 ## Status
 
