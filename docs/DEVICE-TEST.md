@@ -9,7 +9,7 @@ Use the right one on each headset (bookmark it there): Quest 3S reports
 "Quest 3" in its user agent, so the `device=` tag is the only way the data can
 tell them apart. Without it the summary says `quest3-or-3s`.
 
-(the public URL with `?diag` works too; see DEPLOY.md "Device-test deploys").
+(the public URL with `?diag` works too).
 A panel appears under the stage with frame times, quality, hands and
 recognition, room detection and startup timings. Its top line is the
 **session id** in large type (also shown on the page before Enter XR): write it

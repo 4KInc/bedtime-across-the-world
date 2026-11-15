@@ -51,3 +51,7 @@ __pycache__/
 video-clips/
 # Local submission pack (Devpost text, video plan, screenshots): never committed.
 /submission/
+
+# Deployment runbook: kept on the maintainer's machine, not in the repo
+# (the public URLs are in the README).
+docs/DEPLOY.md
