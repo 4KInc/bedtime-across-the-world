@@ -4,7 +4,6 @@
 
 Hands only, no controllers. Seated. Works on any wall, or none.
 
-**Video:** _link added with the submission_
 <!-- Hero image: docs/hero.jpg, a still from the headset capture (added after the device sessions). -->
 
 A parent puts on a Meta Quest and tells a shadow-puppet story on their own wall:
@@ -168,6 +167,27 @@ hand held still in front of you will do.
   grown-up switches it on, your voice; choose colours for Mo, and draw a
   creature with your finger for the next story.
 
+## How Shadowplay uses AI
+
+AI helps the storyteller; it never replaces them, never sees the child, and
+never puts a word on the wall that the app has not checked.
+
+| | What it does | What it is given | Guardrails |
+| --- | --- | --- | --- |
+| **Mo the coach** (Gemini 3.5 Flash Lite) | When a hand is stuck on a shape, Mo gives one short, warm tip in about 0.7 s ("curl your ring finger down") | Only the shape's name and a few fixed facts the headset worked out from the hand's joints | The facts come from the app's own recognition, not from the model; the reply must fit them, pass the content checks (no brands, Mo is "she", no pose from another shape), or the app's own words are used |
+| **Dream a new story** (Gemini 3.8 Flash) | A new bedtime story for the place and shapes the storyteller picks, in about 4 s | A theme and shape names, never names or anything typed or said | The model writes only lines of narration into a fixed shape; the app builds the story itself (scenes, requests, scenery that fits each creature), checks every line, and refuses anything off. Shared, it is checked again by the server and the family's device |
+| **A voice for every line** | The library is read by five narrators recorded offline with **Kokoro**, an open model (Apache-2.0); a dreamed story is read live by **Google Cloud Text-to-Speech**, saying the child's name | Story lines only | Only plain story lines that pass the content checks are spoken; each is cached and deleted after 30 days. When a parent records, *they* are the narrator |
+| **Voice commands** | Say the shape, "pause", "go on", "music off" | A spoken phrase of a second or two (the browser's own recognition, else **Google Cloud Speech-to-Text**) | Only on when switched on; the clip is forgotten; ignored while recording or talking live |
+| **The child's hands** | The family viewer turns the phone's camera into hand positions with **MediaPipe**, on the device | Camera frames, on the device only | Video never leaves the device; a grown-up allows the camera first |
+
+What is *not* AI: the hand-shape recognition in the headset is the app's own,
+joint angles matched to templates and rules tuned on real headset sessions. It
+is instant, works offline, explains itself (that is where Mo's facts come
+from), and cannot be talked into a wrong answer.
+
+The model provider is one setting on the server (`AI_PROVIDER`): Gemini for the
+submission, with Claude and Meta's models also supported.
+
 ## Age rating: 10+
 
 Bedtime stories meant to be shared by a grown-up and a child. The only peril is
@@ -212,12 +232,40 @@ are private to the family and deleted after 30 days.
 
 ## How it works
 
-```
-Quest (WebXR, IWSDK)                                  Phone / tablet (same web app, ?viewer)
-  hand joints -> capsule shadow casters                  recorded or live hands -> the same stage
-  joint-angle shape recognition                          MediaPipe hands (camera, on device)
-  story engine (JSON beats)  --story tap-->  recorder ----> /api/stories (family code)
-                                         \-> Live -------> /live WebSocket room <---- Live
+```mermaid
+flowchart LR
+  subgraph Q["Meta Quest 3 / 3S: Quest Browser, WebXR (IWSDK)"]
+    HT["Hand tracking: 25 joints per hand"] --> REC["Shape recognition: joint angles and rules"]
+    HT --> SHD["Shadows on the wall, lamp behind you"]
+    RS["Room Setup: walls, table, anchors"] --> STG["Stage on your wall, props on your desk"]
+    REC --> ST["Story engine: JSON beats"]
+    ST --> FX["Creatures, Mo, scenery, music"]
+    ST --> NAR["Narration"]
+    DG["Diagnostics overlay (?diag)"]
+  end
+  subgraph V["Phone or tablet: family viewer (?viewer)"]
+    MP["MediaPipe hands, on the device"] --> VS["The same stage: watch, join in, Live"]
+  end
+  subgraph S["Google Cloud Run: one Node service"]
+    API["/api: stories, goodnights, dream, coach, speak, voice, diag"]
+    LV["/live: WebSocket rooms"]
+    GCS[("Cloud Storage: stories, spoken lines, diagnostics. Deleted after 30 days")]
+  end
+  subgraph AI["AI services"]
+    GEM["Gemini: Mo's tips, dreamed stories"]
+    TTS["Cloud Text-to-Speech: dreamed narration"]
+    STT["Cloud Speech-to-Text: voice commands"]
+  end
+  KK["Kokoro, offline: library narration"] -.-> NAR
+  ST -- "record, send" --> API
+  VS -- "watch, send a goodnight" --> API
+  ST <-->|live hands and voice| LV
+  LV <-->|live hands and voice| VS
+  DG --> API
+  API --> GCS
+  API --> GEM
+  API --> TTS
+  API --> STT
 ```
 
 - **Stage** (`src/stage-setup.ts`, `src/wall-choice.ts`): picks the wall straight
