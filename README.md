@@ -44,13 +44,13 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 
 | Session | Headset | Started (UTC) | In the headset | What was played | fps (median, lowest 5 s) | Frame p95 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `cdj3st58rm` | Quest 3 | Nov 14, 22:56 | 12 min | Counting Stars: 12 minutes waiting on the opening bird, made the textbook way (the evidence behind recognising shapes as people really make them) | 71.8, 46.9 | 15.0 ms |
-| `49768whrpd` | Quest 3 | Nov 15, 02:20 | 26 min | Counting Stars, The Brave Little Dog, The Night Garden and The Letter That Took the Slow Way (the opening bird in 22 s, then 6 s). Only its last half minute (16:28) survives in `docs/diag`: the rest was overwritten when the page was reopened, a server bug now fixed, so the numbers here are that half minute's | 72.0, 61.1 | 15.5 ms |
-| `32kbw476u2` | Quest 3S | Nov 15, 07:19 | 0.3 min | A dreamed story; stage found on a labelled wall (27 room planes) | 71.4, 68.0 | 16.2 ms |
-| `xhz96jhkv9` | Quest 3 | Nov 15, 16:28 | 4.6 min | Two dreamed stories, each to The End | 71.6, 67.4 | 14.8 ms |
-| `xnhuwf56d6` | Quest 3S | Nov 15, 16:38 | 0.6 min | The Night Garden | 71.5, 68.3 | 15.5 ms |
-| `afthmamdpn` | Quest 3S | Nov 15, 16:39 | 8.4 min | The Night Garden, The Moth, Mo and the Midnight Moon Buggy (to The End), Goodnight Across the Sea | 71.6, 67.5 | 14.8 ms |
-| `m3zdndu6vq` | Quest 3 | Nov 15, 19:25 | 11.7 min | A dreamed story, Moon Buggy, Sleepy Little Dinosaur and Little Lost Spaceship, each to The End; six of Mo's AI tips in 0.6 to 0.9 s | 71.8, 70.4 | 14.8 ms |
+| [`cdj3st58rm`](docs/diag/2026-11-14/cdj3st58rm.jsonl) ([part 2](docs/diag/2026-11-15/cdj3st58rm.jsonl)) | Quest 3 | Nov 14, 22:56 | 12 min | Counting Stars: 12 minutes waiting on the opening bird, made the textbook way (the evidence behind recognising shapes as people really make them) | 71.8, 46.9 | 15.0 ms |
+| [`49768whrpd`](docs/diag/2026-11-15/49768whrpd.jsonl) | Quest 3 | Nov 15, 02:20 | 26 min | Counting Stars, The Brave Little Dog, The Night Garden and The Letter That Took the Slow Way (the opening bird in 22 s, then 6 s). Only its last half minute (16:28) survives in `docs/diag`: the rest was overwritten when the page was reopened, a server bug now fixed, so the numbers here are that half minute's | 72.0, 61.1 | 15.5 ms |
+| [`32kbw476u2`](docs/diag/2026-11-15/32kbw476u2.jsonl) | Quest 3S | Nov 15, 07:19 | 0.3 min | A dreamed story; stage found on a labelled wall (27 room planes) | 71.4, 68.0 | 16.2 ms |
+| [`xhz96jhkv9`](docs/diag/2026-11-15/xhz96jhkv9.jsonl) | Quest 3 | Nov 15, 16:28 | 4.6 min | Two dreamed stories, each to The End | 71.6, 67.4 | 14.8 ms |
+| [`xnhuwf56d6`](docs/diag/2026-11-15/xnhuwf56d6.jsonl) | Quest 3S | Nov 15, 16:38 | 0.6 min | The Night Garden | 71.5, 68.3 | 15.5 ms |
+| [`afthmamdpn`](docs/diag/2026-11-15/afthmamdpn.jsonl) | Quest 3S | Nov 15, 16:39 | 8.4 min | The Night Garden, The Moth, Mo and the Midnight Moon Buggy (to The End), Goodnight Across the Sea | 71.6, 67.5 | 14.8 ms |
+| [`m3zdndu6vq`](docs/diag/2026-11-15/m3zdndu6vq.jsonl) | Quest 3 | Nov 15, 19:25 | 11.7 min | A dreamed story, Moon Buggy, Sleepy Little Dinosaur and Little Lost Spaceship, each to The End; six of Mo's AI tips in 0.6 to 0.9 s | 71.8, 70.4 | 14.8 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
 
