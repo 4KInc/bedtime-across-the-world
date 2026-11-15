@@ -12,10 +12,21 @@ import {
   ShapeRecognizer,
 } from './shadowplay-components.js';
 import { accessRuntime, handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
+import { NATURAL_HAND } from './lamp-behind.js';
 
 const HAND_LENGTH = 0.18;
-/** Characters read best a little smaller than the raw hand shadow. */
-const CHARACTER_SCALE = 0.6;
+/**
+ * Character size over the raw hand shadow. With the lamp behind the viewer a
+ * shadow is about 2.6x the hand (it was 5-20x from the desk lamp), so a little larger.
+ */
+const CHARACTER_SCALE = 1.15;
+/**
+ * Growing: a hand pulled back from its natural place toward the viewer (and the
+ * lamp behind them) makes its creature bigger, a little more than a real shadow
+ * would, so the story's "grow" asks are playable (about 1.8x at 20 cm from the eyes).
+ */
+const GROW_GAIN = 3.5;
+const GROW_MAX = 2.2;
 /** Largest character, as a fraction of stage width. */
 const MAX_SIZE = 0.95;
 /** Two hands side by side cast a wider shadow than one. */
@@ -75,6 +86,7 @@ export class PuppetSystem extends createSystem({
   private runtimes = new Map<Entity, PuppetRuntime>();
   private palm = new Vector3();
   private palm2 = new Vector3();
+  private v = new Vector3();
   private hit = new Vector3();
   private tmp = new Vector3();
   private quat = new Quaternion();
@@ -285,7 +297,10 @@ export class PuppetSystem extends createSystem({
         rt.pos.addScaledVector(stageRuntime.up, hopY * k);
         const pop = 1 + 0.25 * Math.sin(Math.min(1, rt.alive) * Math.PI);
         const span = rt.twoHanded ? TWO_HAND_SPAN : 1;
-        const target = Math.min(stageRuntime.width * MAX_SIZE, HAND_LENGTH * CHARACTER_SCALE * span * t * pop);
+        // Closer to the lamp (behind the viewer) means bigger: a hand pulled back toward the eyes grows its creature.
+        const forward = -this.v.subVectors(this.palm, stageRuntime.eye).dot(stageRuntime.normal);
+        const grow = 1 + Math.min(GROW_MAX - 1, Math.max(0, NATURAL_HAND - forward) * GROW_GAIN);
+        const target = Math.min(stageRuntime.width * MAX_SIZE, HAND_LENGTH * CHARACTER_SCALE * span * t * pop * grow);
         rt.scale += (target - rt.scale) * k;
         features = hand.features;
       }

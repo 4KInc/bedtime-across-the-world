@@ -23,10 +23,9 @@ interface PinchState {
 }
 
 /**
- * Hands-only lamp control: pinch the switch on the base to turn the lamp off
- * and on (pausing the story), or pinch the lamp and drag it along the desk.
- * Every shadow and the light pool move with it. Pinching the Shadow Journal
- * on the desk opens or closes it.
+ * Hands-only lamp control: pinch the lamp's switch on the desk to turn the lamp
+ * off and on (pausing the story); the lamp itself stands behind the viewer
+ * (lamp-behind.ts). Pinching the Shadow Journal on the desk opens or closes it.
  */
 export class LampControlSystem extends createSystem({
   lamps: { required: [DeskLamp] },
@@ -48,7 +47,8 @@ export class LampControlSystem extends createSystem({
     const stage = this.queries.stages.entities.values().next().value as Entity | undefined;
     const lampObj = lamp?.object3D;
     if (!lamp || !stage || !lampObj || !stageRuntime.ready) return;
-    this.switchObj ??= lampObj.getObjectByName('lamp-switch');
+    // The lamp stands behind the viewer; its switch is on the desk (lamp-behind.ts).
+    this.switchObj ??= this.world.scene.getObjectByName('desk-switch') ?? lampObj.getObjectByName('lamp-switch');
     this.headObj ??= lampObj.getObjectByName('lamp-head');
 
     for (const side of ['right', 'left'] as const) {
@@ -110,6 +110,8 @@ export class LampControlSystem extends createSystem({
         return;
       }
     }
+    // (The lamp behind the viewer is not dragged: calibration aims it.)
+    if (this.switchObj?.name === 'desk-switch') return;
     (this.headObj ?? lampObj).getWorldPosition(this.lampHead);
     const nearHead = this.point.distanceTo(this.lampHead) < GRAB_REACH;
     const nearBase = this.point.distanceTo(lampObj.position) < GRAB_REACH;

@@ -30,6 +30,7 @@ import { wallWindowRuntime } from './wall-window.js';
 import { lanternRuntime } from './lanterns.js';
 import { childDrawingRuntime } from './child-drawing.js';
 import { giftsRuntime } from './gifts-received.js';
+import { lampBehindRuntime } from './lamp-behind.js';
 import { GiftPicker } from './viewer-gifts.js';
 import { dreamRuntime } from './settings.js';
 import { accessRuntime, handOverride, handRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
@@ -242,6 +243,7 @@ export class AutomationSystem extends createSystem({
           moVisit: { ...moVisitRuntime },
           pwa: { ...pwaRuntime },
           wallWindow: { ...wallWindowRuntime },
+          lamp: { ...lampBehindRuntime, bulb: stageRuntime.bulb.toArray().map((n) => Math.round(n * 1000) / 1000) },
           gifts: { mo: giftsRuntime.mo, moFrom: giftsRuntime.moFrom, drawingFrom: giftsRuntime.drawingFrom, loaded: giftsRuntime.loaded, drawn: { ...childDrawingRuntime } },
           lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
@@ -254,7 +256,8 @@ export class AutomationSystem extends createSystem({
           anchorLastTime: stageRuntime.anchorFromLastTime,
           anchorFixes: stageRuntime.anchorFixes,
           center: stageRuntime.center.toArray().map((v) => Math.round(v * 1000) / 1000),
-          lampY: Math.round((entity('DeskLamp')?.object3D?.position.y ?? 0) * 1000) / 1000,
+          // The desk's height, where the lamp's switch stands (the lamp itself is behind the viewer).
+          deskY: Math.round((this.world.scene.getObjectByName('desk-switch')?.position.y ?? 0) * 1000) / 1000,
         };
       },
       /** What the GPU draws: shadow casters, transparent layers, shadow map setup (performance audit). */

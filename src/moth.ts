@@ -15,7 +15,7 @@ import {
 } from '@iwsdk/core';
 import { buildMoth, MothRig } from './silhouettes.js';
 import { Moth, MothModes, PuppetStates, ShadowPuppet } from './shadowplay-components.js';
-import { accessRuntime, handRuntime, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, reachStage, stageRuntime } from './stage-runtime.js';
 import { moPalette } from './gifts-received.js';
 
 const INDEX_TIP = 9;
@@ -207,12 +207,13 @@ export class MothSystem extends createSystem({
     }
   }
 
-  /** Projected shadow of the first index fingertip that is in the light. */
+  /** Where the first index fingertip in reach meets the stage. */
   private fingertipShadow(): boolean {
     for (const hand of [handRuntime.right, handRuntime.left]) {
       if (!hand.tracked || !stageRuntime.lampOn) continue;
       this.tip.fromArray(hand.joints, INDEX_TIP * 3);
-      if (projectToStage(this.tip, this.hit) > 0 && isOnStage(this.hit, 0)) return true;
+      // The lamp's shadow, or where the fingertip is seen over the stage (stage-runtime reachStage).
+      if (reachStage(this.tip, this.hit, 0) > 0) return true;
     }
     return false;
   }

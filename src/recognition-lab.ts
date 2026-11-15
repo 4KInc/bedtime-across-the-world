@@ -1,4 +1,5 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
+import { naturalHandPoint } from './lamp-behind.js';
 import { FIXTURES, localJoints, PoseFixture, TESTERS, toWorld } from './hand-poses.js';
 import { loadLabTrials, saveLabTrials } from './journal-store.js';
 import { buildReport, LabSample, LabTrial } from './recognition-report.js';
@@ -112,8 +113,8 @@ export class RecognitionLabSystem extends createSystem({
   private loadNext(): void {
     const item = this.auto![0];
     if (!item) return;
-    // A little way from the lamp towards the stage, so the shadow lands on the stage.
-    this.anchor.copy(stageRuntime.bulb).lerp(stageRuntime.poolCenter, 0.22).addScaledVector(stageRuntime.up, -0.06);
+    // Where a hand is naturally held, on the light's line, so the shadow lands on the stage.
+    naturalHandPoint(this.anchor, stageRuntime.poolCenter).addScaledVector(stageRuntime.up, -0.06);
     const place = (side: 'left' | 'right', out: Float32Array): Float32Array | null => {
       const pose = side === 'right' ? item.fixture.right : item.fixture.left;
       if (!pose) return null;

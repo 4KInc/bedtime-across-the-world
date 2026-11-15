@@ -8,7 +8,7 @@ Hands only, no controllers. Seated. Works on any wall, or none.
 <!-- Hero image: docs/hero.jpg, a still from the headset capture (added after the device sessions). -->
 
 A parent puts on a Meta Quest and tells a shadow-puppet story on their own wall:
-a virtual desk lamp throws the shadows of their real, tracked hands, and when
+a virtual lamp behind them throws the shadows of their real, tracked hands, and when
 they make a rabbit, a fish or a bird, the shadow comes alive and carries the
 story on. Their child, at home on a phone or tablet, watches it, plays along with
 their own hands through the camera, and sends a goodnight back.
@@ -50,8 +50,9 @@ screen; if the stage lands somewhere odd, pinch the book on the desk, then
 **In the headset (the storyteller)**
 - A stage on your real wall, found from the room's detected planes (a floating
   paper screen when there is no usable wall, and **Move stage here** to put it
-  where you look), with the room dimmed like a theatre and a lamp you can drag
-  to sweep the light.
+  where you look), with the room dimmed like a theatre. The lamp stands behind
+  you, as in shadow theatre, aimed once through your own hands; its switch is on
+  the desk, and in a search the light follows your hand like a torch.
 - Eight narrated stories, picked from the journal: *The Moth Who Borrowed Light*
   (twenty minutes in chapters, a branching wolf encounter, a lighthouse finale),
   *Goodnight Across the Sea*, *The Letter That Took the Slow Way*, *The Brave
@@ -208,7 +209,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/playtest.mjs` | Bot children (perfect, small hands, shaky, wrong shape first, slow, wanderer) play the whole story: no stalls, help arrives; fails if draw calls, triangles or shadow casters exceed the budget |
 | `node scripts/sim/rooms.mjs` | 17 room cases with fake planes: no planes, floor only, walls too close, too far or at a steep angle, doors and windows, late room data, recenter, Move stage here by pinch |
 | `node scripts/sim/session-life.mjs` | First-screen options, Quest menu and headset off mid-line, the first ghost hand, continuing next launch |
-| `node scripts/sim/hands-only.mjs` | Every interaction with emulated hands and no controllers: journal and lamp by pinch, every panel button by hand ray |
+| `node scripts/sim/hands-only.mjs` | Every interaction with emulated hands and no controllers: journal and lamp switch by pinch, every panel button by hand ray |
 | `node scripts/sim/narration-stall.mjs` | A narration clip whose download stalls does not stall the story |
 | `node scripts/sim/first-minutes.mjs` | Time from Enter XR to the first creature on a first launch |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |

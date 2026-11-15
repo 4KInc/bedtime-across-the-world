@@ -1,4 +1,5 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
+import { naturalHandPoint } from './lamp-behind.js';
 import type { HandLandmarker } from '@mediapipe/tasks-vision';
 import { WebcamHands } from './shadowplay-components.js';
 import { handOverride, JOINT_COUNT, secondHands, stageRuntime } from './stage-runtime.js';
@@ -78,7 +79,7 @@ export class CameraHandsSystem extends createSystem({
     const r = stageRuntime.right;
     const u = stageRuntime.up;
     const n = stageRuntime.normal;
-    this.anchor.copy(stageRuntime.bulb).lerp(stageRuntime.center, 0.22).addScaledVector(u, -0.06);
+    naturalHandPoint(this.anchor).addScaledVector(u, -0.06);
     const size = Math.hypot(image[9].x - image[0].x, image[9].y - image[0].y);
     // Bigger in the image = closer to the camera = nearer the wall, further from the lamp.
     const depth = Math.max(-0.15, Math.min(0.15, -(size - NEUTRAL_SIZE) * 0.8));
