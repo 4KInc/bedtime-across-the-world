@@ -161,6 +161,30 @@ export class NarrationSystem extends createSystem({
     this.ready.clear();
   }
 
+  /**
+   * Plays a line. An AbortError only means a pause or a reload (the stall watch's
+   * retry) interrupted this attempt; the line is not over. Refused for want of a
+   * gesture (NotAllowedError), the line is held, not skipped: the story asks for a
+   * pinch, and the line starts with it. Any other failure ends it.
+   */
+  private start(audio: HTMLAudioElement, done: () => void): void {
+    void audio.play().then(
+      () => {
+        if (audio === this.audio) this.held = null;
+      },
+      (e: unknown) => {
+        const name = (e as Error)?.name;
+        if (name === 'AbortError') return;
+        if (name === 'NotAllowedError' && !soundLock.waived && audio === this.audio) {
+          this.held = done;
+          soundLock.blocked = true;
+          return;
+        }
+        done();
+      },
+    );
+  }
+
   private load(): void {
     this.loading = true;
     // Whether lines without a recorded clip can be voiced here (the server's narrator voice).
@@ -235,30 +259,6 @@ export class NarrationSystem extends createSystem({
       return;
     }
     this.finish(story, beat, '');
-  }
-
-  /**
-   * Plays a line. An AbortError only means a pause or a reload (the stall watch's
-   * retry) interrupted this attempt; the line is not over. Refused for want of a
-   * gesture (NotAllowedError), the line is held, not skipped: the story asks for a
-   * pinch, and the line starts with it. Any other failure ends it.
-   */
-  private start(audio: HTMLAudioElement, done: () => void): void {
-    void audio.play().then(
-      () => {
-        if (audio === this.audio) this.held = null;
-      },
-      (e: unknown) => {
-        const name = (e as Error)?.name;
-        if (name === 'AbortError') return;
-        if (name === 'NotAllowedError' && !soundLock.waived && audio === this.audio) {
-          this.held = done;
-          soundLock.blocked = true;
-          return;
-        }
-        done();
-      },
-    );
   }
 
   private finish(story: Entity, beat: string, source: string): void {
