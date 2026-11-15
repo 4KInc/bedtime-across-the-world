@@ -31,9 +31,27 @@ fixed, and checked again on the headset.
 | Play it | https://shadowplay-1031148889398.us-central1.run.app |
 | Play it with live diagnostics on screen | https://shadowplay-1031148889398.us-central1.run.app/?diag |
 
-**Smooth on both headsets.** Every session held the requested 72 Hz: median
-71.5 to 72 fps, a frame-time 95th percentile around 15 ms, and not one
-5-second window under 60 fps, on Quest 3 and Quest 3S alike.
+**Meets the 60 fps minimum on both headsets.** Every session held the requested
+72 Hz: median 71.3 to 72 fps, frame-time 95th percentile around 15 ms (under
+the 16.7 ms that 60 fps allows). 432 of 433 five-second windows stayed at
+60 fps or above; the one exception (47 fps) was a Quest 3 waking after three
+hours asleep and finding the room again.
+
+**The device sessions (the evidence).** Each `?diag` session has an anonymous
+id; its raw data is in [`docs/diag/`](docs/diag) (frame times, hand tracking,
+room detection, story beats; never audio, video, names or codes). Check any
+number here with `node scripts/diag/summarize.mjs docs/diag`.
+
+| Session | Headset | Started (UTC) | In the headset | What was played | fps (median, lowest 5 s) | Frame p95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `cdj3st58rm` | Quest 3 | Nov 14, 22:56 | 12 min | Counting Stars: 12 minutes waiting on the opening bird, made the textbook way (the evidence behind recognising shapes as people really make them) | 71.8, 46.9 | 15.0 ms |
+| `aytdvcb38s` | Quest 3 | Nov 15, 02:19 | - | The page reopened; did not enter the headset view (logged error: the XR session was offered twice) | - | - |
+| `32kbw476u2` | Quest 3S | Nov 15, 07:19 | 0.3 min | A dreamed story; stage found on a labelled wall (27 room planes) | 71.4, 68.0 | 16.2 ms |
+| `49768whrpd` | Quest 3 | Nov 15, 16:28 | 0.6 min | A dreamed story, on the paper screen (no room data) | 72.0, 61.1 | 15.5 ms |
+| `xnhuwf56d6` | Quest 3S | Nov 15, 16:38 | 0.6 min | The Night Garden | 71.5, 68.3 | 15.5 ms |
+| `afthmamdpn` | Quest 3S | Nov 15, 16:39 | 8.4 min | The Night Garden, The Moth, Mo and the Midnight Moon Buggy (to The End), Goodnight Across the Sea | 71.6, 67.5 | 14.8 ms |
+| `xhz96jhkv9` | Quest 3 | Nov 15, 19:25 | 0.5 min | A dreamed story | 71.3, 70.7 | 15.9 ms |
+| `m3zdndu6vq` | Quest 3 | Nov 15, 19:25 | 11.7 min | A dreamed story, Moon Buggy, Sleepy Little Dinosaur and Little Lost Spaceship, each to The End; six of Mo's AI tips in 0.6 to 0.9 s | 71.8, 70.4 | 14.8 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
 
