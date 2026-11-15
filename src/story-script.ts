@@ -53,7 +53,13 @@ export interface StoryScript {
 }
 
 /** The script the story system has loaded and is running (replays and Live wait for it). */
-export const storyRuntime = { script: '', title: '' };
+export const storyRuntime = {
+  script: '',
+  title: '',
+  /** Each spoken beat's words (names filled in), in story order: for the narrator's voice on lines without a recorded clip. */
+  lines: {} as Record<string, string>,
+  order: [] as string[],
+};
 
 /** Comfortable caption reading time: ~3 words per second plus a pause. */
 export function readingSeconds(text: string): number {

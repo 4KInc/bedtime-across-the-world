@@ -1,6 +1,6 @@
 import { createSystem, Entity, Vector3, VisibilityState } from '@iwsdk/core';
 import { away, setAway } from './away.js';
-import { personalise } from './family.js';
+import { nameInDream, personalise } from './family.js';
 import { loadProgress, loadUnlocks, saveProgress, saveUnlocks } from './journal-store.js';
 import {
   HiddenProp,
@@ -211,12 +211,15 @@ export class StorySystem extends createSystem({
     this.switching = true;
     storyRuntime.script = '';
     storyRuntime.title = '';
+    storyRuntime.lines = {};
+    storyRuntime.order = [];
     loadStoryScript(path)
       .then((script) => {
         this.script = script;
         this.scriptPath = path;
         storyRuntime.script = path;
         storyRuntime.title = script.title;
+        publishLines(script);
         const following = Boolean(story.getValue(StoryState, 'followMode'));
         if (following) {
           // A replay or Live story drives the beats; nothing to restore afterwards in the old script.
@@ -247,6 +250,7 @@ export class StorySystem extends createSystem({
         this.scriptPath = path;
         storyRuntime.script = path;
         storyRuntime.title = script.title;
+        publishLines(script);
         story.setValue(StoryState, 'script', path);
         for (const c of unlocks.chapters) this.unlocked.add(c);
         for (const e of unlocks.endings) this.endings.add(e);
@@ -431,6 +435,7 @@ export class StorySystem extends createSystem({
 
   private setCaption(story: Entity, text: string): void {
     text = personalise(text);
+    if (isDreamed(this.scriptPath)) text = nameInDream(text);
     this.beatCaption = text;
     story.setValue(StoryState, 'caption', text);
   }
@@ -805,6 +810,21 @@ function openInLight(stage: Entity, side: 'left' | 'right'): boolean {
  * open hands waited 75 s for a spread-finger pose).
  */
 const OPEN_MAX_CURL = 0.3;
+
+const isDreamed = (path: string) => path.startsWith('dreamed');
+
+/** The script's spoken words, names filled in, for the narrator (narration.ts). */
+function publishLines(script: StoryScript): void {
+  storyRuntime.lines = {};
+  storyRuntime.order = [];
+  for (const beat of script.beats) {
+    const text = 'text' in beat && typeof beat.text === 'string' ? beat.text : '';
+    if (!text || beat.type === 'journal') continue;
+    const words = personalise(text);
+    storyRuntime.lines[beat.id] = isDreamed(storyRuntime.script) ? nameInDream(words) : words;
+    storyRuntime.order.push(beat.id);
+  }
+}
 
 function handOpened(stage: Entity, side: 'left' | 'right'): boolean {
   const shape = stage.getValue(ShapeRecognizer, side === 'left' ? 'leftShape' : 'rightShape');
