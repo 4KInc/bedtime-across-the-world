@@ -9,7 +9,7 @@ import {
   ShapeGeometry,
   Vector3,
 } from '@iwsdk/core';
-import { buildSea, buildStorm, ScenerySet } from './scenery-sets.js';
+import { buildMoonRoad, buildSea, buildStorm, MoonRoadSet, ScenerySet } from './scenery-sets.js';
 import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
 
@@ -110,6 +110,8 @@ interface SceneryRuntime {
   stormLevel: number;
   sea: ScenerySet;
   seaLevel: number;
+  moonRoad: MoonRoadSet;
+  moonRoadLevel: number;
 }
 
 /** Background silhouette sets (currently the Chapter One field), faded in by the story. */
@@ -121,6 +123,8 @@ export class ScenerySystem extends createSystem({
   private quat = new Quaternion();
   private yAxis = new Vector3(0, 1, 0);
   private time = 0;
+  /** Scratch: from the stage centre to Mo. */
+  private toMo = new Vector3();
 
   init(): void {
     this.cleanupFuncs.push(
@@ -190,15 +194,16 @@ export class ScenerySystem extends createSystem({
 
     const storm = buildStorm(material);
     const sea = buildSea(material);
+    const moonRoad = buildMoonRoad(material);
     const root = new Group();
     root.name = 'scenery';
-    root.add(field, river, forest, storm.group, sea.group);
+    root.add(field, river, forest, storm.group, sea.group, moonRoad.group);
     entity.object3D.add(root);
     const rt = {
       root, field, clumps, material, level: 0,
       river, waves, moon, moonMaterial, riverLevel: 0,
       forest, forestLevel: 0, geometries,
-      storm, stormLevel: 0, sea, seaLevel: 0,
+      storm, stormLevel: 0, sea, seaLevel: 0, moonRoad, moonRoadLevel: 0,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -219,15 +224,17 @@ export class ScenerySystem extends createSystem({
       rt.forestLevel = fade(rt.forestLevel, delta, set === ScenerySets.Forest);
       rt.stormLevel = fade(rt.stormLevel, delta, set === ScenerySets.Storm);
       rt.seaLevel = fade(rt.seaLevel, delta, set === ScenerySets.Sea);
+      rt.moonRoadLevel = fade(rt.moonRoadLevel, delta, set === ScenerySets.MoonRoad);
       // One shared ink material: sets cross-fade through each other's level.
-      rt.material.opacity = 0.9 * Math.max(rt.level, rt.riverLevel, rt.forestLevel, rt.stormLevel, rt.seaLevel);
+      rt.material.opacity = 0.9 * Math.max(rt.level, rt.riverLevel, rt.forestLevel, rt.stormLevel, rt.seaLevel, rt.moonRoadLevel);
       rt.field.visible = rt.level > 0.001;
       rt.river.visible = rt.riverLevel > 0.001;
       rt.forest.visible = rt.forestLevel > 0.001;
       rt.storm.group.visible = rt.stormLevel > 0.001;
       rt.sea.group.visible = rt.seaLevel > 0.001;
+      rt.moonRoad.group.visible = rt.moonRoadLevel > 0.001;
       rt.root.visible =
-        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible;
+        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible || rt.moonRoad.group.visible;
       rt.moonMaterial.opacity = 0.5 * rt.riverLevel;
 
       const n = stageRuntime.normal;
@@ -252,6 +259,13 @@ export class ScenerySystem extends createSystem({
       rt.sea.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
       if (rt.storm.group.visible) rt.storm.update(this.time, rt.stormLevel, finale);
       if (rt.sea.group.visible) rt.sea.update(this.time, rt.seaLevel, finale);
+      rt.moonRoad.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
+      if (rt.moonRoad.group.visible) {
+        // The buggy trundles after Mo along the road.
+        this.toMo.copy(stageRuntime.moWall).sub(stageRuntime.center);
+        rt.moonRoad.follow(this.toMo.dot(stageRuntime.right) / stageRuntime.width);
+        rt.moonRoad.update(this.time, rt.moonRoadLevel, finale);
+      }
     }
   }
 }

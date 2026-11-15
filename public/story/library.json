@@ -1,4 +1,31 @@
 {
+  "worlds": [
+    {
+      "id": "nature",
+      "title": "Wonder and Nature",
+      "blurb": "Forests, animals, stars and friends."
+    },
+    {
+      "id": "adventure",
+      "title": "Cars and Adventure",
+      "blurb": "Roads, rescues, tunnels and little vehicles."
+    },
+    {
+      "id": "ocean",
+      "title": "Ocean and Exploration",
+      "blurb": "Waves, lighthouses and faraway shores."
+    },
+    {
+      "id": "dinosaurs",
+      "title": "Dinosaurs and Discovery",
+      "blurb": "Friendly dinosaurs, hidden caves and fossils."
+    },
+    {
+      "id": "space",
+      "title": "Space and Exploration",
+      "blurb": "Rockets, planets and friendly visitors."
+    }
+  ],
   "stories": [
     {
       "id": "the-moth",
@@ -6,35 +33,40 @@
       "script": "story/the-moth.story.json",
       "minutes": 20,
       "blurb": "Five short chapters that remember where you stopped.",
-      "chapters": 5
+      "chapters": 5,
+      "world": "nature"
     },
     {
       "id": "across-the-sea",
       "title": "Goodnight Across the Sea",
       "script": "story/across-the-sea.story.json",
       "minutes": 5,
-      "blurb": "Mo carries a goodnight from far away."
+      "blurb": "Mo carries a goodnight from far away.",
+      "world": "ocean"
     },
     {
       "id": "the-slow-letter",
       "title": "The Letter That Took the Slow Way",
       "script": "story/the-slow-letter.story.json",
       "minutes": 5,
-      "blurb": "A snail, a swan and a deer carry a letter home."
+      "blurb": "A snail, a swan and a deer carry a letter home.",
+      "world": "nature"
     },
     {
       "id": "the-brave-little-dog",
       "title": "The Brave Little Dog",
       "script": "story/the-brave-little-dog.story.json",
       "minutes": 5,
-      "blurb": "Being brave while someone is far away."
+      "blurb": "Being brave while someone is far away.",
+      "world": "nature"
     },
     {
       "id": "counting-stars",
       "title": "Counting Stars",
       "script": "story/counting-stars.story.json",
       "minutes": 3,
-      "blurb": "A calm count to five, for the littlest ones."
+      "blurb": "A calm count to five, for the littlest ones.",
+      "world": "nature"
     },
     {
       "id": "the-night-garden",
@@ -42,7 +74,8 @@
       "script": "story/the-night-garden.story.json",
       "minutes": 4,
       "blurb": "Tiptoe through a sleepy garden: a rabbit, a snail and a deer.",
-      "narrator": "bf_emma"
+      "narrator": "bf_emma",
+      "world": "nature"
     },
     {
       "id": "the-kind-crocodile",
@@ -50,7 +83,8 @@
       "script": "story/the-kind-crocodile.story.json",
       "minutes": 4,
       "blurb": "Across the river with a crocodile who only wants to help.",
-      "narrator": "bm_george"
+      "narrator": "bm_george",
+      "world": "nature"
     },
     {
       "id": "the-little-rainstorm",
@@ -58,7 +92,16 @@
       "script": "story/the-little-rainstorm.story.json",
       "minutes": 4,
       "blurb": "Pitter, patter: a dog, a bird and the very last raindrop.",
-      "narrator": "af_bella"
+      "narrator": "af_bella",
+      "world": "nature"
+    },
+    {
+      "id": "moon-buggy",
+      "title": "Mo and the Midnight Moon Buggy",
+      "script": "story/moon-buggy.story.json",
+      "minutes": 4,
+      "blurb": "A little buggy has lost its way home. Help it reach its garage.",
+      "world": "adventure"
     }
   ]
 }

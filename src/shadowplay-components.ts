@@ -206,6 +206,8 @@ export const ScenerySets = {
   Forest: 'forest',
   Storm: 'storm',
   Sea: 'sea',
+  /** Cars & Adventure: the moon road, the buggy and its garage. */
+  MoonRoad: 'moon-road',
 } as const;
 
 /** Background silhouette set drawn behind the characters. */

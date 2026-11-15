@@ -183,6 +183,15 @@
   </div>
   <div id="family-status" class="family-status">Record a bedtime story, or go live with your family.</div>
 
+  <div class="label">Where should we go tonight?</div>
+  <div class="row">
+    <button id="world-prev" class="option arrow">&lt;</button>
+    <div class="story-name">
+      <span id="world-title" class="story-title">Wonder and Nature</span>
+      <span id="world-blurb" class="story-blurb">Forests, animals, stars and friends.</span>
+    </div>
+    <button id="world-next" class="option arrow">&gt;</button>
+  </div>
   <div class="label">Tonight's story</div>
   <div class="row">
     <button id="story-prev" class="option arrow">&lt;</button>
