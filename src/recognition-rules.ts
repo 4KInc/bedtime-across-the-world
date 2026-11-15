@@ -45,6 +45,39 @@ function ownPinch(h: PairHand): number {
   const i = INDEX_TIP * 3;
   return Math.hypot(h.joints[t] - h.joints[i], h.joints[t + 1] - h.joints[i + 1], h.joints[t + 2] - h.joints[i + 2]);
 }
+/**
+ * When a story asks for the cup: two hands held together, edge to edge, palms
+ * up, fingers only a little bent, are a cup (a bowl of two hands). On a Quest 3S
+ * (Nov 15, session 32kbw476u2) that is how the cup was made: wrists 4 to 7 cm
+ * apart, curl 0.15 to 0.3, each hand read as a flat fish, so it never counted
+ * (one cup took 109 s, the other was given up). A resting hand curls the same,
+ * so the palms facing up is what makes it a cup; a fist is not part of one.
+ */
+const CUP_TOGETHER_GAP = 0.14;
+const CUP_MAX_CURL = 0.75;
+/** Palm facing up: within about 60 degrees of straight up (cupped hands tilt towards each other). */
+const PALM_UP_MIN = 0.45;
+const INDEX_KNUCKLE = 6;
+const PINKY_KNUCKLE = 21;
+
+/**
+ * How much a hand's palm faces up: 1 straight up, 0 sideways, -1 down. From the
+ * wrist and the index and little-finger knuckles; the cross product points out
+ * of a right palm and out of the back of a left one.
+ */
+export function palmUp(j: Float32Array, left: boolean): number {
+  const i = INDEX_KNUCKLE * 3;
+  const p = PINKY_KNUCKLE * 3;
+  const ax = j[i] - j[0], ay = j[i + 1] - j[1], az = j[i + 2] - j[2];
+  const bx = j[p] - j[0], by = j[p + 1] - j[1], bz = j[p + 2] - j[2];
+  const nx = ay * bz - az * by;
+  const ny = az * bx - ax * bz;
+  const nz = ax * by - ay * bx;
+  const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+  if (len < 1e-9) return 0;
+  return (left ? -ny : ny) / len;
+}
+
 /** Assist (the story has waited 40 s or more): any two hands near each other, side by side, are the bird. */
 const BIRD_ASSIST_GAP = 0.35;
 const BIRD_ASSIST_TOLERANCE = 0.2;
@@ -128,8 +161,8 @@ export interface PairHand {
  * fingers up and spread), crocodile (flat hands stacked), bird (open, wrists
  * side by side), cup (both cupped, side by side). Deer and crocodile only when
  * `hidden` (Free Stage, or a story that asks for one). `birdWanted` /
- * `deerWanted` / `crocWanted`: that shape is asked for (more room for real
- * hands); `assist`: the story's extra tolerance.
+ * `deerWanted` / `crocWanted` / `cupWanted`: that shape is asked for (more room
+ * for real hands); `assist`: the story's extra tolerance.
  */
 export function classifyPair(
   l: PairHand,
@@ -139,6 +172,7 @@ export function classifyPair(
   assist = 0,
   deerWanted = false,
   crocWanted = false,
+  cupWanted = false,
 ): string | null {
   const dx = l.joints[0] - r.joints[0];
   const dy = l.joints[1] - r.joints[1];
@@ -192,6 +226,17 @@ export function classifyPair(
       (lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB) ||
       (thumbs <= THUMBS_TOGETHER && ownPinch(l) >= OWN_PINCH_MIN && ownPinch(r) >= OWN_PINCH_MIN);
     if (gap < BIRD_WANTED_GAP && l.curl <= BIRD_WANTED_CURL && r.curl <= BIRD_WANTED_CURL && thumbsOk) return ShapeIds.Bird;
+  }
+  // A cup asked for: hands held together (after the bird, so a choice between them still finds the bird).
+  if (
+    cupWanted &&
+    gap < CUP_TOGETHER_GAP &&
+    l.curl <= CUP_MAX_CURL &&
+    r.curl <= CUP_MAX_CURL &&
+    palmUp(l.joints, true) >= PALM_UP_MIN &&
+    palmUp(r.joints, false) >= PALM_UP_MIN
+  ) {
+    return ShapeIds.Cup;
   }
   if (gap >= BIRD_WRIST_GAP) return null;
   // Wings sit side by side: stacked hands are not a bird.
