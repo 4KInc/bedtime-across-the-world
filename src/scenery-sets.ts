@@ -203,3 +203,162 @@ export function buildSea(ink: MeshBasicMaterial): ScenerySet {
     },
   };
 }
+
+// ---------------------------------------------------------------- moon road (Cars & Adventure)
+
+/** Rolling moon ground with two crater rims, across the bottom of the stage. */
+function moonGround(): Shape {
+  const s = new Shape();
+  s.moveTo(-0.62, 0);
+  for (let x = -0.62; x <= 0.62 + 1e-6; x += 0.02) {
+    const hills = 0.075 + Math.sin(x * 5.5 + 0.6) * 0.022 + Math.sin(x * 13) * 0.006;
+    // Crater rims: two little raised lips with a dip between.
+    const crater = (cx: number, r: number) => {
+      const d = (x - cx) / r;
+      return Math.abs(d) < 1 ? 0.02 * (d * d * 1.6 - 0.6) * (1 - d * d) * 2.2 : 0;
+    };
+    s.lineTo(x, hills + crater(-0.12, 0.09) + crater(0.18, 0.06));
+  }
+  s.lineTo(0.62, 0);
+  s.closePath();
+  return s;
+}
+
+/** The buggy's quiet moon garage: a little dome with a door, on the right of the road. */
+function garageShape(): Shape {
+  const x = 0.45;
+  const s = new Shape();
+  s.moveTo(x - 0.1, 0.05);
+  s.lineTo(x - 0.1, 0.16);
+  s.absarc(x, 0.16, 0.1, Math.PI, 0, true);
+  s.lineTo(x + 0.1, 0.05);
+  s.closePath();
+  return s;
+}
+
+/** A little moon buggy in profile, facing right: body, cab, antenna, three wheels. */
+function buggyShape(): Shape {
+  const s = new Shape();
+  s.moveTo(-0.075, 0.028);
+  s.lineTo(-0.08, 0.06);
+  s.lineTo(-0.03, 0.065);
+  s.lineTo(-0.018, 0.1); // cab
+  s.lineTo(0.03, 0.1);
+  s.lineTo(0.045, 0.066);
+  s.lineTo(0.078, 0.06);
+  s.lineTo(0.082, 0.032);
+  s.closePath();
+  return s;
+}
+
+/** Three wheels and a thin antenna with a round tip. */
+function buggyParts(): Shape[] {
+  const parts = [-0.05, 0.002, 0.054].map((x) => {
+    const w = new Shape();
+    w.absarc(x, 0.022, 0.022, 0, Math.PI * 2, false);
+    return w;
+  });
+  const antenna = new Shape();
+  antenna.moveTo(-0.062, 0.06);
+  antenna.lineTo(-0.066, 0.13);
+  antenna.lineTo(-0.06, 0.13);
+  antenna.lineTo(-0.056, 0.06);
+  antenna.closePath();
+  const tip = new Shape();
+  tip.absarc(-0.063, 0.135, 0.009, 0, Math.PI * 2, false);
+  return [...parts, antenna, tip];
+}
+
+function headlightShape(): Shape {
+  const s = new Shape();
+  s.moveTo(0, 0);
+  s.lineTo(0.28, 0.05);
+  s.lineTo(0.28, -0.045);
+  s.closePath();
+  return s;
+}
+
+/** The moon road also has a buggy that follows Mo along it: where Mo is, in stage widths. */
+export interface MoonRoadSet extends ScenerySet {
+  /** Mo's position along the stage (stage widths, centre 0); the buggy trundles after her. */
+  follow(u: number): void;
+}
+
+/**
+ * Cars & Adventure: a moon road with craters, the buggy's garage, and the little
+ * buggy whose headlights are fading. It follows Mo along the road; at the
+ * finale it rolls into its garage, the garage window glows and the headlights
+ * go softly out.
+ */
+export function buildMoonRoad(ink: MeshBasicMaterial): MoonRoadSet {
+  const group = new Group();
+  group.name = 'scenery-moon-road';
+  const groundGeo = new ShapeGeometry(moonGround(), 1);
+  const ground = new Mesh(groundGeo, ink);
+  ground.name = 'scenery-moon-road-ground';
+  ground.renderOrder = 4;
+  const garageGeo = new ShapeGeometry(garageShape(), 16);
+  const garage = new Mesh(garageGeo, ink);
+  garage.name = 'scenery-moon-road-garage';
+  garage.renderOrder = 3;
+
+  const windowMat = glow(0xffc46a);
+  const windowGeo = new PlaneGeometry(0.06, 0.07);
+  const garageWindow = new Mesh(windowGeo, windowMat);
+  garageWindow.name = 'scenery-moon-road-garage-window';
+  garageWindow.position.set(0.45, 0.16, 0.001);
+  garageWindow.renderOrder = 5;
+
+  const buggy = new Group();
+  buggy.name = 'scenery-moon-road-buggy';
+  const bodyGeo = new ShapeGeometry([buggyShape(), ...buggyParts()], 8);
+  const body = new Mesh(bodyGeo, ink);
+  body.name = 'scenery-moon-road-buggy-body';
+  body.renderOrder = 5;
+  const lightMat = glow(0xfff0b0);
+  const lightGeo = new ShapeGeometry(headlightShape(), 1);
+  const headlight = new Mesh(lightGeo, lightMat);
+  headlight.name = 'scenery-moon-road-buggy-headlight';
+  headlight.position.set(0.078, 0.048, -0.0005);
+  headlight.renderOrder = 2;
+  buggy.add(headlight, body);
+  buggy.position.set(-0.36, 0.06, 0.0008);
+
+  group.add(garage, ground, garageWindow, buggy);
+  let target = -0.36;
+  let lastTime = -1;
+  return {
+    group,
+    follow(u) {
+      // A little behind Mo, and never past the garage door.
+      target = Math.min(0.3, Math.max(-0.48, u - 0.12));
+    },
+    update(time, level, finale) {
+      const dt = lastTime < 0 ? 0 : Math.min(0.1, time - lastTime);
+      lastTime = time;
+      // Home at the finale: into the garage.
+      const goal = finale > 0.01 ? 0.45 : target;
+      const before = buggy.position.x;
+      buggy.position.x += (goal - before) * Math.min(1, dt * 0.8);
+      // A gentle bounce while it drives over the bumps.
+      const moving = Math.min(1, Math.abs(buggy.position.x - before) / Math.max(dt, 1e-3) / 0.05);
+      buggy.position.y = 0.06 + Math.sin(time * 9) * 0.004 * moving;
+      buggy.visible = finale < 0.98;
+      // Fading headlights: a weak flicker until the finale, then bright, then softly out.
+      const flicker = 0.55 + 0.25 * Math.sin(time * 2.3) * Math.sin(time * 5.1);
+      const lights = finale > 0.01 ? Math.sin(Math.min(1, finale) * Math.PI) : flicker * 0.5;
+      lightMat.color.setHex(0xfff0b0).multiplyScalar(0.3 * level * lights);
+      headlight.visible = level * lights > 0.01;
+      windowMat.color.setHex(0xffc46a).multiplyScalar(0.06 * level + 0.9 * level * finale);
+    },
+    dispose() {
+      groundGeo.dispose();
+      garageGeo.dispose();
+      windowGeo.dispose();
+      windowMat.dispose();
+      bodyGeo.dispose();
+      lightGeo.dispose();
+      lightMat.dispose();
+    },
+  };
+}

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { contentProblems } from '../src/story-checks.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(`../public/${p}`, import.meta.url), 'utf8'));
-const library = read('story/library.json').stories;
+const { stories: library, worlds } = read('story/library.json');
 const narration = read('narration/manifest.json');
 const SHAPES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
 
@@ -23,7 +23,7 @@ test('every library story: its file, unique beat ids across the library, and an 
 });
 
 test('the newer stories pass the content checks (no brands, Mo is "she", the right hand poses)', () => {
-  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm']) {
+  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy']) {
     const story = read(library.find((s) => s.id === id).script);
     for (const b of story.beats) {
       if (b.type === 'request') assert.ok(SHAPES.has(b.shape) && (!b.alt || SHAPES.has(b.alt)), `${b.id} shape`);
@@ -42,5 +42,22 @@ test('every spoken line of the newer stories has its narration, read by the stor
       const clip = narration.clips[b.id];
       assert.ok(clip && existsSync(new URL(`../public/${clip}`, import.meta.url)), `${b.id} has a clip`);
     }
+  }
+});
+
+test('story worlds: every story is in a known world, none is labelled for boys or girls, and the first launch stays in Wonder and Nature', () => {
+  const ids = new Set(worlds.map((w) => w.id));
+  assert.equal(ids.size, worlds.length, 'world ids are unique');
+  for (const w of worlds) assert.doesNotMatch(`${w.title} ${w.blurb}`, /\b(boys?|girls?|princess(es)?)\b/i, w.id);
+  for (const s of library) assert.ok(ids.has(s.world), `${s.id}: world ${s.world}`);
+  assert.equal(library.find((s) => s.id === 'counting-stars').world, 'nature');
+  // Cars and Adventure, the first new world, has its first story.
+  assert.ok(library.some((s) => s.world === 'adventure'), 'Cars and Adventure has a story');
+});
+
+test('every scenery set a library story uses is one the stage can draw', () => {
+  const SETS = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road']);
+  for (const entry of library) {
+    for (const b of read(entry.script).beats) if (b.type === 'scenery') assert.ok(SETS.has(b.set), `${b.id}: ${b.set}`);
   }
 });

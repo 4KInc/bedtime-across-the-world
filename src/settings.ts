@@ -66,7 +66,20 @@ interface LibraryStory {
   /** Stories told in chapters say so (each chapter is short, and the story resumes at the last one). */
   chapters?: number;
   blurb: string;
+  /** The story world it belongs to (library.json "worlds"); missing means Wonder and Nature. */
+  world?: string;
 }
+/**
+ * A story world: Mo is always the guide; the world is where she takes the child
+ * tonight. Chosen by interest, never labelled for boys or girls. A world with no
+ * stories yet is not shown.
+ */
+interface StoryWorld {
+  id: string;
+  title: string;
+  blurb: string;
+}
+const DEFAULT_WORLD = 'nature';
 const MOTH_SCRIPT = 'story/the-moth.story.json';
 /** "Dream a new one": what the app asks Mo for (server/dream.ts accepts exactly these). */
 const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky'] as const;
@@ -103,8 +116,14 @@ export class SettingsSystem extends createSystem({
   /** What the story picker last showed. */
   private shownScript = '';
   private library: LibraryStory[] = [];
-  /** Index of the story being looked at in the picker. */
+  /** Worlds that have at least one story, in library order. */
+  private worlds: StoryWorld[] = [];
+  /** Index of the world being looked at in the picker. */
+  private browsingWorld = 0;
+  /** Index (into the library) of the story being looked at in the picker. */
   private browsing = 0;
+  private worldTitle: UIKit.Text | undefined;
+  private worldBlurb: UIKit.Text | undefined;
   private storyTitle: UIKit.Text | undefined;
   private storyBlurb: UIKit.Text | undefined;
   private storyStart: UIKit.Text | undefined;
@@ -163,9 +182,14 @@ export class SettingsSystem extends createSystem({
   /** The browsed story's name and blurb; the start button shows whether it is tonight's. */
   private refreshStories(): void {
     const script = first(this.queries.stories.entities)?.getValue(StoryState, 'script') ?? '';
-    const key = `${script}|${this.browsing}|${this.library.length}`;
+    const key = `${script}|${this.browsingWorld}|${this.browsing}|${this.library.length}`;
     if (key === this.shownScript || !this.panel) return;
     this.shownScript = key;
+    const world = this.worlds[this.browsingWorld];
+    if (world) {
+      this.worldTitle?.setProperties({ text: world.title });
+      this.worldBlurb?.setProperties({ text: world.blurb });
+    }
     const story = this.library[this.browsing];
     if (!story) return;
     const telling = story.script === script;
@@ -178,14 +202,28 @@ export class SettingsSystem extends createSystem({
     this.panel.getElementById('chapter-section')?.setProperties({ display: script === MOTH_SCRIPT ? 'flex' : 'none' });
   }
 
+  /** Library indexes of the stories in the world being looked at. */
+  private storiesInWorld(): number[] {
+    const world = this.worlds[this.browsingWorld]?.id ?? DEFAULT_WORLD;
+    const out: number[] = [];
+    this.library.forEach((s, i) => {
+      if (worldOf(s) === world) out.push(i);
+    });
+    return out;
+  }
+
   private loadLibrary(): void {
     fetch(`${import.meta.env.BASE_URL}story/library.json`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ stories: LibraryStory[] }>) : null))
+      .then((r) => (r.ok ? (r.json() as Promise<{ worlds?: StoryWorld[]; stories: LibraryStory[] }>) : null))
       .then((lib) => {
         this.library = lib?.stories ?? [];
-        // Start browsing at tonight's story.
+        const worlds = lib?.worlds?.length ? lib.worlds : [{ id: DEFAULT_WORLD, title: 'Wonder and Nature', blurb: '' }];
+        this.worlds = worlds.filter((w) => this.library.some((s) => worldOf(s) === w.id));
+        // Start browsing at tonight's story, in its world.
         const script = first(this.queries.stories.entities)?.getValue(StoryState, 'script') ?? '';
         this.browsing = Math.max(0, this.library.findIndex((s) => s.script === script));
+        const current = this.library[this.browsing];
+        this.browsingWorld = Math.max(0, this.worlds.findIndex((w) => current && w.id === worldOf(current)));
         this.shownScript = '';
       })
       .catch(() => undefined);
@@ -357,10 +395,20 @@ export class SettingsSystem extends createSystem({
         this.status?.setProperties({ text: `Starting ${name}...` });
       });
     }
+    // Stories step within the world being looked at; worlds step to that world's first story.
     const browse = (step: number) => {
-      if (!this.library.length) return;
-      this.browsing = (this.browsing + step + this.library.length) % this.library.length;
+      const inWorld = this.storiesInWorld();
+      if (!inWorld.length) return;
+      const at = Math.max(0, inWorld.indexOf(this.browsing));
+      this.browsing = inWorld[(at + step + inWorld.length) % inWorld.length];
     };
+    const browseWorld = (step: number) => {
+      if (!this.worlds.length) return;
+      this.browsingWorld = (this.browsingWorld + step + this.worlds.length) % this.worlds.length;
+      this.browsing = this.storiesInWorld()[0] ?? this.browsing;
+    };
+    on('world-prev', () => browseWorld(-1));
+    on('world-next', () => browseWorld(1));
     on('story-prev', () => browse(-1));
     on('story-next', () => browse(1));
     on('story-start', () => {
@@ -388,6 +436,8 @@ export class SettingsSystem extends createSystem({
       .then((r) => (r.ok ? (r.json() as Promise<{ available?: boolean }>) : { available: false }))
       .then((r) => (this.dreamAvailable = Boolean(r.available)))
       .catch(() => (this.dreamAvailable = false));
+    this.worldTitle = panel.getElementById<UIKit.Text>('world-title') ?? undefined;
+    this.worldBlurb = panel.getElementById<UIKit.Text>('world-blurb') ?? undefined;
     this.storyTitle = panel.getElementById<UIKit.Text>('story-title') ?? undefined;
     this.storyBlurb = panel.getElementById<UIKit.Text>('story-blurb') ?? undefined;
     this.storyStart = panel.getElementById<UIKit.Text>('story-start-label') ?? undefined;
@@ -506,4 +556,9 @@ export const dreamRuntime = {
 function first<T>(set: Iterable<T>): T | undefined {
   for (const v of set) return v;
   return undefined;
+}
+
+/** A story's world (stories from before worlds belong to Wonder and Nature). */
+function worldOf(story: LibraryStory): string {
+  return story.world ?? DEFAULT_WORLD;
 }

@@ -1,0 +1,203 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "Mo and the Midnight Moon Buggy",
+  "beats": [
+    {
+      "id": "buggy-title",
+      "type": "chapter",
+      "chapter": "Mo and the Midnight Moon Buggy",
+      "text": "Mo and the Midnight Moon Buggy"
+    },
+    {
+      "id": "buggy-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "buggy-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying somewhere new. All the way up to the moon."
+    },
+    {
+      "id": "buggy-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "buggy-road",
+      "type": "scenery",
+      "set": "moon-road"
+    },
+    {
+      "id": "buggy-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "buggy-found",
+      "type": "narrate",
+      "text": "Up here there is a long, bumpy road, and on it, a little moon buggy. Brrm... brrm... putt."
+    },
+    {
+      "id": "buggy-lost",
+      "type": "narrate",
+      "text": "Its headlights are fading. It has lost its way home, and the moon is nearly asleep."
+    },
+    {
+      "id": "buggy-help",
+      "type": "narrate",
+      "text": "Mo has an idea. We can help the buggy find its garage."
+    },
+    {
+      "id": "buggy-want-dog",
+      "type": "request",
+      "shape": "dog",
+      "alt": "rabbit",
+      "text": "Make a dog: a flat hand, thumb up for an ear, and your little finger down for its mouth."
+    },
+    {
+      "id": "buggy-dog-yes",
+      "type": "narrate",
+      "text": "A moon dog! Good at sniffing out the way. Climb on, Mo."
+    },
+    {
+      "id": "buggy-dog-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "buggy-dog-carry",
+      "type": "carry",
+      "toU": 0.05,
+      "text": "Sniff, sniff, along the road. The little buggy follows behind."
+    },
+    {
+      "id": "buggy-dog-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.05,
+      "restV": 0.14
+    },
+    {
+      "id": "buggy-dog-bows",
+      "type": "release",
+      "text": "The dog found the right road, and sits down for a rest."
+    },
+    {
+      "id": "buggy-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "buggy-crater",
+      "type": "narrate",
+      "text": "Oh no. A big crater, right in the middle of the road. How will the buggy get across?"
+    },
+    {
+      "id": "buggy-want-bird",
+      "type": "request",
+      "shape": "bird",
+      "text": "Make a bird with two hands, side by side. Fly up high to look for a way around."
+    },
+    {
+      "id": "buggy-bird-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "buggy-bird-carry",
+      "type": "carry",
+      "toU": 0.25,
+      "minV": 0.12,
+      "text": "Up, up, over the crater. Look, there is a smooth path around the edge."
+    },
+    {
+      "id": "buggy-bird-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.22,
+      "restV": 0.16
+    },
+    {
+      "id": "buggy-bird-bows",
+      "type": "release",
+      "text": "The buggy rolls slowly round the crater. Brrm, brrm. The bird waves its wings goodbye."
+    },
+    {
+      "id": "buggy-dim2",
+      "type": "lamp",
+      "level": 0.65
+    },
+    {
+      "id": "buggy-dark",
+      "type": "narrate",
+      "text": "Now it is very dark, and the headlights are only a tiny glow. The buggy needs a little light."
+    },
+    {
+      "id": "buggy-falling",
+      "type": "narrate",
+      "text": "Look! A small star is falling, just for us."
+    },
+    {
+      "id": "buggy-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch it."
+    },
+    {
+      "id": "buggy-caught",
+      "type": "narrate",
+      "text": "You caught it. Shine it on the road, so the buggy can see the way home."
+    },
+    {
+      "id": "buggy-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let the star light the way."
+    },
+    {
+      "id": "buggy-free",
+      "type": "release",
+      "text": "And there it is. The little garage, with its door open."
+    },
+    {
+      "id": "buggy-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "buggy-home",
+      "type": "narrate",
+      "text": "The buggy rolls inside, safe and sound. Its headlights blink once, twice, and go softly out."
+    },
+    {
+      "id": "buggy-dim3",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "buggy-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "buggy-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little buggy. Goodnight, moon. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "buggy-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "buggy-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

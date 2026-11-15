@@ -7,6 +7,7 @@ import {
   PerformancePlayer,
   PerformanceRecorder,
   RecognitionLab,
+  Scenery,
   Settings,
   ShadowJournal,
   ShapeRecognizer,
@@ -44,6 +45,7 @@ const COMPONENTS = {
   PerformancePlayer,
   PerformanceRecorder,
   RecognitionLab,
+  Scenery,
   Settings,
   ShadowJournal,
   ShapeRecognizer,
@@ -64,6 +66,7 @@ export const automationEnabled =
  */
 export class AutomationSystem extends createSystem({
   DemoDirector: { required: [DemoDirector] },
+  Scenery: { required: [Scenery] },
   DeskLamp: { required: [DeskLamp] },
   FamilyInbox: { required: [FamilyInbox] },
   LiveSession: { required: [LiveSession] },
