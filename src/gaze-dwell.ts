@@ -180,7 +180,8 @@ export class GazeDwellSystem extends createSystem({
       });
     }
     const lamp = this.queries.lamps.entities.values().next().value as Entity | undefined;
-    this.switchObj ??= lamp?.object3D?.getObjectByName('lamp-switch');
+    // The lamp stands behind the viewer; its switch is on the desk (lamp-behind.ts).
+    this.switchObj ??= this.world.scene.getObjectByName('desk-switch') ?? lamp?.object3D?.getObjectByName('lamp-switch');
     const stage = this.queries.stages.entities.values().next().value as Entity | undefined;
     if (this.switchObj && stage && !this.extra.has('lamp-switch')) {
       this.extra.set('lamp-switch', {

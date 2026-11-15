@@ -1,6 +1,7 @@
 // Look to press (head-gaze dwell), with controllers in hand and no hand tracking:
 // the first-screen toggle, opening the Shadow Journal by looking at it, pressing a
-// Settings button by looking (once, no repeats), the ghost hand shown at once and
+// Settings button by looking (once, no repeats), pausing by looking at the lamp
+// switch on the desk, the ghost hand shown at once and
 // looking at it waking the creature, and the story never pausing for "put your
 // controllers down", the whole story told eyes only. Then the mode is turned off by looking at its own toggle.
 //
@@ -77,6 +78,22 @@ await sleep(2000);
   await sleep(2500);
   const again = (await page.evaluate(() => __sp.presses())).filter((p) => p === 'tol-forgiving').length;
   check('looking at "Forgiving" presses it once', tol === 'forgiving' && presses === 1 && again === 1, { tol, presses, again });
+}
+
+// 4b. Look at the lamp's switch on the desk (the lamp itself stands behind you): the story
+// pauses; look at it again and it goes on.
+{
+  await lookAt('desk-switch');
+  await sleep(2200);
+  const off = await get('Stage', 'lampOn');
+  await lookAt([0, 1.6, -2]);
+  await sleep(800);
+  await lookAt('desk-switch');
+  await sleep(2200);
+  const on = await get('Stage', 'lampOn');
+  await lookAt([0, 1.6, -2]);
+  await sleep(500);
+  check('looking at the lamp switch on the desk pauses, and again goes on', off === false && on === true, { off, on });
 }
 
 // 5. Close the book by looking; the story goes on although only controllers are held.
