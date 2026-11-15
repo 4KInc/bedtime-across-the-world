@@ -20,6 +20,8 @@ COPY src/voice-commands.ts ./src/voice-commands.ts
 COPY src/coach-vocab.ts ./src/coach-vocab.ts
 # Content and shared-story checks, shared with the app.
 COPY src/story-checks.ts ./src/story-checks.ts
+# A goodnight's gifts (Mo's palettes, the drawing format), checked on upload.
+COPY src/child-gifts.ts ./src/child-gifts.ts
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 8080
