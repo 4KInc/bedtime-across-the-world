@@ -16,7 +16,12 @@ const SESSION = /^[a-z0-9]{8,32}$/;
 /** Short identifiers: shapes, beat ids, enums, a GPU name. */
 const SAFE = /^[\w .:/()+,-]{0,64}$/;
 const MAX_ITEMS = 40;
-const MAX_KEYS = 48;
+/**
+ * Fields per item. A snapshot carries about 50 (frame times, both hands, the
+ * two-hand rules, the stage placement); one over this refuses the whole batch,
+ * so keep room (tests/diag-snapshot.test.mjs counts the client's snapshot).
+ */
+export const MAX_KEYS = 64;
 
 /** Fields that may carry longer free text (errors only). */
 const TEXT_FIELDS = new Set(['message', 'stack', 'source']);
