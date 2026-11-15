@@ -334,10 +334,22 @@ test('voice: available, a short webm clip becomes text, with the command phrases
   assert.equal(Buffer.from(sent.audio?.content ?? '', 'base64').length, clip.length);
 });
 
+test('voice: a 16 kHz WAV clip (from before the speech) goes as LINEAR16, without its header', async () => {
+  const pcm = Buffer.alloc(16000 * 2, 7);
+  const header = Buffer.alloc(44, 1);
+  const res = await fetch(`${BASE}/api/voice`, { method: 'POST', headers: { 'X-Forwarded-For': '6.6.6.7, 10.9.9.8', 'Content-Type': 'audio/wav' }, body: Buffer.concat([header, pcm]) });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { text: 'the bird' });
+  const sent = sttSeen.at(-1)!;
+  assert.equal(sent.config?.encoding, 'LINEAR16');
+  assert.equal((sent.config as { sampleRateHertz?: number }).sampleRateHertz, 16000);
+  assert.equal(Buffer.from(sent.audio?.content ?? '', 'base64').length, pcm.length);
+});
+
 test('voice: refuses other types, empty and over-long clips', async () => {
   const send = (body: Buffer, type = 'audio/webm') =>
     fetch(`${BASE}/api/voice`, { method: 'POST', headers: { 'X-Forwarded-For': '6.6.6.6, 10.9.9.8', 'Content-Type': type }, body });
-  assert.equal((await send(Buffer.alloc(4000), 'audio/wav')).status, 415);
+  assert.equal((await send(Buffer.alloc(4000), 'audio/ogg')).status, 415);
   assert.equal((await send(Buffer.alloc(50))).status, 400);
   assert.equal((await send(Buffer.alloc(200 * 1024))).status, 413);
 });

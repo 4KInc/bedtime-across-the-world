@@ -10,7 +10,10 @@
  */
 import { COMMAND_PHRASES } from '../src/voice-commands.ts';
 
-export const MAX_CLIP_BYTES = 96 * 1024;
+/** A clip of up to 4 s (with its half second from before the speech), as 16 kHz WAV or WebM. */
+export const MAX_CLIP_BYTES = 160 * 1024;
+/** WAV header length: the speech service is sent the samples after it. */
+const WAV_HEADER = 44;
 
 export class SpeechToText {
   private token = '';
@@ -39,22 +42,26 @@ export class SpeechToText {
     return { Authorization: `Bearer ${this.token}` };
   }
 
-  /** The best transcript of one WebM/Opus clip ('' when nothing was understood). */
-  async transcribe(clip: Buffer): Promise<string> {
+  /**
+   * The best transcript of one clip ('' when nothing was understood): 16 kHz mono
+   * WAV (what the app sends: it starts half a second before the speech) or WebM/Opus.
+   */
+  async transcribe(clip: Buffer, format: 'wav' | 'webm' = 'webm'): Promise<string> {
+    const wav = format === 'wav';
     const res = await fetch(`${this.api}/v1/speech:recognize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await this.auth()) },
       body: JSON.stringify({
         config: {
-          encoding: 'WEBM_OPUS',
-          sampleRateHertz: 48000,
+          encoding: wav ? 'LINEAR16' : 'WEBM_OPUS',
+          sampleRateHertz: wav ? 16000 : 48000,
           languageCode: 'en-US',
           model: 'command_and_search',
           maxAlternatives: 1,
           profanityFilter: true,
           speechContexts: [{ phrases: COMMAND_PHRASES, boost: 15 }],
         },
-        audio: { content: clip.toString('base64') },
+        audio: { content: (wav ? clip.subarray(WAV_HEADER) : clip).toString('base64') },
       }),
       signal: AbortSignal.timeout(8000),
     });
