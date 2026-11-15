@@ -13,6 +13,7 @@ import { checkSharedStory } from '../src/story-checks.ts';
 import { checkDream, Dreamer } from './dream.ts';
 import { DEFAULTS, Llm } from './llm.ts';
 import { MAX_CLIP_BYTES, SpeechToText } from './voice.ts';
+import { speakable, speechKey, TextToSpeech } from './speak.ts';
 
 /**
  * Shadowplay server: serves the app and a tiny private sharing API for
@@ -27,6 +28,8 @@ import { MAX_CLIP_BYTES, SpeechToText } from './voice.ts';
  *   POST /api/voice          a short spoken clip (audio/webm) -> { text } (Voice commands; nothing stored)
  *   GET  /api/coach          { available }: whether Mo's tips are written by AI here
  *   POST /api/coach          { shape, facts, attempt } -> { line, source } (Mo the coach; no personal data)
+ *   GET  /api/speak          { available }: whether lines without a recorded clip can be voiced here
+ *   GET  /api/speak?text=    one story line, spoken (audio/mpeg; dreamed stories; cached in the bucket)
  *   GET  /api/dream          { available }: whether new stories can be dreamed up here
  *   POST /api/dream          { theme, shapes } -> a new story script (words by the AI_PROVIDER model, built and checked here)
  *   POST /api/diag           device diagnostics from pages opened with ?diag (numbers and ids only)
@@ -68,6 +71,7 @@ const coach = llm ? new Coach(llm, process.env.COACH_MODEL || DEFAULTS[provider]
 const dreamer = llm ? new Dreamer(llm, process.env.DREAM_MODEL || DEFAULTS[provider].dreamModel) : null;
 if (llm) console.log(`[ai] Mo's tips and dreamed stories by ${llm.label}`);
 const speech = process.env.VOICE_STT === 'google' ? new SpeechToText(process.env.STT_API ?? undefined, process.env.STT_TOKEN_URL ?? undefined) : null;
+const tts = process.env.STORY_TTS === 'google' ? new TextToSpeech(process.env.TTS_API ?? undefined, process.env.TTS_TOKEN_URL ?? undefined) : null;
 
 // ---------------------------------------------------------------- rate limiting
 
@@ -79,6 +83,8 @@ const limits = {
   diag: new RateLimiter(60_000, 60),
   // Voice commands: one short clip per spoken command.
   voice: new RateLimiter(60_000, 40),
+  /** A dreamed story is ~25 lines, fetched a few ahead; replays come from the cache. */
+  speak: new RateLimiter(60_000, 90),
   // Mo's tips: a few per minute at most (one per stuck shape request, every 12 s).
   coach: new RateLimiter(60_000, 12),
   // New stories: a handful an evening.
@@ -265,6 +271,33 @@ async function postVoice(req: IncomingMessage, res: ServerResponse): Promise<voi
   }
 }
 
+/** One story line, spoken: from the bucket when it was spoken before, else made once and kept. */
+async function getSpeak(req: IncomingMessage, res: ServerResponse, text: string | null): Promise<void> {
+  if (text === null) return json(res, 200, { available: tts !== null });
+  if (!tts) return json(res, 503, { error: 'No narrator voice here.' });
+  if (!speakable(text)) return json(res, 400, { error: 'Not a story line.' });
+  const key = speechKey(text);
+  let mp3: Buffer | null = null;
+  try {
+    const cached = await store.get(key);
+    if (cached) mp3 = Buffer.from((JSON.parse(cached) as { mp3: string }).mp3, 'base64');
+  } catch {
+    mp3 = null;
+  }
+  if (!mp3) {
+    if (!allowed('speak', req)) return json(res, 429, { error: 'Too many lines at once.' });
+    try {
+      mp3 = await tts.synthesize(text);
+    } catch (error) {
+      console.warn('[speak]', error instanceof Error ? error.message : error);
+      return json(res, 502, { error: 'The narrator could not speak just now.' });
+    }
+    await store.put(key, JSON.stringify({ storedAt: Date.now(), mp3: mp3.toString('base64') })).catch(() => undefined);
+  }
+  res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Content-Length': mp3.length, 'Cache-Control': 'public, max-age=31536000, immutable' });
+  res.end(mp3);
+}
+
 async function postCoach(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!coach) return json(res, 503, { error: 'Mo is resting.' });
   if (!allowed('coach', req)) return json(res, 429, { error: 'Too many tips.' });
@@ -384,6 +417,7 @@ const server = createServer((req, res) => {
     if (path === '/api/dream' && req.method === 'POST') return postDream(req, res);
     if (path === '/api/coach' && req.method === 'GET') return json(res, 200, { available: coach !== null, ...(llm ? { by: llm.label } : {}) });
     if (path === '/api/coach' && req.method === 'POST') return postCoach(req, res);
+    if (path === '/api/speak' && req.method === 'GET') return getSpeak(req, res, url.searchParams.get('text'));
     if (path === '/api/voice' && req.method === 'GET') return json(res, 200, { available: speech !== null });
     if (path === '/api/voice' && req.method === 'POST') return postVoice(req, res);
     if (path === '/api/stories' && req.method === 'POST') return uploadStory(req, res);

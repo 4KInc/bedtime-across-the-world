@@ -49,3 +49,12 @@ function clean(names: Partial<FamilyNames>): FamilyNames {
 export function personalise(text: string, names: FamilyNames = family.current): string {
   return text.replace(/\{(child|performer)(?:\|([^}]*))?\}/g, (_, key: keyof FamilyNames, fallback = '') => names[key] || fallback);
 }
+
+/**
+ * A dreamed story's words come from the model as plain text, which says "little
+ * one" where a library story has {child|little one}: with a name on this device,
+ * say the child's name there instead (captions and the narrator's voice).
+ */
+export function nameInDream(text: string, names: FamilyNames = family.current): string {
+  return names.child ? text.replace(/\blittle one\b/gi, names.child) : text;
+}

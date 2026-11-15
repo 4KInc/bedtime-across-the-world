@@ -26,6 +26,7 @@ let server: ChildProcess;
 const STT_PORT = PORT + 1000;
 const sttSeen: { config?: { encoding?: string; speechContexts?: { phrases: string[] }[] }; audio?: { content?: string } }[] = [];
 let stt: Server;
+const ttsSeen: { input?: { text?: string }; voice?: { name?: string } }[] = [];
 /** A stand-in for the Claude Messages API: records requests; a dog tip comes back unusable (a link). */
 const CLAUDE_PORT = PORT + 1500;
 const claudeSeen: { headers: Record<string, string | string[] | undefined>; body: { model?: string; system?: string; messages?: { content: string }[] } }[] = [];
@@ -36,6 +37,13 @@ before(async () => {
     let body = '';
     req.on('data', (c) => (body += c));
     req.on('end', () => {
+      // The same stand-in is Cloud Text-to-Speech: a few bytes of "MP3".
+      if (req.url?.includes('text:synthesize')) {
+        ttsSeen.push(JSON.parse(body));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ audioContent: Buffer.from('ID3 a spoken line').toString('base64') }));
+        return;
+      }
       sttSeen.push(JSON.parse(body));
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ results: [{ alternatives: [{ transcript: 'the bird' }] }] }));
@@ -73,6 +81,9 @@ before(async () => {
       VOICE_STT: 'google',
       STT_API: `http://127.0.0.1:${STT_PORT}`,
       STT_TOKEN_URL: '',
+      STORY_TTS: 'google',
+      TTS_API: `http://127.0.0.1:${STT_PORT}`,
+      TTS_TOKEN_URL: '',
       ANTHROPIC_API_KEY: 'test-key',
       ANTHROPIC_API: `http://127.0.0.1:${CLAUDE_PORT}`,
     },
@@ -218,6 +229,28 @@ test("a goodnight's gifts: Mo's colours and a drawing, checked", async () => {
   assert.equal(list.replies[0].drawing, drawing);
   assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'gift-2', mo: '#ff00ff' }))).status, 400);
   assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'gift-3', drawing: 'A'.repeat(9000) }))).status, 400);
+});
+
+test('speak: a dreamed line, spoken once and then from the cache; only plain story lines', async () => {
+  const c = as();
+  assert.deepEqual(await (await c.get('/api/speak')).json(), { available: true });
+  const line = 'Goodnight, Mia. The little fish swims home to sleep.';
+  const first = await c.get(`/api/speak?text=${encodeURIComponent(line)}`);
+  assert.equal(first.status, 200);
+  assert.equal(first.headers.get('content-type'), 'audio/mpeg');
+  assert.equal(Buffer.from(await first.arrayBuffer()).toString(), 'ID3 a spoken line');
+  assert.equal(ttsSeen.length, 1);
+  assert.equal(ttsSeen[0].input?.text, line);
+  assert.match(ttsSeen[0].voice?.name ?? '', /Chirp3-HD/);
+  // Again: from the cache, not spoken again.
+  const again = await as().get(`/api/speak?text=${encodeURIComponent(line)}`);
+  assert.equal(again.status, 200);
+  assert.equal(ttsSeen.length, 1);
+  // Not story lines: markup, a link, a brand, too long.
+  for (const bad of ['<script>alert(1)</script>', 'See www.example.com', 'Peppa Pig says goodnight', 'a'.repeat(300)]) {
+    assert.equal((await as().get(`/api/speak?text=${encodeURIComponent(bad)}`)).status, 400, bad);
+  }
+  assert.equal(ttsSeen.length, 1);
 });
 
 test('static files cannot escape the app folder', async () => {
