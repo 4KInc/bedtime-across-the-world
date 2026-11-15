@@ -172,37 +172,9 @@ export function startLampHum(): Hum | null {
 
 // ------------------------------------------------------------------ creature voices
 
-/** A pitch glide (for chirps, boings and bubbles). */
-function slide(f0: number, f1: number, start: number, duration: number, gain: number, type: OscillatorType, pos?: Point3, clear = false): void {
-  const a = audio();
-  if (!a) return;
-  const t0 = a.currentTime + start;
-  const osc = a.createOscillator();
-  const amp = a.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(f0, t0);
-  osc.frequency.exponentialRampToValueAtTime(f1, t0 + duration);
-  amp.gain.setValueAtTime(0, t0);
-  amp.gain.linearRampToValueAtTime(gain, t0 + 0.012);
-  amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-  osc.connect(amp).connect(output(a, pos, clear));
-  osc.start(t0);
-  osc.stop(t0 + duration + 0.05);
-}
-
 /** For tests: creature voices played, by shape. */
 export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0 };
 
-/**
- * Each creature's little voice, from its side of the wall: soft in character, a
- * bedtime voice rather than a cartoon one, but clearly heard. On a Quest 3S
- * (Nov 15, session xnhuwf56d6) 14 voices played and none was clearly heard: they
- * were short (60-200 ms), started with the wake chime, and the lullaby played
- * under them. Now they are louder and longer, come just after the chime, play
- * without HRTF filtering, and the lullaby dips while one speaks. `quiet` for the
- * occasional sounds while it is awake.
- */
-const CREATURE_LEVEL = 5;
 /** After the wake chime's first note, so the voice is not lost under it. */
 const AFTER_CHIME = 0.45;
 /** How long the lullaby dips for a creature's voice (s), and to what share. */
@@ -210,53 +182,47 @@ const DUCK_SECONDS = 1.6;
 const DUCK_LEVEL = 0.25;
 let duckUntil = 0;
 
-export function playCreature(shape: string, pos?: Point3, quiet = false): void {
-  const a = audio();
-  if (!a) return;
-  const g = (quiet ? 0.6 : 1) * CREATURE_LEVEL;
-  const d = quiet ? 0 : AFTER_CHIME;
-  const s = (f0: number, f1: number, at: number, dur: number, gain: number, type: OscillatorType) => slide(f0, f1, d + at, dur, gain * g, type, pos, true);
-  const t = (f: number, at: number, dur: number, gain: number, type: OscillatorType) => tone(f, d + at, dur, gain * g, type, pos, true);
-  switch (shape) {
-    case 'rabbit':
-    case 'ears':
-      s(520, 880, 0, 0.26, 0.07, 'sine');
-      s(600, 980, 0.3, 0.22, 0.05, 'sine');
-      break;
-    case 'fish':
-      for (let i = 0; i < 3; i++) s(380 + i * 90, 900 + i * 120, i * 0.16, 0.14, 0.05, 'sine');
-      break;
-    case 'dog':
-      s(260, 150, 0, 0.22, 0.08, 'triangle');
-      s(240, 140, 0.3, 0.2, 0.06, 'triangle');
-      break;
-    case 'bird':
-      for (let i = 0; i < 3; i++) s(1900, 2700, i * 0.18, 0.16, 0.045, 'sine');
-      break;
-    case 'cup':
-      t(2093, 0, 0.7, 0.04, 'sine');
-      t(2637, 0.1, 0.7, 0.035, 'sine');
-      t(3136, 0.2, 0.9, 0.03, 'sine');
-      break;
-    case 'snail':
-      s(300, 420, 0, 0.7, 0.05, 'sine');
-      break;
-    case 'swan':
-      s(340, 300, 0, 0.3, 0.06, 'triangle');
-      s(360, 310, 0.36, 0.26, 0.05, 'triangle');
-      break;
-    case 'deer':
-      t(820, 0, 0.12, 0.06, 'sine');
-      t(760, 0.2, 0.12, 0.05, 'sine');
-      break;
-    case 'crocodile':
-      t(120, 0, 0.14, 0.06, 'square');
-      t(95, 0.18, 0.18, 0.07, 'triangle');
-      break;
-    default:
-      return;
+/**
+ * Each creature's little voice: a short sound file (scripts/sfx/creatures.py),
+ * played like the narration, as loud as it, just after the wake chime, with the
+ * lullaby dipping under it. Synthesised live (Web Audio) they were played but
+ * not heard: on a Quest 3S (session xnhuwf56d6) 14 voices, and on a Quest 3
+ * (xhz96jhkv9) 7 with the audio context running, none heard, while the
+ * narrator's files were. Preloaded once; `quiet` for the occasional sounds while
+ * a creature is awake.
+ */
+const CREATURE_FILES: Readonly<Record<string, string>> = {
+  rabbit: 'rabbit', ears: 'rabbit', fish: 'fish', dog: 'dog', bird: 'bird', cup: 'cup',
+  snail: 'snail', swan: 'swan', deer: 'deer', crocodile: 'crocodile',
+};
+const creatureAudio = new Map<string, HTMLAudioElement>();
+
+function creatureClip(file: string): HTMLAudioElement | null {
+  if (typeof Audio === 'undefined') return null;
+  let el = creatureAudio.get(file);
+  if (!el) {
+    el = new Audio(`${import.meta.env.BASE_URL}sfx/creature-${file}.mp3`);
+    el.preload = 'auto';
+    creatureAudio.set(file, el);
   }
-  duckUntil = Math.max(duckUntil, a.currentTime + d + DUCK_SECONDS);
+  return el;
+}
+
+/** Fetch every creature's voice ahead, so the first wake is heard at once. */
+export function preloadCreatureVoices(): void {
+  for (const file of new Set(Object.values(CREATURE_FILES))) creatureClip(file);
+}
+
+export function playCreature(shape: string, _pos?: Point3, quiet = false): void {
+  const file = CREATURE_FILES[shape];
+  if (!file) return;
+  const el = creatureClip(file);
+  if (!el) return;
+  const voice = el.cloneNode(true) as HTMLAudioElement;
+  voice.volume = quiet ? 0.55 : 1;
+  window.setTimeout(() => void voice.play().catch(() => undefined), (quiet ? 0 : AFTER_CHIME) * 1000);
+  const a = ctx;
+  if (a) duckUntil = Math.max(duckUntil, a.currentTime + (quiet ? 0 : AFTER_CHIME) + DUCK_SECONDS);
   soundRuntime.creature[shape] = (soundRuntime.creature[shape] ?? 0) + 1;
 }
 
