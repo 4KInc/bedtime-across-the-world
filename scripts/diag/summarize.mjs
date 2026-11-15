@@ -83,6 +83,7 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
     const med = (k) => { const v = pairSnaps.map((r) => r[k]).sort((a, b) => a - b); return v[Math.floor(v.length / 2)]; };
     const lit = pairSnaps.filter((r) => r.pll && r.prl).length;
     console.log(`two hands in requests (${pairSnaps.length} snaps): wrist gap median ${med('pg')} m (bird < 0.28)  curl L ${med('plc')} R ${med('prc')} (bird <= 0.3)  thumb L ${med('plt')} R ${med('prt')}  both in light ${lit}/${pairSnaps.length}`);
+    if (pairSnaps.some((r) => r.plp !== undefined)) console.log(`   palms up median L ${med('plp')} R ${med('prp')} (cup when asked: hands together, both >= 0.45)`);
     if (pairSnaps.some((r) => r.pdy !== undefined)) console.log(`   height difference median ${med('pdy')} m (crocodile 0.03-0.2)  spread L ${med('pls')} R ${med('prs')} (deer >= 0.5)  fingers up L ${med('plu')} R ${med('pru')} (deer >= 0.75, crocodile ~0.5)`);
   }
   const beats = ev('beat');

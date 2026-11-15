@@ -328,7 +328,7 @@ export class DiagSystem extends createSystem({
       pg: round(pairRuntime.gap, 3), plc: round(pairRuntime.lCurl, 2), prc: round(pairRuntime.rCurl, 2),
       plt: round(pairRuntime.lThumb, 2), prt: round(pairRuntime.rThumb, 2), pll: pairRuntime.lLight, prl: pairRuntime.rLight,
       pdy: round(pairRuntime.dy, 3), pls: round(pairRuntime.lSpread, 2), prs: round(pairRuntime.rSpread, 2),
-      plu: round(pairRuntime.lUp, 2), pru: round(pairRuntime.rUp, 2),
+      plu: round(pairRuntime.lUp, 2), pru: round(pairRuntime.rUp, 2), plp: round(pairRuntime.lPalm, 2), prp: round(pairRuntime.rPalm, 2),
       lt: l.t, ls: l.shape, lsc: l.score, lsil: l.sil,
       rt: rt.t, rs: rt.shape, rsc: rt.score, rsil: rt.sil,
       ...(stage ? this.placement(stage) : {}),

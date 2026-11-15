@@ -137,7 +137,7 @@ class HandPipeline {
  */
 function twoHands(l: Frame, r: Frame, hidden: boolean, target: string): string {
   // As in the app: a requested bird gets the looser two-hand rule.
-  const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer', target === 'crocodile');
+  const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer', target === 'crocodile', target === 'cup');
   if (pair) return pair;
   return r.shape === target || l.shape === target ? target : ShapeIds.None;
 }
@@ -337,6 +337,45 @@ for (const fx of pairFixtures) {
   }
   const line = `   relaxed bird (wrists 24 cm, fingers relaxed): asked for ${asked}/${N}, strict rule ${strict}/${N}`;
   console.log(asked / N < TARGET_ACCURACY ? fail(line) : line);
+}
+// Cupped hands as real hands made them (Quest 3S, Nov 15): held together edge to edge,
+// palms up, fingers only a little bent, each hand read as a flat fish. Asked for, that is
+// a cup; not asked, it stays what it was; palms down or fists together are never a cup.
+{
+  const together: HandPose = { fingers: [{ curl: 0.22 }, { curl: 0.22 }, { curl: 0.25 }, { curl: 0.28 }], spread: 4, thumb: 'half' };
+  const fist: HandPose = { fingers: [{ curl: 1 }, { curl: 1 }, { curl: 1 }, { curl: 1 }], spread: 0, thumb: 'across' };
+  // Palms up, fingers pointing at the wall (-Z): local X to -X, Y to -Z, the palm (local -Z) to +Y.
+  const UP_R = new Vector3(-1, 0, 0);
+  const UP_U = new Vector3(0, 0, -1);
+  const UP_N = new Vector3(0, -1, 0);
+  // Palms down: the palm to -Y.
+  const DOWN_R = new Vector3(1, 0, 0);
+  const DOWN_N = new Vector3(0, 1, 0);
+  const cupCond: Condition = 'jitter 5 mm';
+  const frames = (pose: HandPose, up: boolean, target: string, s: number, salt: number) => {
+    const hand = (side: 'left' | 'right', x: number, sd: number) =>
+      toWorld(localJoints(pose, 0.85 + (s % 7) * 0.05, 1000 + s * 13 + sd * 101), side, new Vector3(x, 0, 0), up ? UP_R : DOWN_R, UP_U, up ? UP_N : DOWN_N, new Float32Array(75));
+    const rb = hand('right', 0.03, salt);
+    const lb = hand('left', -0.03, salt + 9);
+    const pr = new HandPipeline();
+    const pl = new HandPipeline();
+    return Array.from({ length: HZ * 3 }, (_, i) => {
+      const r = pr.step(track(rb, pose, 'right', cupCond, s, salt, i))!;
+      const l = pl.step(track(lb, pose, 'left', cupCond, s, salt + 9, i))!;
+      return twoHands(l, r, false, target);
+    });
+  };
+  const count = (pose: HandPose, up: boolean, target: string, salt: number) => {
+    let n = 0;
+    for (let s = 0; s < N; s++) if (triggerTime(frames(pose, up, target, s, salt), 'cup') !== null) n++;
+    return n;
+  };
+  const asked = count(together, true, 'cup', 95);
+  const notAsked = count(together, true, 'none', 95);
+  const down = count(together, false, 'cup', 96);
+  const fists = count(fist, true, 'cup', 97);
+  const line = `   cup with hands together, palms up (wrists 6 cm, fingers a little bent): asked for ${asked}/${N}, not asked ${notAsked}/${N}; palms down ${down}/${N}, fists ${fists}/${N}`;
+  console.log(asked / N < TARGET_ACCURACY || notAsked > 0 || down > 0 || fists > 0 ? fail(line) : line);
 }
 let falseTriggers = 0;
 const falseBy: Record<string, number> = {};
