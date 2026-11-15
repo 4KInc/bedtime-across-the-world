@@ -248,7 +248,7 @@ export class AutomationSystem extends createSystem({
           wallWindow: { ...wallWindowRuntime },
           lamp: { ...lampBehindRuntime, bulb: stageRuntime.bulb.toArray().map((n) => Math.round(n * 1000) / 1000) },
           gifts: { mo: giftsRuntime.mo, moFrom: giftsRuntime.moFrom, drawingFrom: giftsRuntime.drawingFrom, loaded: giftsRuntime.loaded, drawn: { ...childDrawingRuntime } },
-          lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
+          lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, gap: lanternRuntime.gap, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
           dream: { ...dreamRuntime },
