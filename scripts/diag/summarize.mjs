@@ -4,6 +4,7 @@
 //   gsutil cat 'gs://<bucket>/diag/2026-11-12/*.jsonl' | node scripts/diag/summarize.mjs -
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { transitionWindows } from './windows.mjs';
 
 function files(path) {
   if (statSync(path).isDirectory()) return readdirSync(path).flatMap((f) => files(join(path, f)));
@@ -48,8 +49,13 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   const p95 = xrSnaps.map((s) => s.p95Ms).filter((x) => x > 0);
   const worst = xrSnaps.map((s) => s.worstMs).filter((x) => x > 0);
   console.log(`fps in XR (per 5 s window): p5 ${pct(fps, 0.05)}  median ${pct(fps, 0.5)}  p95 ${pct(fps, 0.95)}   frame p95 ms: median ${pct(p95, 0.5)}  worst window ${pct(worst, 1)}`);
-  const below = fps.filter((f) => f < 60).length;
-  console.log(`windows under 60 fps: ${below}/${fps.length}   session frame rate: ${[...new Set(xrSnaps.map((s) => s.rate))].join('/') || '-'}  supported: ${(xrSnaps.at(-1)?.rates ?? []).join(',') || '-'}`);
+  // The headset's own transitions (sleep, wake, the system menu's blur) are counted on their own (windows.mjs).
+  const transitions = transitionWindows(rows);
+  const playing = xrSnaps.filter((s) => !transitions.has(s)).map((s) => s.fps).filter((x) => x > 0);
+  const during = xrSnaps.filter((s) => transitions.has(s)).map((s) => s.fps).filter((x) => x > 0);
+  const below = playing.filter((f) => f < 60).length;
+  const lowest = during.length ? Math.min(...during).toFixed(1) : '-';
+  console.log(`windows under 60 fps: ${below}/${playing.length}   system transitions (sleep, wake, menu): ${during.length} window(s), lowest ${lowest} fps   session frame rate: ${[...new Set(xrSnaps.map((s) => s.rate))].join('/') || '-'}  supported: ${(xrSnaps.at(-1)?.rates ?? []).join(',') || '-'}`);
   const rate = ev('rate')[0];
   if (rate) console.log(`requested 72 Hz: ${rate.result ?? (rate.ok ? 'granted' : 'refused')}`);
   const q = ev('quality');

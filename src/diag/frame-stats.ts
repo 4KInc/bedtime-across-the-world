@@ -53,3 +53,45 @@ export class FrameStats {
     this.head = this.count = 0;
   }
 }
+
+/**
+ * Frames during a system transition: the headset going to sleep or waking,
+ * the system menu blurring the view, the session hidden. The Quest holds the
+ * app's frames back then (a frame "taking" most of a second as it wakes), so
+ * they say nothing about how the app renders. They are counted on their own,
+ * not mixed into the frame-rate windows: from any visibility change until
+ * SETTLE_MS after the session is plainly visible again.
+ */
+export class TransitionGate {
+  private settleMs: number;
+  private until = 0;
+  private visible = true;
+  /** Frames held out since the last take(), and the longest of them (ms). */
+  frames = 0;
+  worst = 0;
+
+  constructor(settleMs = 2000) {
+    this.settleMs = settleMs;
+  }
+
+  /** The session's visibility changed at `now` (ms); `visible` when it is now plainly visible (not blurred or hidden). */
+  change(now: number, visible: boolean): void {
+    this.visible = visible;
+    this.until = now + this.settleMs;
+  }
+
+  /** True when this frame counts toward the frame-rate windows; otherwise it is tallied here. */
+  admit(now: number, ms: number): boolean {
+    if (this.visible && now >= this.until) return true;
+    this.frames++;
+    if (ms > this.worst) this.worst = ms;
+    return false;
+  }
+
+  /** The tally since the last call (for a snapshot), then cleared. */
+  take(): { frames: number; worst: number } {
+    const out = { frames: this.frames, worst: this.worst };
+    this.frames = this.worst = 0;
+    return out;
+  }
+}

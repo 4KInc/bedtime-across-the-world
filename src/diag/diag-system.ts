@@ -16,7 +16,7 @@ import { ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js'
 import { handRuntime, stageRuntime } from '../stage-runtime.js';
 import { coachRuntime } from '../mo-coach.js';
 import { dreamRuntime } from '../settings.js';
-import { FrameStats } from './frame-stats.js';
+import { FrameStats, TransitionGate } from './frame-stats.js';
 import { shadowMapSize } from '../quality-levels.js';
 import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
@@ -73,6 +73,8 @@ export class DiagSystem extends createSystem({
   meshes: { required: [XRMesh] },
 }) {
   private stats = new FrameStats(5000);
+  /** Frames while the headset sleeps, wakes or blurs the view: tallied apart from the frame-rate windows. */
+  private transition = new TransitionGate(2000);
   private read = { avg: 0, p95: 0, worst: 0, fps: 0, frames: 0 };
   private session = newSessionId();
   private device = deviceClass();
@@ -143,8 +145,16 @@ export class DiagSystem extends createSystem({
       () => window.removeEventListener('unhandledrejection', onRejection),
       () => document.removeEventListener('visibilitychange', onHide),
       this.world.visibilityState.subscribe((state) => {
+        const before = this.visibility;
         this.visibility = state;
         if (state !== VisibilityState.NonImmersive && !this.xrAt) this.xrAt = performance.now();
+        if (state !== VisibilityState.NonImmersive) {
+          // A fresh window in the headset: frames from before (the 2D page, asleep, the system's view) are not this.
+          this.stats.reset();
+          // Entering XR is the app's own work (placing the stage, first draws): it counts. A change while
+          // in XR (sleep, wake, the system menu's blur) is the headset's: held out until it settles.
+          if (before !== VisibilityState.NonImmersive) this.transition.change(performance.now(), state === VisibilityState.Visible);
+        }
         this.event({ e: 'vis', state });
       }),
       () => {
@@ -162,9 +172,9 @@ export class DiagSystem extends createSystem({
       this.rateReported = true;
       this.event({ e: 'rate', requested: 72, result: stageRuntime.frameRateRequest });
     }
-    this.stats.push(delta * 1000);
-    this.watchLamp();
     const now = performance.now();
+    if (this.visibility === VisibilityState.NonImmersive || this.transition.admit(now, delta * 1000)) this.stats.push(delta * 1000);
+    this.watchLamp();
     this.watch(now);
     if (now - this.lastOverlay >= OVERLAY_MS) {
       this.lastOverlay = now;
@@ -330,6 +340,7 @@ export class DiagSystem extends createSystem({
 
   private snapshot(): Item {
     const r = this.stats.read(this.read);
+    const held = this.transition.take();
     const stage = this.queries.stages.entities.values().next().value;
     const story = this.queries.stories.entities.values().next().value;
     const session = this.world.xrSession as (XRSession & { frameRate?: number; supportedFrameRates?: Float32Array }) | null;
@@ -350,6 +361,8 @@ export class DiagSystem extends createSystem({
       avgMs: round(r.avg, 2),
       p95Ms: round(r.p95, 2),
       worstMs: round(r.worst, 2),
+      // Frames held out of the window as a system transition (sleep, wake, blur), and the longest of them.
+      ...(held.frames ? { transFrames: held.frames, transWorstMs: round(held.worst, 2) } : {}),
       quality,
       shadowMap: shadowMapSize(quality),
       // Two hands: wrist gap (m), finger curl and thumb bend each side, and whether each is in the light.
