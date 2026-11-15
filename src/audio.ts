@@ -1,5 +1,5 @@
 import { createSystem, Vector3, VisibilityState } from '@iwsdk/core';
-import { audioRunning, Hum, Lullaby, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
+import { audioRunning, Hum, Lullaby, preloadCreatureVoices, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
 import { LiveSession, PerformanceRecorder, Settings, Stage, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
 
@@ -28,6 +28,11 @@ export class AudioSystem extends createSystem({
   private hum: Hum | null = null;
   private lullaby: Lullaby | null = null;
   private retry = 0;
+
+  init(): void {
+    // The creatures' voices are small files: fetch them now, so the first wake is heard at once.
+    preloadCreatureVoices();
+  }
 
   update(delta: number): void {
     if (!audioRunning()) {

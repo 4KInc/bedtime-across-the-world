@@ -19,7 +19,17 @@ const check = (name, ok, detail = {}) => {
 };
 const errors = [];
 const browser = await chromium.launch({ args: [...RENDER, '--ignore-certificate-errors', '--autoplay-policy=no-user-gesture-required'] });
-const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true })).newPage();
+const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true });
+// Which sound files actually start playing (creature voices are files, like the narration).
+await context.addInitScript(() => {
+  window.__played = [];
+  const orig = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    window.__played.push(this.src);
+    return orig.call(this);
+  };
+});
+const page = await context.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
 const sound = () => page.evaluate(() => __sp.view().sound);
 await page.goto(APP + '/', { waitUntil: 'load' });
@@ -42,7 +52,9 @@ check('the lullaby plays (notes keep coming), ducked under the narrator', later.
 
 // The bird wakes: its voice.
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId') === 'stars-bird-carry', null, { timeout: 90000 });
-check('the bird has its own voice when it wakes', ((await sound()).creature.bird ?? 0) >= 1, (await sound()).creature);
+await sleep(800);
+const birdFile = await page.evaluate(() => window.__played.some((src) => src.includes('sfx/creature-bird.mp3')));
+check('the bird has its own voice when it wakes, played as a sound file like the narration', ((await sound()).creature.bird ?? 0) >= 1 && birdFile, { ...(await sound()).creature, birdFile });
 
 // Paused (journal open): half as loud.
 await page.evaluate(() => __sp.set('ShadowJournal', 'open', true));
