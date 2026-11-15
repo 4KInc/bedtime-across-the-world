@@ -18,7 +18,7 @@
  * sessions, the recognition lab) and use this to catch regressions.
  */
 import { Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures } from '../../src/hand-features';
+import { acceptScore, classify, computeFeatures, rescuesRequested } from '../../src/hand-features';
 import { FIXTURES, HandPose, localJoints, toWorld } from '../../src/hand-poses';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, requested, stepHold } from '../../src/recognition-rules';
 import { ShapeIds } from '../../src/shadowplay-components';
@@ -96,18 +96,34 @@ function track(base: Float32Array, pose: HandPose, side: 'left' | 'right', cond:
   return out;
 }
 
-function shapeOf(joints: Float32Array, tolerance = TOLERANCE): { shape: string; best: string; curl: number; features: Float32Array } {
+/** The tolerance the pipeline uses (the player's Normal setting; section 7 raises it like the story's assist). */
+let tolerance = TOLERANCE;
+/** The story's extra tolerance for the pair rules (section 7). */
+let pairAssist = 0;
+
+function shapeOf(joints: Float32Array, tol = tolerance): { shape: string; best: string; score: number; curl: number; features: Float32Array } {
   const f = new Float32Array(9);
   computeFeatures(joints, f);
   const r = classify(f, { id: ShapeIds.None, score: 0 });
-  const shape = r.score >= acceptScore(r.id, tolerance) ? r.id : ShapeIds.None;
-  return { shape, best: r.id, curl: (f[1] + f[2] + f[3] + f[4]) / 4, features: f };
+  const shape = r.score >= acceptScore(r.id, tol) ? r.id : ShapeIds.None;
+  return { shape, best: r.id, score: r.score, curl: (f[1] + f[2] + f[3] + f[4]) / 4, features: f };
+}
+
+type Frame = { shape: string; best: string; score: number; curl: number; features: Float32Array; joints: Float32Array };
+
+/** What a request for `target` accepts from one hand's frame, as in the app: its shape, or the requested shape when it is close enough. */
+function acceptedFor(frame: Frame | string | null, target: string): string {
+  if (frame === null) return ShapeIds.None;
+  if (typeof frame === 'string') return requested(frame, target, ShapeIds.None, ShapeIds.None, ShapeIds.None, false, false);
+  const own = requested(frame.shape, target, ShapeIds.None, ShapeIds.None, ShapeIds.None, false, false);
+  if (own !== ShapeIds.None) return own;
+  return rescuesRequested(frame.features, { id: frame.best as never, score: frame.score }, target, tolerance, pairAssist) ? target : ShapeIds.None;
 }
 
 /** The app's per-hand pipeline: smooth the tracked joints, then classify (null while untracked). */
 class HandPipeline {
   private smoother = new JointSmoother();
-  step(raw: Float32Array | null): { shape: string; best: string; curl: number; features: Float32Array; joints: Float32Array } | null {
+  step(raw: Float32Array | null): Frame | null {
     const joints = this.smoother.update(raw);
     if (!joints) return null;
     return { ...shapeOf(joints), joints: new Float32Array(joints) };
@@ -119,9 +135,9 @@ class HandPipeline {
  * make one, otherwise each hand's own shape (a single cupped hand also answers
  * "cup your hands").
  */
-function twoHands(l: { shape: string; best: string; curl: number; features: Float32Array; joints: Float32Array }, r: typeof l, hidden: boolean, target: string): string {
+function twoHands(l: Frame, r: Frame, hidden: boolean, target: string): string {
   // As in the app: a requested bird gets the looser two-hand rule.
-  const pair = classifyPair(l, r, hidden, target === 'bird');
+  const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer');
   if (pair) return pair;
   return r.shape === target || l.shape === target ? target : ShapeIds.None;
 }
@@ -181,12 +197,13 @@ for (const fx of negatives) {
       const base = person(fx.right!, 'right', s, FIXTURES.indexOf(fx));
       const p = new HandPipeline();
       for (let i = 0; i < HZ; i++) {
-        const { shape } = p.step(track(base, fx.right!, 'right', cond, s, FIXTURES.indexOf(fx), i))!;
+        const frame = p.step(track(base, fx.right!, 'right', cond, s, FIXTURES.indexOf(fx), i))!;
+        const shape = frame.shape;
         if (i < HZ / 5) continue;
         negFrames++;
         negShapes[shape] = (negShapes[shape] ?? 0) + 1;
         for (const target of STORY_SHAPES) {
-          if (requested(shape, target, ShapeIds.None, ShapeIds.None, ShapeIds.None, false, false) !== ShapeIds.None) {
+          if (acceptedFor(frame, target) !== ShapeIds.None) {
             negHits[target] = (negHits[target] ?? 0) + 1;
           }
         }
@@ -235,12 +252,12 @@ const dropped = (i: number) => {
 };
 
 /** When the request first triggers in a 3 s sequence of accepted-shape frames (null if never). */
-function triggerTime(shapes: string[], target: string): number | null {
+function triggerTime(shapes: (Frame | string | null)[], target: string): number | null {
   const state: HoldState = { candidate: ShapeIds.None, sinceMatch: 0 };
   let held = 0;
   const dt = 1 / HZ;
   for (let i = 0; i < shapes.length; i++) {
-    const accepted = requested(shapes[i], target, ShapeIds.None, ShapeIds.None, ShapeIds.None, false, false);
+    const accepted = acceptedFor(shapes[i], target);
     held = stepHold(state, held, accepted, dt);
     if (held >= HOLD) return i * dt;
   }
@@ -248,9 +265,9 @@ function triggerTime(shapes: string[], target: string): number | null {
 }
 
 /** 3 s of one hand through the pipeline, with dropouts. */
-function oneHandFrames(base: Float32Array, pose: HandPose, cond: Condition, s: number, salt: number): string[] {
+function oneHandFrames(base: Float32Array, pose: HandPose, cond: Condition, s: number, salt: number): (Frame | null)[] {
   const p = new HandPipeline();
-  return Array.from({ length: HZ * 3 }, (_, i) => (dropped(i) ? (p.step(null), ShapeIds.None) : p.step(track(base, pose, 'right', cond, s, salt, i))!.shape));
+  return Array.from({ length: HZ * 3 }, (_, i) => (dropped(i) ? (p.step(null), null) : p.step(track(base, pose, 'right', cond, s, salt, i))!));
 }
 
 /** 3 s of two hands through the pipeline, with dropouts (both hands drop together). */
@@ -354,6 +371,65 @@ for (const fx of negatives) {
 }
 const ftLine = `   negatives: ${falseTriggers} false triggers over ${negatives.length * N * 2} sequences x their requests${falseTriggers ? ' ' + JSON.stringify(falseBy) : ''}`;
 console.log(falseTriggers ? fail(ftLine) : ftLine);
+
+// ---------------------------------------------------------------- 7. real-hand variations
+
+/**
+ * Real hands are not the drawn poses: fingers rest a little bent (or a curled
+ * finger opens), the hand tilts, fingers spread differently, two hands sit
+ * further apart. Each story shape, varied like that, over time (jitter +
+ * occlusion + dropouts), at the player's Normal tolerance and at the story's
+ * assist levels (20 s and 40 s waits). Report only; see the targets below.
+ */
+type Variant = { name: string; pose: (p: HandPose) => HandPose; apart?: number };
+const relax = (p: HandPose): HandPose => ({
+  ...p,
+  fingers: p.fingers.map((x) => ({ curl: x.curl < 0.2 ? x.curl + 0.15 : x.curl > 0.8 ? x.curl - 0.2 : x.curl })) as HandPose['fingers'],
+});
+const VARIANTS: Variant[] = [
+  { name: 'as drawn', pose: (p) => p },
+  { name: 'relaxed', pose: relax },
+  { name: 'tilted +25', pose: (p) => ({ ...p, roll: (p.roll ?? 0) + 25 }) },
+  { name: 'tilted -25', pose: (p) => ({ ...p, roll: (p.roll ?? 0) - 25 }) },
+  { name: 'spread +8', pose: (p) => ({ ...p, spread: (p.spread ?? 0) + 8 }) },
+  { name: 'relaxed + tilted', pose: (p) => relax({ ...p, roll: (p.roll ?? 0) + 20 }) },
+  { name: 'apart +6 cm', pose: (p) => p, apart: 0.03 },
+];
+const LEVELS: [string, number, number][] = [['Normal', TOLERANCE, 0], ['20 s', TOLERANCE + 0.1, 0.1], ['40 s', TOLERANCE + 0.2, 0.2]];
+const NV = 20;
+console.log(`\n7. Real-hand variations (triggers within ${TRIGGER_WITHIN} s, of ${NV}; Normal / after 20 s / after 40 s):`);
+const realRows: { shape: string; variant: string; rates: number[] }[] = [];
+for (const fx of [...oneHand.filter((f) => STORY_SHAPES.includes(f.label)).map((f) => ({ label: f.label, right: f.right!, left: null as HandPose | null, rightAt: [0, 0] as [number, number], leftAt: [0, 0] as [number, number] })), ...pairFixtures]) {
+  for (const v of VARIANTS) {
+    if (v.apart && !fx.left) continue;
+    const rates = LEVELS.map(([, tol, assist]) => {
+      tolerance = tol;
+      pairAssist = assist;
+      let ok = 0;
+      for (let s = 0; s < NV; s++) {
+        const salt = 200 + VARIANTS.indexOf(v) * 7;
+        const rp = v.pose(fx.right);
+        let frames: (Frame | string | null)[];
+        if (fx.left) {
+          const lp = v.pose(fx.left);
+          const ra: [number, number] = [fx.rightAt[0] + (v.apart ?? 0), fx.rightAt[1]];
+          const la: [number, number] = [fx.leftAt[0] - (v.apart ?? 0), fx.leftAt[1]];
+          frames = pairFrames(person(rp, 'right', s, salt, ra), rp, ra, person(lp, 'left', s, salt + 9, la), lp, la, cond, s, salt, isHiddenPair(fx.label), fx.label);
+        } else frames = oneHandFrames(person(rp, 'right', s, salt), rp, cond, s, salt);
+        const t = triggerTime(frames, fx.label);
+        if (t !== null && t <= TRIGGER_WITHIN) ok++;
+      }
+      return ok / NV;
+    });
+    realRows.push({ shape: `${fx.label}${fx.left ? ' (pair)' : ''}`, variant: v.name, rates });
+  }
+}
+tolerance = TOLERANCE;
+pairAssist = 0;
+for (const r of realRows) {
+  const cells = r.rates.map((x) => `${Math.round(x * 100)}%`.padStart(7)).join('');
+  console.log(`   ${r.shape.padEnd(18)}${r.variant.padEnd(18)}${cells}${r.rates[2] < 0.9 ? '   <-- weak even after 40 s' : r.rates[0] < 0.75 ? '   <-- weak at Normal' : ''}`);
+}
 
 // ---------------------------------------------------------------- 5. the gate
 

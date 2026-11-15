@@ -207,3 +207,42 @@ export function acceptScore(id: string, tolerance: number): number {
   // (0.88 at Normal); the tolerance setting and the assist ladder still loosen it.
   return id === ShapeIds.Cup ? 1 - tolerance * 0.4 : 1 - tolerance;
 }
+
+/**
+ * Real hands sit between shapes: a relaxed fish scores a little closer to the
+ * swan, a tilted snail to the rabbit. When a story asks for a shape, what
+ * matters is whether the hand is close enough to that shape, not whether
+ * another one fits slightly better: the requested shape counts when its own
+ * score passes its threshold and trails the best match by no more than this
+ * margin, which the story's assist widens (0.05, then 0.10 after 20 s, 0.15
+ * after 40 s).
+ */
+export const REQUEST_MARGIN = 0.05;
+
+/**
+ * Only between shapes real hands slide between: the flat hands (fish, swan,
+ * dog) and the fist-with-two-fingers ones (rabbit, ears, snail); and a flat
+ * shape from the resting-hand template only when the fingers are straighter
+ * than a resting hand's. The cup is left strict (a resting hand is close to a cup).
+ */
+const NEIGHBOURS: Readonly<Record<string, readonly string[]>> = {
+  [ShapeIds.Fish]: [ShapeIds.Swan, ShapeIds.Dog],
+  [ShapeIds.Swan]: [ShapeIds.Fish, ShapeIds.Dog],
+  [ShapeIds.Dog]: [ShapeIds.Fish, ShapeIds.Swan],
+  [ShapeIds.Snail]: [ShapeIds.Rabbit, ShapeIds.Ears],
+  [ShapeIds.Rabbit]: [ShapeIds.Snail, ShapeIds.Ears],
+  [ShapeIds.Ears]: [ShapeIds.Rabbit, ShapeIds.Snail],
+};
+
+/** Flat-hand shapes: a relaxed one can lose to the resting-hand template, but its fingers are straighter than a resting hand's (~0.3). */
+const FLAT = new Set<string>([ShapeIds.Fish, ShapeIds.Swan, ShapeIds.Dog]);
+const FLATTER_THAN_REST = 0.26;
+
+export function rescuesRequested(features: Float32Array, best: MatchResult, target: string, tolerance: number, assist: number): boolean {
+  if (target === ShapeIds.None || target === best.id) return false;
+  // The story's assist lets a little more bend through (after 60 s any still hand counts anyway).
+  const fromRest = best.id === ShapeIds.None && FLAT.has(target) && (features[1] + features[2] + features[3] + features[4]) / 4 <= FLATTER_THAN_REST + assist * 0.3;
+  if (!fromRest && !NEIGHBOURS[target]?.includes(best.id)) return false;
+  const score = templateScore(features, target);
+  return score >= acceptScore(target, tolerance) && score >= best.score - (REQUEST_MARGIN + assist * 0.5);
+}

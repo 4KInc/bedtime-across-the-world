@@ -35,6 +35,11 @@ const OWN_PINCH_MIN = 0.04;
 const THUMB_TIP = 4;
 const INDEX_TIP = 9;
 
+function antlerThumb(h: PairHand): boolean {
+  const t = h.features[0];
+  return t <= PAIR_MAX_THUMB || (t <= DEER_MAX_THUMB && ownPinch(h) >= OWN_PINCH_MIN);
+}
+
 function ownPinch(h: PairHand): number {
   const t = THUMB_TIP * 3;
   const i = INDEX_TIP * 3;
@@ -48,6 +53,14 @@ const BIRD_ASSIST_TOLERANCE = 0.2;
 const DEER_WRIST_GAP = 0.4;
 const DEER_MIN_UP = 0.75;
 const DEER_MIN_SPREAD = 0.5;
+/**
+ * Real antlers are rarely rigid: fingers a little bent, the thumb wherever it
+ * falls, the hands tilted. Fingers up and spread is what makes a deer (and
+ * keeps resting hands out), so the curl and thumb get more room, and the
+ * story's assist relaxes how upright the fingers must be.
+ */
+const DEER_MAX_CURL = 0.32;
+const DEER_MAX_THUMB = 0.5;
 /** Crocodile: flat hands stacked, one wrist above the other. */
 const CROC_MIN_DY = 0.03;
 const CROC_MAX_DY = 0.2;
@@ -114,10 +127,11 @@ export interface PairHand {
  * Two-hand shapes, both hands in the light. Most specific first: deer (open,
  * fingers up and spread), crocodile (flat hands stacked), bird (open, wrists
  * side by side), cup (both cupped, side by side). Deer and crocodile only when
- * `hidden` (Free Stage, or a story that asks for one). `birdWanted`: a bird is
- * asked for (more room for real hands); `assist`: the story's extra tolerance.
+ * `hidden` (Free Stage, or a story that asks for one). `birdWanted` /
+ * `deerWanted`: that shape is asked for (more room for real hands); `assist`:
+ * the story's extra tolerance.
  */
-export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWanted = false, assist = 0): string | null {
+export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWanted = false, assist = 0, deerWanted = false): string | null {
   const dx = l.joints[0] - r.joints[0];
   const dy = l.joints[1] - r.joints[1];
   const dz = l.joints[2] - r.joints[2];
@@ -126,12 +140,16 @@ export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWant
   const lf = l.features;
   const rf = r.features;
   const open = l.curl <= BIRD_MAX_CURL && r.curl <= BIRD_MAX_CURL && lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB;
+  // A bent thumb is fine unless it touches its own index tip (an OK sign, not an antler hand).
+  const antlers = l.curl <= DEER_MAX_CURL && r.curl <= DEER_MAX_CURL && antlerThumb(l) && antlerThumb(r);
+  // Only when a deer is asked for, so a crocodile's level hands never become antlers.
+  const up = DEER_MIN_UP - (deerWanted ? assist : 0);
   if (
     hidden &&
-    open &&
+    antlers &&
     gap < DEER_WRIST_GAP &&
-    lf[8] >= DEER_MIN_UP &&
-    rf[8] >= DEER_MIN_UP &&
+    lf[8] >= up &&
+    rf[8] >= up &&
     lf[5] >= DEER_MIN_SPREAD &&
     rf[5] >= DEER_MIN_SPREAD
   ) {
