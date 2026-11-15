@@ -94,6 +94,30 @@ const DEER_MIN_SPREAD = 0.5;
  */
 const DEER_MAX_CURL = 0.32;
 const DEER_MAX_THUMB = 0.5;
+/**
+ * When a deer is asked for, antlers of two raised fingers count too once the
+ * story's first assist starts (15 s): on a Quest 3S (Nov 15, session xnhuwf56d6)
+ * antlers were made with the index and middle up and the others folded, which
+ * reads as a rabbit, so the deer never woke. Not at once: a pointing hand whose
+ * hidden middle finger tracking holds half bent reads the same, and the ghost
+ * hand shows the open antlers first. Each hand still needs both fingers up.
+ */
+const DEER_TWO_FINGER_ASSIST = 0.1;
+const DEER_TWO_FINGERS = 0.4;
+
+/** The ring and little fingers folded (a resting hand curls them only ~0.3). */
+const DEER_FOLDED = 0.6;
+
+/** Index and middle straight, ring and little finger folded, the thumb not on the index tip (an OK sign is not an antler). */
+function twoFingerAntler(h: PairHand): boolean {
+  const f = h.features;
+  return (
+    f[1] <= DEER_TWO_FINGERS &&
+    f[2] <= DEER_TWO_FINGERS &&
+    (f[3] + f[4]) / 2 >= DEER_FOLDED &&
+    ownPinch(h) >= OWN_PINCH_MIN
+  );
+}
 /** Crocodile: flat hands stacked, one wrist above the other. */
 const CROC_MIN_DY = 0.03;
 const CROC_MAX_DY = 0.2;
@@ -183,7 +207,9 @@ export function classifyPair(
   const rf = r.features;
   const open = l.curl <= BIRD_MAX_CURL && r.curl <= BIRD_MAX_CURL && lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB;
   // A bent thumb is fine unless it touches its own index tip (an OK sign, not an antler hand).
-  const antlers = l.curl <= DEER_MAX_CURL && r.curl <= DEER_MAX_CURL && antlerThumb(l) && antlerThumb(r);
+  const antlers =
+    (l.curl <= DEER_MAX_CURL && r.curl <= DEER_MAX_CURL && antlerThumb(l) && antlerThumb(r)) ||
+    (deerWanted && assist >= DEER_TWO_FINGER_ASSIST && twoFingerAntler(l) && twoFingerAntler(r));
   // Only when a deer is asked for, so a crocodile's level hands never become antlers.
   // When asked for, the assist also lets fingers held together count (Quest 3, Nov 15: antlers made flat).
   const up = DEER_MIN_UP - (deerWanted ? assist : 0);

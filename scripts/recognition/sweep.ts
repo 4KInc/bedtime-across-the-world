@@ -338,6 +338,33 @@ for (const fx of pairFixtures) {
   const line = `   relaxed bird (wrists 24 cm, fingers relaxed): asked for ${asked}/${N}, strict rule ${strict}/${N}`;
   console.log(asked / N < TARGET_ACCURACY ? fail(line) : line);
 }
+// Antlers as real hands made them (Quest 3S, Nov 15): index and middle up and spread, the
+// others folded (each hand reads as a rabbit). Asked for, after the story's first assist
+// (15 s), that is a deer; not before, not in Free Stage, and not when a rabbit is asked for
+// (the rabbit request still gets its rabbit).
+{
+  const vee: HandPose = { fingers: [{ curl: 0.08 }, { curl: 0.08 }, { curl: 0.95 }, { curl: 0.95 }], spread: 25, thumb: { touch: 19 } };
+  const at: [[number, number], [number, number]] = [[0.13, 0], [-0.13, 0]];
+  const run = (target: string, hidden: boolean, want: string, assist = 0.1) => {
+    pairAssist = assist;
+    let n = 0;
+    for (let s = 0; s < N; s++) {
+      const salt = 98;
+      const rb = person(vee, 'right', s, salt, at[0]);
+      const lb = person(vee, 'left', s, salt + 9, at[1]);
+      if (triggerTime(pairFrames(rb, vee, at[0], lb, vee, at[1], cond, s, salt, hidden, target), want) !== null) n++;
+    }
+    return n;
+  };
+  const before = run('deer', true, 'deer', 0);
+  const asked = run('deer', true, 'deer');
+  const free = run('none', true, 'deer');
+  const rabbit = run('rabbit', false, 'deer');
+  const stillRabbit = run('rabbit', false, 'rabbit');
+  pairAssist = 0;
+  const line = `   two-finger antlers (index + middle up, wrists 26 cm): deer asked, after 15 s ${asked}/${N} (at once ${before}/${N}); deer in Free Stage ${free}/${N}, when a rabbit is asked ${rabbit}/${N} (rabbit still ${stillRabbit}/${N})`;
+  console.log(asked / N < TARGET_ACCURACY || free > 0 || rabbit > 0 || stillRabbit / N < TARGET_ACCURACY ? fail(line) : line);
+}
 // Cupped hands as real hands made them (Quest 3S, Nov 15): held together edge to edge,
 // palms up, fingers only a little bent, each hand read as a flat fish. Asked for, that is
 // a cup; not asked, it stays what it was; palms down or fists together are never a cup.
