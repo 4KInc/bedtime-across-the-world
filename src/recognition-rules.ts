@@ -127,6 +127,10 @@ const CROC_MAX_SIDEWAYS = 0.12;
  * is too noisy to use; stacked and level is what makes it a crocodile).
  */
 const CROC_MAX_CURL = 0.3;
+/** A crocodile asked for: curled jaws (a fist is ~0.9), stacked up to this far, this far apart sideways. */
+const CROC_WANTED_CURL = 0.65;
+const CROC_WANTED_DY = 0.25;
+const CROC_WANTED_SIDEWAYS = 0.25;
 /** Jaws point sideways: finger direction roughly level (0.5 = level, 1 = up). */
 const CROC_LEVEL = 0.25;
 
@@ -240,6 +244,20 @@ export function classifyPair(
     sideways <= CROC_MAX_SIDEWAYS + ca &&
     Math.abs(lf[8] - 0.5) <= CROC_LEVEL + ca &&
     Math.abs(rf[8] - 0.5) <= CROC_LEVEL + ca
+  ) {
+    return ShapeIds.Crocodile;
+  }
+  // A crocodile asked for, as people make it (Quest 3, Nov 15: jaws of curled fingers, curl
+  // ~0.5, often held open, one hand up and one down): two hands stacked one above the other,
+  // close, not fists.
+  if (
+    crocWanted &&
+    l.curl <= CROC_WANTED_CURL &&
+    r.curl <= CROC_WANTED_CURL &&
+    Math.abs(dy) >= CROC_MIN_DY &&
+    Math.abs(dy) <= CROC_WANTED_DY &&
+    sideways <= CROC_WANTED_SIDEWAYS &&
+    sideways < Math.abs(dy) * 1.6
   ) {
     return ShapeIds.Crocodile;
   }

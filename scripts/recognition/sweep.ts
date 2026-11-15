@@ -404,6 +404,30 @@ for (const fx of pairFixtures) {
   const line = `   cup with hands together, palms up (wrists 6 cm, fingers a little bent): asked for ${asked}/${N}, not asked ${notAsked}/${N}; palms down ${down}/${N}, fists ${fists}/${N}`;
   console.log(asked / N < TARGET_ACCURACY || notAsked > 0 || down > 0 || fists > 0 ? fail(line) : line);
 }
+// A real-hands crocodile (Quest 3, Nov 15): jaws of curled fingers, stacked about 15 cm with
+// the hands a little apart sideways. Counts when a crocodile is asked for, and is never taken
+// for a bird or a deer (two curled hands together may answer "cup your hands", as they should).
+{
+  const croc = FIXTURES.find((fx) => fx.label === 'crocodile')!;
+  const curled = (p: HandPose): HandPose => ({ ...p, fingers: p.fingers.map(() => ({ curl: 0.5 })) as HandPose['fingers'] });
+  const rp = curled(croc.right!);
+  const lp = curled(croc.left!);
+  const ra: [number, number] = [0.07, 0.075];
+  const la: [number, number] = [-0.07, -0.075];
+  let asked = 0;
+  let other = 0;
+  for (let s = 0; s < N; s++) {
+    const salt = 95;
+    const rb = person(rp, 'right', s, salt, ra);
+    const lb = person(lp, 'left', s, salt + 9, la);
+    if (triggerTime(pairFrames(rb, rp, ra, lb, lp, la, cond, s, salt, true, 'crocodile'), 'crocodile') !== null) asked++;
+    for (const target of ['bird', 'deer']) {
+      if (triggerTime(pairFrames(rb, rp, ra, lb, lp, la, cond, s, salt, true, target), target) !== null) other++;
+    }
+  }
+  const line = `   curled crocodile (stacked 15 cm, 14 cm apart sideways): asked for ${asked}/${N}, read as a bird or deer ${other}/${N * 2}`;
+  console.log(asked / N < TARGET_ACCURACY || other > 0 ? fail(line) : line);
+}
 let falseTriggers = 0;
 const falseBy: Record<string, number> = {};
 for (const fx of negatives) {
