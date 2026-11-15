@@ -87,6 +87,8 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   }
   const beats = ev('beat');
   console.log(`story: ${beats.length} beats, ${[...new Set(beats.map((b) => b.script))].join(', ') || '-'}; last ${beats.at(-1)?.beat ?? '-'}`);
+  const audio = ev('audio');
+  console.log(`sound effects: ${audio.length ? audio.map((a) => a.state).filter((v, i, all) => v !== all[i - 1]).join(' > ') : 'not recorded'}   creature voices: ${audio.at(-1)?.voices ?? '-'}`);
   console.log(`visibility: ${ev('vis').map((v) => v.state).join(' > ') || '-'}   page: ${ev('page').map((v) => v.state).join(' > ') || '-'}`);
   const errors = ev('error');
   console.log(`errors: ${errors.length}`);

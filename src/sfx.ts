@@ -39,13 +39,26 @@ export function audioRunning(): boolean {
   return ctx?.state === 'running';
 }
 
+/** The audio context's state for diagnostics: 'none' before it exists, then suspended, running or closed. */
+export function audioState(): string {
+  return ctx?.state ?? 'none';
+}
+
+/**
+ * Placed sounds keep their full level out to this distance (m) and only then
+ * fall off. The stage is on a wall 1.5 to 3.5 m away, so with the usual 0.6 m a
+ * creature's voice came out at a fifth of its level, under the lullaby (Quest 3S,
+ * Nov 15: a wall 3.3 m away, no creature heard). Direction still comes from the HRTF.
+ */
+const PLACED_FULL_LEVEL = 3;
+
 /** Where a sound goes: an HRTF panner at `pos`, or straight out when unplaced. */
 function output(a: AudioContext, pos?: Point3): AudioNode {
   if (!pos) return a.destination;
   const panner = a.createPanner();
   panner.panningModel = 'HRTF';
   panner.distanceModel = 'inverse';
-  panner.refDistance = 0.6;
+  panner.refDistance = PLACED_FULL_LEVEL;
   panner.rolloffFactor = 1;
   panner.positionX.value = pos.x;
   panner.positionY.value = pos.y;
@@ -180,11 +193,12 @@ export const soundRuntime = { creature: {} as Record<string, number>, lullabyNot
 
 /**
  * Each creature's little voice, from where it is on the wall: soft and short,
- * a bedtime voice rather than a cartoon one. `quiet` for the occasional sounds
- * while it is awake.
+ * a bedtime voice rather than a cartoon one, but clearly above the lullaby
+ * (its notes peak near 0.045). `quiet` for the occasional sounds while it is awake.
  */
+const CREATURE_LEVEL = 2.5;
 export function playCreature(shape: string, pos?: Point3, quiet = false): void {
-  const g = quiet ? 0.5 : 1;
+  const g = (quiet ? 0.6 : 1) * CREATURE_LEVEL;
   switch (shape) {
     case 'rabbit':
     case 'ears':
@@ -199,7 +213,7 @@ export function playCreature(shape: string, pos?: Point3, quiet = false): void {
       slide(240, 140, 0.22, 0.14, 0.06 * g, 'triangle', pos);
       break;
     case 'bird':
-      for (let i = 0; i < 3; i++) slide(1900, 2700, i * 0.09, 0.07, 0.045 * g, 'sine', pos);
+      for (let i = 0; i < 3; i++) slide(1900, 2700, i * 0.14, 0.12, 0.045 * g, 'sine', pos);
       break;
     case 'cup':
       tone(2093, 0, 0.6, 0.04 * g, 'sine', pos);
