@@ -5,7 +5,7 @@
 // told to the end: every shape, the carries, cupping the falling star and
 // opening the hands to let it go (with flat hands, fingers together).
 //
-//   node scripts/sim/comfortable-hands.mjs [--gpu]
+//   node scripts/sim/comfortable-hands.mjs [--gpu] [--only story-id ...]
 // Needs the dev server (npm run dev) on https://localhost:8082.
 import { chromium } from 'playwright';
 
@@ -32,8 +32,11 @@ await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__s
 const STORIES = [
   ['counting-stars', 'stars'], ['the-night-garden', 'garden'], ['the-kind-crocodile', 'kind'],
   ['the-slow-letter', 'letter'], ['the-brave-little-dog', 'brave'], ['the-little-rainstorm', 'rain'],
+  ['across-the-sea', 'sea'],
 ];
-for (const [file, prefix] of STORIES) {
+// --only <story> [story...]: just those.
+const only = process.argv.includes('--only') ? process.argv.slice(process.argv.indexOf('--only') + 1).filter((a) => !a.startsWith('--')) : null;
+for (const [file, prefix] of STORIES.filter(([f]) => !only || only.includes(f))) {
   await page.evaluate((f) => {
     __sp.set('DemoDirector', 'playing', false);
     __sp.set('StoryState', 'script', `story/${f}.story.json`);

@@ -23,7 +23,7 @@ test('every library story: its file, unique beat ids across the library, and an 
 });
 
 test('the newer stories pass the content checks (no brands, Mo is "she", the right hand poses)', () => {
-  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy']) {
+  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy', 'sleepy-dinosaur', 'lost-spaceship']) {
     const story = read(library.find((s) => s.id === id).script);
     for (const b of story.beats) {
       if (b.type === 'request') assert.ok(SHAPES.has(b.shape) && (!b.alt || SHAPES.has(b.alt)), `${b.id} shape`);
@@ -53,11 +53,35 @@ test('story worlds: every story is in a known world, none is labelled for boys o
   assert.equal(library.find((s) => s.id === 'counting-stars').world, 'nature');
   // Cars and Adventure, the first new world, has its first story.
   assert.ok(library.some((s) => s.world === 'adventure'), 'Cars and Adventure has a story');
+  // Every world has at least one story, so every world shows in the picker.
+  for (const w of worlds) assert.ok(library.some((s) => s.world === w.id), `${w.id} has a story`);
+});
+
+test('every world and story colour is a "#rrggbb" colour, and no two worlds share a picker colour', () => {
+  const HEX = /^#[0-9a-f]{6}$/i;
+  for (const w of worlds) {
+    assert.match(w.color, HEX, `${w.id} color`);
+    assert.ok(w.sky?.length === 2 && w.sky.every((c) => HEX.test(c)), `${w.id} sky`);
+  }
+  assert.equal(new Set(worlds.map((w) => w.color)).size, worlds.length, 'world colours differ');
+  for (const s of library) if (s.sky) assert.ok(s.sky.length === 2 && s.sky.every((c) => HEX.test(c)), `${s.id} sky`);
 });
 
 test('every scenery set a library story uses is one the stage can draw', () => {
-  const SETS = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road']);
+  const SETS = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);
   for (const entry of library) {
     for (const b of read(entry.script).beats) if (b.type === 'scenery') assert.ok(SETS.has(b.set), `${b.id}: ${b.set}`);
+  }
+});
+
+test('no library line has a word the narrator would spell out letter by letter', () => {
+  // Kokoro reads a word with no vowel as letters: "Shh" came out "S H H", "Brrm" "B R R M"
+  // (Quest 3S, Nov 15). Write a word it can say ("Hush", "Brum") instead.
+  for (const entry of library) {
+    for (const b of read(entry.script).beats) {
+      const words = (b.text ?? '').replace(/\{[^}]*\}/g, '').match(/[A-Za-z']+/g) ?? [];
+      const spelled = words.filter((w) => !/[aeiouy]/i.test(w) && w.length > 1);
+      assert.deepEqual(spelled, [], `${b.id}: ${b.text}`);
+    }
   }
 });

@@ -25,7 +25,9 @@ const errors = [];
 const browser = await chromium.launch({ args: [...RENDER, '--ignore-certificate-errors', '--autoplay-policy=no-user-gesture-required'] });
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true })).newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+page.on('console', (m) => m.type() === 'error' && !/status of 404/.test(m.text()) && errors.push(m.text()));
+// A missing file is an error, except the server's voice (no server here) for lines with no recorded clip.
+page.on('response', (r) => r.status() === 404 && !/\/api\//.test(r.url()) && errors.push(`404 ${r.url()}`));
 const remote = (m, p) => page.evaluate(([m, p]) => IWER_DEVICE.remote.dispatch(m, p), [m, p]);
 const get = (c, f) => page.evaluate(([c, f]) => __sp.get(c, f), [c, f]);
 /** Aim the hand ray at a panel button and pinch; again if the press did not land (the ray can still be settling). */

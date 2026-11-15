@@ -90,6 +90,12 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   console.log(`story: ${beats.length} beats, ${[...new Set(beats.map((b) => b.script))].join(', ') || '-'}; last ${beats.at(-1)?.beat ?? '-'}`);
   const audio = ev('audio');
   console.log(`sound effects: ${audio.length ? audio.map((a) => a.state).filter((v, i, all) => v !== all[i - 1]).join(' > ') : 'not recorded'}   creature voices: ${audio.at(-1)?.voices ?? '-'}`);
+  const firstRunning = audio.find((a) => a.state === 'running');
+  if (firstRunning) console.log(`   sound started ${Math.round(firstRunning.t - (ev('vis').find((v) => v.state === 'visible')?.t ?? 0))} s after entering XR`);
+  const held = audio.find((a) => a.held);
+  if (held) console.log(`   narrator held for a pinch at ${held.t} s; ${audio.some((a) => a.waived) ? 'no pinch: went on with captions' : 'pinched'}`);
+  const glances = ev('lampglance');
+  if (glances.length) console.log(`lamp glances (lit lamp near the middle of the view): ${glances.length}, nearest ${Math.min(...glances.map((g) => g.cm))} cm, during a creature flare ${glances.filter((g) => g.flare > 0.1).length}`);
   console.log(`visibility: ${ev('vis').map((v) => v.state).join(' > ') || '-'}   page: ${ev('page').map((v) => v.state).join(' > ') || '-'}`);
   const errors = ev('error');
   console.log(`errors: ${errors.length}`);

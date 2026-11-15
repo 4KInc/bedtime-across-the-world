@@ -18,6 +18,7 @@ import {
   StoryStatuses,
 } from './shadowplay-components.js';
 import { loadStoryScript, readingSeconds, StoryBeat, StoryScript, storyRuntime } from './story-script.js';
+import { soundLock } from './sfx.js';
 import { accessRuntime, handRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
 import { DropoutWatch } from './tracking-watch.js';
 import { viewerMode } from './viewer-mode.js';
@@ -38,6 +39,10 @@ const PAUSED_CAPTION = 'Paused. Pinch the lamp switch to continue.';
 /** Behind the Quest menu, or with the headset off: it carries on by itself on return. */
 const AWAY_CAPTION = 'Paused.';
 const JOURNAL_CAPTION = 'Your Shadow Journal. Pinch the book to close it.';
+/** The headset held the sound back until a gesture (see soundLock in sfx.ts). */
+const SOUND_CAPTION = 'Pinch your thumb and finger together once to turn on the sound.';
+/** How long the story waits for that pinch before going on with captions only (s). */
+const SOUND_WAIT_SECONDS = 10;
 const TITLE_CAPTION =
   'Shadowplay. A lamp behind you, a story on your wall. Put on your headset and press Enter XR to begin.';
 const OUTSIDE_XR_CAPTION = 'Paused. Press Enter XR to return to the story.';
@@ -113,6 +118,8 @@ export class StorySystem extends createSystem({
   /** Browser attract mode (before any XR session) is showing. */
   private attract = false;
   private controllerTime = 0;
+  /** Time spent waiting for the pinch that turns the sound on (s). */
+  private soundWait = 0;
   private unlocked = new Set<string>();
 
   private assistLevel = 0;
@@ -356,10 +363,21 @@ export class StorySystem extends createSystem({
 
     const journalOpen = Boolean(first(this.queries.journals.entities)?.getValue(ShadowJournal, 'open'));
     if (story.getValue(StoryState, 'journalOpen') !== journalOpen) story.setValue(StoryState, 'journalOpen', journalOpen);
-    const paused = !stage.getValue(Stage, 'lampOn') || away.now || journalOpen || needHands;
+    // Sound held back: wait (a little) for the pinch that lets the narrator speak. Look to
+    // press and voice commands go straight on with captions: a pinch may not be possible.
+    if (soundLock.blocked && !soundLock.waived) {
+      this.soundWait += delta;
+      if (handsFree || this.soundWait > SOUND_WAIT_SECONDS) soundLock.waived = true;
+    }
+    const needSound = soundLock.blocked && !soundLock.waived;
+    const paused = !stage.getValue(Stage, 'lampOn') || away.now || journalOpen || needHands || needSound;
     if (paused) {
       setIfChanged(story, 'status', StoryStatuses.Paused);
-      setIfChanged(story, 'caption', needHands ? HANDS_CAPTION : journalOpen ? JOURNAL_CAPTION : away.now ? AWAY_CAPTION : PAUSED_CAPTION);
+      setIfChanged(
+        story,
+        'caption',
+        needHands ? HANDS_CAPTION : journalOpen ? JOURNAL_CAPTION : away.now ? AWAY_CAPTION : needSound ? SOUND_CAPTION : PAUSED_CAPTION,
+      );
       return;
     }
     if (status === StoryStatuses.Paused) story.setValue(StoryState, 'caption', this.beatCaption);

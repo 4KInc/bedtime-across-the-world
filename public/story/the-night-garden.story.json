@@ -16,7 +16,7 @@
     {
       "id": "garden-hello",
       "type": "narrate",
-      "text": "Shh, {child|little one}. The garden is going to sleep. Let's tiptoe through it with Mo."
+      "text": "Hush, {child|little one}. The garden is going to sleep. Let's tiptoe through it with Mo."
     },
     {
       "id": "garden-mo",

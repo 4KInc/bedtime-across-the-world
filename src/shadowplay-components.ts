@@ -208,6 +208,10 @@ export const ScenerySets = {
   Sea: 'sea',
   /** Cars & Adventure: the moon road, the buggy and its garage. */
   MoonRoad: 'moon-road',
+  /** Dinosaurs & Discovery: the fern valley, the volcano and the little dinosaur's cave. */
+  DinoValley: 'dino-valley',
+  /** Space & Exploration: moon rocks, stars, the ringed planet and Pip's spaceship. */
+  StarPort: 'star-port',
 } as const;
 
 /** Background silhouette set drawn behind the characters. */

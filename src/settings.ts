@@ -78,6 +78,8 @@ interface StoryWorld {
   id: string;
   title: string;
   blurb: string;
+  /** The world's own colour in the picker ("#rrggbb"); plain cream in high contrast. */
+  color?: string;
 }
 const DEFAULT_WORLD = 'nature';
 const MOTH_SCRIPT = 'story/the-moth.story.json';
@@ -186,9 +188,12 @@ export class SettingsSystem extends createSystem({
     if (key === this.shownScript || !this.panel) return;
     this.shownScript = key;
     const world = this.worlds[this.browsingWorld];
+    const p = palette();
     if (world) {
-      this.worldTitle?.setProperties({ text: world.title });
+      const tint = accessRuntime.highContrast ? p.cream : (world.color ?? p.cream);
+      this.worldTitle?.setProperties({ text: world.title, color: tint });
       this.worldBlurb?.setProperties({ text: world.blurb });
+      for (const id of ['world-prev', 'world-next']) this.buttons.get(id)?.setProperties({ ...p.unselected, borderColor: tint, color: tint });
     }
     const story = this.library[this.browsing];
     if (!story) return;
@@ -196,7 +201,6 @@ export class SettingsSystem extends createSystem({
     this.storyTitle?.setProperties({ text: story.title });
     const length = story.chapters ? `${story.chapters} chapters, ${story.minutes} min` : `${story.minutes} min`;
     this.storyBlurb?.setProperties({ text: `${story.blurb} (${length})` });
-    const p = palette();
     this.buttons.get('story-start')?.setProperties(telling ? p.selected : p.unselected);
     this.storyStart?.setProperties({ text: telling ? 'Telling this story tonight' : 'Tell this story', color: telling ? p.ink : p.cream });
     this.panel.getElementById('chapter-section')?.setProperties({ display: script === MOTH_SCRIPT ? 'flex' : 'none' });
