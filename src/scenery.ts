@@ -9,7 +9,7 @@ import {
   ShapeGeometry,
   Vector3,
 } from '@iwsdk/core';
-import { buildMoonRoad, buildSea, buildStorm, MoonRoadSet, ScenerySet } from './scenery-sets.js';
+import { buildDinoValley, buildMoonRoad, buildSea, buildStarPort, buildStorm, FollowerSet, ScenerySet } from './scenery-sets.js';
 import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
 
@@ -110,8 +110,8 @@ interface SceneryRuntime {
   stormLevel: number;
   sea: ScenerySet;
   seaLevel: number;
-  moonRoad: MoonRoadSet;
-  moonRoadLevel: number;
+  /** Sets with a character that follows Mo (the moon road's buggy, the little dinosaur, Pip's spaceship). */
+  followers: { set: string; scene: FollowerSet; level: number }[];
 }
 
 /** Background silhouette sets (currently the Chapter One field), faded in by the story. */
@@ -137,6 +137,7 @@ export class ScenerySystem extends createSystem({
         rt.moonMaterial.dispose();
         rt.storm.dispose();
         rt.sea.dispose();
+        rt.followers.forEach((f) => f.scene.dispose());
         this.runtimes.delete(entity);
       }),
     );
@@ -194,16 +195,20 @@ export class ScenerySystem extends createSystem({
 
     const storm = buildStorm(material);
     const sea = buildSea(material);
-    const moonRoad = buildMoonRoad(material);
+    const followers = [
+      { set: ScenerySets.MoonRoad as string, scene: buildMoonRoad(material), level: 0 },
+      { set: ScenerySets.DinoValley as string, scene: buildDinoValley(material), level: 0 },
+      { set: ScenerySets.StarPort as string, scene: buildStarPort(material), level: 0 },
+    ];
     const root = new Group();
     root.name = 'scenery';
-    root.add(field, river, forest, storm.group, sea.group, moonRoad.group);
+    root.add(field, river, forest, storm.group, sea.group, ...followers.map((f) => f.scene.group));
     entity.object3D.add(root);
     const rt = {
       root, field, clumps, material, level: 0,
       river, waves, moon, moonMaterial, riverLevel: 0,
       forest, forestLevel: 0, geometries,
-      storm, stormLevel: 0, sea, seaLevel: 0, moonRoad, moonRoadLevel: 0,
+      storm, stormLevel: 0, sea, seaLevel: 0, followers,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -224,17 +229,23 @@ export class ScenerySystem extends createSystem({
       rt.forestLevel = fade(rt.forestLevel, delta, set === ScenerySets.Forest);
       rt.stormLevel = fade(rt.stormLevel, delta, set === ScenerySets.Storm);
       rt.seaLevel = fade(rt.seaLevel, delta, set === ScenerySets.Sea);
-      rt.moonRoadLevel = fade(rt.moonRoadLevel, delta, set === ScenerySets.MoonRoad);
+      let followerLevel = 0;
+      let followerVisible = false;
+      for (const f of rt.followers) {
+        f.level = fade(f.level, delta, set === f.set);
+        f.scene.group.visible = f.level > 0.001;
+        followerLevel = Math.max(followerLevel, f.level);
+        followerVisible ||= f.scene.group.visible;
+      }
       // One shared ink material: sets cross-fade through each other's level.
-      rt.material.opacity = 0.9 * Math.max(rt.level, rt.riverLevel, rt.forestLevel, rt.stormLevel, rt.seaLevel, rt.moonRoadLevel);
+      rt.material.opacity = 0.9 * Math.max(rt.level, rt.riverLevel, rt.forestLevel, rt.stormLevel, rt.seaLevel, followerLevel);
       rt.field.visible = rt.level > 0.001;
       rt.river.visible = rt.riverLevel > 0.001;
       rt.forest.visible = rt.forestLevel > 0.001;
       rt.storm.group.visible = rt.stormLevel > 0.001;
       rt.sea.group.visible = rt.seaLevel > 0.001;
-      rt.moonRoad.group.visible = rt.moonRoadLevel > 0.001;
       rt.root.visible =
-        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible || rt.moonRoad.group.visible;
+        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible || followerVisible;
       rt.moonMaterial.opacity = 0.5 * rt.riverLevel;
 
       const n = stageRuntime.normal;
@@ -259,12 +270,13 @@ export class ScenerySystem extends createSystem({
       rt.sea.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
       if (rt.storm.group.visible) rt.storm.update(this.time, rt.stormLevel, finale);
       if (rt.sea.group.visible) rt.sea.update(this.time, rt.seaLevel, finale);
-      rt.moonRoad.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
-      if (rt.moonRoad.group.visible) {
-        // The buggy trundles after Mo along the road.
+      for (const f of rt.followers) {
+        f.scene.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
+        if (!f.scene.group.visible) continue;
+        // The set's character goes after Mo along the stage.
         this.toMo.copy(stageRuntime.moWall).sub(stageRuntime.center);
-        rt.moonRoad.follow(this.toMo.dot(stageRuntime.right) / stageRuntime.width);
-        rt.moonRoad.update(this.time, rt.moonRoadLevel, finale);
+        f.scene.follow(this.toMo.dot(stageRuntime.right) / stageRuntime.width);
+        f.scene.update(this.time, f.level, finale);
       }
     }
   }

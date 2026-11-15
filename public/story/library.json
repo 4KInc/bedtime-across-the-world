@@ -3,27 +3,52 @@
     {
       "id": "nature",
       "title": "Wonder and Nature",
-      "blurb": "Forests, animals, stars and friends."
+      "blurb": "Forests, animals, stars and friends.",
+      "color": "#8fd18a",
+      "sky": [
+        "#3d3ab0",
+        "#ff8a5c"
+      ]
     },
     {
       "id": "adventure",
       "title": "Cars and Adventure",
-      "blurb": "Roads, rescues, tunnels and little vehicles."
+      "blurb": "Roads, rescues, tunnels and little vehicles.",
+      "color": "#ffc94a",
+      "sky": [
+        "#2b2fa8",
+        "#ff9a3c"
+      ]
     },
     {
       "id": "ocean",
       "title": "Ocean and Exploration",
-      "blurb": "Waves, lighthouses and faraway shores."
+      "blurb": "Waves, lighthouses and faraway shores.",
+      "color": "#5cc8ff",
+      "sky": [
+        "#1f6fb8",
+        "#2cc5b5"
+      ]
     },
     {
       "id": "dinosaurs",
       "title": "Dinosaurs and Discovery",
-      "blurb": "Friendly dinosaurs, hidden caves and fossils."
+      "blurb": "Friendly dinosaurs, hidden caves and fossils.",
+      "color": "#ff8c5a",
+      "sky": [
+        "#2e9e4f",
+        "#ffb45a"
+      ]
     },
     {
       "id": "space",
       "title": "Space and Exploration",
-      "blurb": "Rockets, planets and friendly visitors."
+      "blurb": "Rockets, planets and friendly visitors.",
+      "color": "#c79bff",
+      "sky": [
+        "#5a2fd6",
+        "#ff6ec7"
+      ]
     }
   ],
   "stories": [
@@ -50,7 +75,11 @@
       "script": "story/the-slow-letter.story.json",
       "minutes": 5,
       "blurb": "A snail, a swan and a deer carry a letter home.",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#2f7fbf",
+        "#ffd36b"
+      ]
     },
     {
       "id": "the-brave-little-dog",
@@ -58,7 +87,11 @@
       "script": "story/the-brave-little-dog.story.json",
       "minutes": 5,
       "blurb": "Being brave while someone is far away.",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#4a3fc4",
+        "#ff6f7d"
+      ]
     },
     {
       "id": "counting-stars",
@@ -66,7 +99,11 @@
       "script": "story/counting-stars.story.json",
       "minutes": 3,
       "blurb": "A calm count to five, for the littlest ones.",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#23308f",
+        "#b08cff"
+      ]
     },
     {
       "id": "the-night-garden",
@@ -75,7 +112,11 @@
       "minutes": 4,
       "blurb": "Tiptoe through a sleepy garden: a rabbit, a snail and a deer.",
       "narrator": "bf_emma",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#2f8a64",
+        "#ff9ad5"
+      ]
     },
     {
       "id": "the-kind-crocodile",
@@ -84,7 +125,11 @@
       "minutes": 4,
       "blurb": "Across the river with a crocodile who only wants to help.",
       "narrator": "bm_george",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#1f8f8f",
+        "#c8e86b"
+      ]
     },
     {
       "id": "the-little-rainstorm",
@@ -93,7 +138,11 @@
       "minutes": 4,
       "blurb": "Pitter, patter: a dog, a bird and the very last raindrop.",
       "narrator": "af_bella",
-      "world": "nature"
+      "world": "nature",
+      "sky": [
+        "#5a6ad6",
+        "#9ad0ff"
+      ]
     },
     {
       "id": "moon-buggy",
@@ -103,6 +152,24 @@
       "blurb": "A little buggy has lost its way home. Help it reach its garage.",
       "world": "adventure",
       "narrator": "am_michael"
+    },
+    {
+      "id": "sleepy-dinosaur",
+      "title": "Mo and the Sleepy Little Dinosaur",
+      "script": "story/sleepy-dinosaur.story.json",
+      "minutes": 5,
+      "blurb": "A little long-neck dinosaur has lost its cave. Help it home to bed.",
+      "world": "dinosaurs",
+      "narrator": "bf_emma"
+    },
+    {
+      "id": "lost-spaceship",
+      "title": "Mo and the Little Lost Spaceship",
+      "script": "story/lost-spaceship.story.json",
+      "minutes": 5,
+      "blurb": "Pip the friendly visitor cannot find the way home. Fly with Mo through the stars.",
+      "world": "space",
+      "narrator": "af_bella"
     }
   ]
 }
