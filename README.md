@@ -9,9 +9,10 @@ Hands only, no controllers. Seated. Works on any wall, or none.
 
 A parent puts on a Meta Quest and tells a shadow-puppet story on their own wall:
 a virtual lamp behind them throws the shadows of their real, tracked hands, and when
-they make a rabbit, a fish or a bird, the shadow comes alive and carries the
-story on. Their child, at home on a phone or tablet, watches it, plays along with
-their own hands through the camera, and sends a goodnight back.
+they make a rabbit, a fish or a bird, the shadow comes alive in colour and carries
+the story on. Their child, at home on a phone or tablet, watches it, plays along
+with their own hands through the camera, and sends a goodnight back, with a
+drawing and new colours for Mo.
 
 For the soldier on deployment, the parent working in another country, the
 grandparent across an ocean.
@@ -23,7 +24,7 @@ Competition 2026 (Entertainment track, New Experience division).
 
 | | |
 | --- | --- |
-| In a Meta Quest browser | https://shadowplay-1031148889398.us-central1.run.app (press **Enter XR**) |
+| In a Meta Quest browser | https://shadowplay-1031148889398.us-central1.run.app (press **Enter XR**, or install it as an app from the browser menu: it then opens straight into the headset view) |
 | Family viewer (phone, tablet, desktop) | https://shadowplay-1031148889398.us-central1.run.app/?viewer |
 
 On first launch both sides come with a labelled sample family, so you can try
@@ -34,49 +35,77 @@ then **Goodnights**).
 ### Your first minute
 
 1. Open the link in the Quest Browser, press **Enter XR** and allow room access
-   (it finds your wall).
+   (it finds your wall and your desk).
 2. **Keep the room lights on.** Shadowplay dims the room for you, and hand
    tracking needs light.
-3. Put the controllers down. Raise a hand into the lamplight: Mo the moth follows
-   your fingertip. When asked, make the shape the ghost hand shows and hold it
-   still for a moment; the shadow comes alive.
+3. Put the controllers down. The lamp stands behind you, as in shadow theatre:
+   hold a hand up in front of you, where it is comfortable, and Mo the moth
+   follows your fingertip (the light settles to shine through your hands).
+   When asked, make the shape the ghost hand shows and hold it a moment; the
+   shadow comes alive. If you hear nothing, pinch once: the headset may be
+   holding sound back.
 
 Two fallbacks: with no wall straight ahead, the story plays on a floating paper
 screen; if the stage lands somewhere odd, pinch the book on the desk, then
-**Move stage here**, and look at the wall you want.
+**Move stage here**, and look at the wall you want. If a shape will not come,
+the story helps: after 15 and 30 seconds it is more forgiving, and after 45 any
+hand held still in front of you will do.
 
 ## What it does
 
 **In the headset (the storyteller)**
 - A stage on your real wall, found from the room's detected planes (a floating
   paper screen when there is no usable wall, and **Move stage here** to put it
-  where you look), with the room dimmed like a theatre. The lamp stands behind
-  you, as in shadow theatre, aimed once through your own hands; its switch is on
-  the desk, and in a search the light follows your hand like a torch.
-- Eight narrated stories, picked from the journal: *The Moth Who Borrowed Light*
-  (twenty minutes in chapters, a branching wolf encounter, a lighthouse finale),
-  *Goodnight Across the Sea*, *The Letter That Took the Slow Way*, *The Brave
-  Little Dog*, *Counting Stars* (three minutes, for the littlest ones), and
-  *The Night Garden*, *The Kind Crocodile* and *The Little Rainstorm*, each
-  read by its own narrator.
-  Eleven hand shapes, from a rabbit to a two-handed crocodile; the story never
-  fails: it shows a ghost hand, waits, and becomes more forgiving.
-- **Record a story** (hands, story and your voice) and **Send to family**: a
-  private family code (three words and a number, like `lantern-otter-moss-417`),
-  no accounts.
+  where you look), with the room dimmed like a theatre and a twilight sky in
+  each world's and scene's colours glowing behind the shadows.
+- **The lamp is behind you**, as in shadow theatre: it stands on a small table
+  behind your shoulder and is aimed once through your own hands, so a hand held
+  where it is comfortable throws its shadow onto the stage (its switch is on
+  the desk: pinch it to pause). Pull a hand back toward you and its shadow
+  grows; in a search, the light follows your hand like a torch.
+- **Creatures come alive**: in their own colour, with fireflies leaving the wall,
+  a little voice each (a chirp, a bubble, a soft woof), and a quiet music-box
+  lullaby under the story (**Music** in Settings). Mo flies off the wall and
+  lands on your fingertip, and at the end falls asleep there. When you let a
+  creature go, a glowing paper cut-out of it hops onto your desk. At the finale
+  a window opens in the wall onto hills under the stars, and every story told
+  to the end leaves a star in a jar beside the journal, kept from night to night.
+- Eleven narrated stories in five **story worlds** (*Where should we go
+  tonight?*), picked from the journal, each world with its own colours and sky:
+  - *Wonder and Nature*: *The Moth Who Borrowed Light* (twenty minutes in
+    chapters, a branching wolf encounter, a lighthouse finale), *The Letter
+    That Took the Slow Way*, *The Brave Little Dog*, *Counting Stars* (three
+    minutes, for the littlest ones), *The Night Garden*, *The Kind Crocodile*
+    and *The Little Rainstorm*;
+  - *Ocean and Exploration*: *Goodnight Across the Sea*, from the shore with a
+    swan to a lighthouse;
+  - *Cars and Adventure*: *Mo and the Midnight Moon Buggy*, on a moon road;
+  - *Dinosaurs and Discovery*: *Mo and the Sleepy Little Dinosaur*, in a fern
+    valley under a smoking volcano;
+  - *Space and Exploration*: *Mo and the Little Lost Spaceship*, at a star port
+    under a ringed planet.
+
+  The newer stories each have their own narrator. Eleven hand shapes, from a
+  rabbit to a two-handed crocodile, recognised as people really make them; the
+  story never fails: it shows a ghost hand, waits, and becomes more forgiving.
+- **Record a story** (hands, story and your voice: you are the narrator, the
+  captions are your script) and **Send to family**: a private family code
+  (three words and a number, like `lantern-otter-moss-417`), no accounts.
 - **Go live**: your family joins with the code and sees your shadows on their
   screen in real time; talk to each other; **Take turns** so the child makes
-  every other creature.
-- **Goodnights**: what your family sent back plays on your wall.
+  every other creature, which wakes in the child's own colour with their name.
+- **Goodnights**: what your family sent back plays on your wall; Mo takes the
+  colours the child chose, and the creature they drew walks onto the wall in
+  the next story.
 - **Dream a new one** (Tonight's story): Mo dreams up a new short story for a
   place (sea, forest, meadow, river, rain or sky) and two or three shapes the
   storyteller picks, in the order the story should ask for them (or say
-  "dream a story about the river with a fish and a bird"). Gemini writes the narration
-  lines; the app builds the story itself (the same pattern as Counting Stars)
-  and checks every line, so it plays like any other story, with captions. A
-  dreamed story can be recorded and sent, or told live, like any other: its
-  words travel with it, and the server and the family's device check them
-  again before it plays.
+  "dream a story about the river with a fish and a bird"). Gemini writes the
+  narration lines; the app builds the story itself (the same pattern as
+  Counting Stars) and checks every line, so it plays like any other story, with
+  captions and a narrator's voice that says the child's name. A dreamed story
+  can be recorded and sent, or told live, like any other: its words travel with
+  it, and the server and the family's device check them again before it plays.
 - Accessibility: recognition tolerance, show-me hints, one-hand mode and a
   high-contrast mode (black-and-white panels and captions, solid shadows on the
   wall), and **Look to press** for limited hand mobility: rest the centre of
@@ -84,11 +113,15 @@ screen; if the stage lands somewhere odd, pinch the book on the desk, then
   at the ghost hand to make a shape, so a whole story can be told without hands
   (head gaze: Quest 3 and 3S have no eye tracking). **Voice commands** are the
   spoken alternative: say the shape the story asks for, "open the journal",
-  "pause", "continue", "go on" or a button's name. One-hand mode, forgiving
-  shapes, high contrast, Look to press and Voice commands are also on the
-  first screen, before entering XR.
+  "pause", "continue", "go on", "music off" or a button's name. One-hand mode,
+  forgiving shapes, high contrast, Look to press and Voice commands are also on
+  the first screen, before entering XR.
 - Pauses when you open the Quest menu or take the headset off, and picks up on
   the same line; a story left mid-way continues from its chapter next time.
+  If the headset holds sound back (it does when you enter from the Quest's own
+  Enter VR prompt rather than the page's button), the story waits on its line
+  and asks for one pinch to turn the sound on; with no pinch it goes on with
+  captions after a few seconds.
 
 **On the phone or tablet (the family)**
 - Watch a story someone recorded for you, in their voice, with your name in it.
@@ -96,7 +129,8 @@ screen; if the stage lands somewhere odd, pinch the book on the desk, then
   grown-up allows it).
 - **Join live** with a family code; talk, show your hands, take turns.
 - **Send a goodnight back**: twenty seconds of your shadow creature and, if a
-  grown-up switches it on, your voice.
+  grown-up switches it on, your voice; choose colours for Mo, and draw a
+  creature with your finger for the next story.
 
 ## Age rating: 10+
 
@@ -211,7 +245,7 @@ The same list is in the app: **Credits** on the first screen and in the family v
 npm install
 npm run dev        # IWSDK dev server + managed browser with the Quest emulator (https://localhost:8082)
 npm run server     # sharing API and Live rooms on :8787 (the dev server proxies /api and /live)
-npm test           # typecheck, unit tests, server tests, recognition sweep
+npm test           # typecheck, unit tests (every story: content checks, scenery that fits its world, narration clips), server tests, recognition sweep
 ```
 
 `iwsdk.config.json` is the project authority (scene, assets, XR features);
@@ -236,7 +270,8 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/comfortable-hands.mjs` | Hands held where people hold them (not in the lamp's beam): every story with a shape told to the end, each shape in under a second |
 | `node scripts/sim/lamp-behind.mjs` | The lamp behind the viewer, its switch on the desk, the light aimed through the viewer's hands |
 | `node scripts/sim/never-stuck.mjs` | A shaky hand that never makes the shape still gets the creature from the story's last help |
-| `node scripts/sim/new-stories.mjs`, `story-worlds.mjs` | The newer stories told to the end with their narration; choosing a story world |
+| `node scripts/sim/new-stories.mjs`, `story-worlds.mjs`, `dino-space.mjs` | The newer stories told to the end with their narration; choosing each story world by hand ray, its scenery, and the dinosaur and spaceship going home at the finale |
+| `node scripts/sim/sound-unlock.mjs` | Sound held back until a gesture: the story waits on its line, a pinch plays it, captions carry on without one |
 | `node scripts/sim/dream-stories.mjs`, `dream-voice.mjs`, `share-dreamed.mjs` | Dreaming a story (place and shapes), its narrator's voice with the child's name, recording and sending it |
 | `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
