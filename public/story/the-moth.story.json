@@ -16,7 +16,7 @@
     {
       "id": "hush",
       "type": "narrate",
-      "text": "Shh, {child|little one}. The show is about to begin."
+      "text": "Hush, {child|little one}. The show is about to begin."
     },
     {
       "id": "mo-arrives",
