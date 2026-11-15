@@ -189,6 +189,20 @@ const shapesOf = (story) => ({
   await context.close();
 }
 
+// 3. A creature the chooser does not offer, named in the idea (Quest 3, Nov 15: the crocodile came back as a dog).
+{
+  const { page, pinch, asked, context } = await session({ browserSpeech: true });
+  await pinch('dream-say');
+  await page.evaluate(() => window.__say('Tell me a story with a fish and a crocodile'));
+  const now = await playing(page);
+  const story = asked.length ? await dreamer.dream(checkDream(asked[0])) : null;
+  const sets = story ? story.beats.filter((b) => b.type === 'scenery').map((b) => b.set) : [];
+  check('"a fish and a crocodile" is asked for in those words', asked.length === 1 && asked[0].wish === 'Tell me a story with a fish and a crocodile', { asked });
+  check('Mo dreams the fish, then the crocodile (no dog added), by the river', !!story && JSON.stringify(shapesOf(story).shapes) === '["fish","crocodile"]' && sets.at(-1) === 'river', { ...(story && shapesOf(story)), sets });
+  check('the fish-and-crocodile story starts', /^dreamed:/.test(now.script), now);
+  await context.close();
+}
+
 check('no page errors', errors.length === 0, errors.slice(0, 3));
 await browser.close();
 const failed = results.filter((r) => !r.ok).length;

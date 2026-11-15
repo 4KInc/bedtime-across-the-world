@@ -14,7 +14,10 @@ import { contentProblems } from '../src/story-checks.ts';
 import { MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
 import type { Llm } from './llm.ts';
 
-export const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
+/** Every shape a dreamed story can tell: the five the chooser offers, and the ones an idea can name ("a fish and a crocodile"). */
+export const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail'] as const;
+/** What Mo picks from when an idea names no shapes, or tops up a request: the easiest five. */
+export const PICK_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 export const THEMES: Readonly<Record<string, { words: string; scenery: string }>> = {
   sea: { words: 'by the quiet sea at night', scenery: 'sea' },
   forest: { words: 'in a sleepy forest', scenery: 'forest' },
@@ -34,6 +37,10 @@ const SHAPE_WORDS: Readonly<Record<string, RegExp>> = {
   dog: /\b(dog|puppy)\b/i,
   bird: /\bbird\b/i,
   cup: /\bcup/i,
+  swan: /\bswan/i,
+  crocodile: /\b(crocodile|croc)/i,
+  deer: /\b(deer|reindeer)\b/i,
+  snail: /\bsnail/i,
 };
 
 export interface DreamRequest {
@@ -98,7 +105,7 @@ export function fillAtRandom(req: DreamRequest, random = Math.random): DreamRequ
   const themes = Object.keys(THEMES);
   const theme = Object.hasOwn(THEMES, req.theme) ? req.theme : themes[Math.floor(random() * themes.length)];
   const shapes = [...req.shapes];
-  const rest = DREAM_SHAPES.filter((s) => !shapes.includes(s));
+  const rest = PICK_SHAPES.filter((s) => !shapes.includes(s));
   while (shapes.length < 2) shapes.push(rest.splice(Math.floor(random() * rest.length), 1)[0]);
   return { ...req, theme, shapes };
 }
@@ -112,7 +119,9 @@ function pickPrompt(req: DreamRequest): string {
   return [
     `The idea: ${req.wish}`,
     `Choose the place that fits it best, one of: ${Object.keys(THEMES).join(', ')}.${req.theme ? ` (Already chosen: ${req.theme}.)` : ''}`,
-    `Choose two or three shadow shapes that fit it best, from: ${DREAM_SHAPES.join(', ')} (cup means cupped hands holding something small, like a star or a firefly).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
+    req.shapes.length >= 2
+      ? `The shapes are already chosen: ${req.shapes.join(', ')}.`
+      : `Choose two or three shadow shapes that fit it best, from: ${PICK_SHAPES.join(', ')} (cup means cupped hands holding something small, like a star or a firefly).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
     'JSON: {"theme":"...","shapes":["...","..."]}',
   ].join('\n');
 }
@@ -130,7 +139,8 @@ export function readPick(req: DreamRequest, reply: string): DreamRequest | null 
   }
   const theme = req.theme || (typeof pick.theme === 'string' && Object.hasOwn(THEMES, pick.theme) ? pick.theme : '');
   const picked = Array.isArray(pick.shapes) ? pick.shapes.filter(isShape) : [];
-  const shapes = [...new Set([...req.shapes, ...picked])].slice(0, 3);
+  // Two or more named (a fish and a crocodile): exactly those; the model only tops up fewer.
+  const shapes = req.shapes.length >= 2 ? req.shapes : [...new Set([...req.shapes, ...picked])].slice(0, 3);
   const out = { ...req, theme, shapes };
   return complete(out) ? out : null;
 }
@@ -205,7 +215,7 @@ function prompt(req: DreamRequest): string {
     `Where each scene happens, in order (the story travels there when the place changes; say so in that scene's setup): ${scenePlaces(req)
       .map((place, i) => `${req.shapes[i]} ${PLACE_WORDS[place]}`)
       .join(', ')}.`,
-    'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
+    'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together; for the swan: a flat hand bent down at the wrist; for the crocodile: two flat hands, one on top of the other, like a long mouth; for the deer: wrists together, fingers up and spread like antlers; for the snail: a fist for the shell and two fingers for its eyes); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
     'opening = two lines that begin the story; ending = two lines that say goodnight. title = 2 to 5 words.',
     `JSON: {"title":"...","opening":["...","..."],"scenes":[${scenes}],"ending":["...","..."]}`,
   ].join('\n');
