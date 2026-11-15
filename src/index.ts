@@ -8,6 +8,7 @@ import { loadReceivedGifts } from './gifts-received.js';
 import { isInstalledPwa, pwaRuntime } from './pwa.js';
 import projectOptions from 'virtual:iwsdk-project';
 import { AudioSystem } from './audio.js';
+import { SoundUnlockSystem } from './sound-unlock.js';
 import { CaptionSystem } from './captions.js';
 import { FreeStageSystem } from './free-stage.js';
 import { HandCasterSystem } from './hand-caster.js';
@@ -72,6 +73,7 @@ World.create(
     .registerSystem(LanternSystem)
     .registerSystem(ChildDrawingSystem)
     .registerSystem(AudioSystem)
+    .registerSystem(SoundUnlockSystem)
     .registerSystem(QualitySystem)
     .registerSystem(StoryTapSystem)
     .registerSystem(PerformanceRecorderSystem)

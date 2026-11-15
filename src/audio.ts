@@ -1,5 +1,5 @@
 import { createSystem, Vector3, VisibilityState } from '@iwsdk/core';
-import { audioRunning, gesture, Hum, Lullaby, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
+import { audioRunning, Hum, Lullaby, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
 import { LiveSession, PerformanceRecorder, Settings, Stage, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
 
@@ -28,31 +28,8 @@ export class AudioSystem extends createSystem({
   private hum: Hum | null = null;
   private lullaby: Lullaby | null = null;
   private retry = 0;
-  private session: XRSession | undefined;
-  private readonly onGesture = () => gesture();
-
-  init(): void {
-    // A pinch (select) or grip in the headset, or a tap or key on the page, is the gesture sound needs.
-    window.addEventListener('pointerdown', this.onGesture);
-    window.addEventListener('keydown', this.onGesture);
-    this.cleanupFuncs.push(() => {
-      window.removeEventListener('pointerdown', this.onGesture);
-      window.removeEventListener('keydown', this.onGesture);
-      this.watchSession(undefined);
-    });
-  }
-
-  private watchSession(session: XRSession | undefined): void {
-    if (session === this.session) return;
-    this.session?.removeEventListener('selectstart', this.onGesture);
-    this.session?.removeEventListener('squeezestart', this.onGesture);
-    this.session = session;
-    session?.addEventListener('selectstart', this.onGesture);
-    session?.addEventListener('squeezestart', this.onGesture);
-  }
 
   update(delta: number): void {
-    this.watchSession(this.world.session);
     if (!audioRunning()) {
       // Entering XR counts as the gesture: start the context then, not at the first sound effect.
       this.retry -= delta;
