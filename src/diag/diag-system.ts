@@ -7,6 +7,7 @@ import {
   Object3D,
   PlaneGeometry,
   SRGBColorSpace,
+  Vector3,
   VisibilityState,
   XRMesh,
   XRPlane,
@@ -20,7 +21,7 @@ import { shadowMapSize } from '../quality-levels.js';
 import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
 import { pairRuntime } from '../shape-match.js';
-import { audioState, soundRuntime } from '../sfx.js';
+import { audioState, soundLock, soundRuntime } from '../sfx.js';
 
 /** Snapshot to the server every SNAPSHOT_MS; events within EVENT_FLUSH_MS. */
 const SNAPSHOT_MS = 5000;
@@ -84,7 +85,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0 };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0 };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -94,6 +95,11 @@ export class DiagSystem extends createSystem({
   private beatSeconds = 0;
   /** The stage asks for 72 Hz on XR entry; its answer is reported once. */
   private rateReported = false;
+  /** Looking toward the lit lamp behind (it stands 65 cm back): reported once per glance. */
+  private atLamp = false;
+  private head = new Vector3();
+  private look = new Vector3();
+  private toLamp = new Vector3();
 
   init(): void {
     this.canvas.width = W;
@@ -157,6 +163,7 @@ export class DiagSystem extends createSystem({
       this.event({ e: 'rate', requested: 72, result: stageRuntime.frameRateRequest });
     }
     this.stats.push(delta * 1000);
+    this.watchLamp();
     const now = performance.now();
     this.watch(now);
     if (now - this.lastOverlay >= OVERLAY_MS) {
@@ -220,10 +227,13 @@ export class DiagSystem extends createSystem({
     // Sound effects: whether Web Audio runs (narration plays without it), and how many creature voices played.
     const audio = audioState();
     const beat = story?.getValue(StoryState, 'beatId') ?? '';
-    if (audio !== this.last.audio || (beat !== this.last.beat && this.voices() !== this.last.voices)) {
+    // `held`: the narrator was held back for want of a gesture; `waived`: the story went on without it.
+    const lock = (soundLock.blocked ? 1 : 0) + (soundLock.waived ? 2 : 0);
+    if (audio !== this.last.audio || lock !== this.last.lock || (beat !== this.last.beat && this.voices() !== this.last.voices)) {
       this.last.audio = audio;
+      this.last.lock = lock;
       this.last.voices = this.voices();
-      this.event({ e: 'audio', state: audio, voices: this.last.voices });
+      this.event({ e: 'audio', state: audio, voices: this.last.voices, held: soundLock.blocked, waived: soundLock.waived });
     }
     if (beat && beat !== this.last.beat) {
       // Hand-tracking flickers during the beat that just ended (a dim-room signal).
@@ -255,6 +265,24 @@ export class DiagSystem extends createSystem({
     let n = 0;
     for (const k in soundRuntime.creature) n += soundRuntime.creature[k];
     return n;
+  }
+
+  /** A glance toward the lit lamp: how far the bulb is (cm) and how close to the middle of the view (deg). */
+  private watchLamp(): void {
+    if (this.visibility === 'non-immersive' || !stageRuntime.ready || !stageRuntime.lampOn) {
+      this.atLamp = false;
+      return;
+    }
+    const head = this.player.head;
+    head.getWorldPosition(this.head);
+    head.getWorldDirection(this.look).negate();
+    this.toLamp.subVectors(stageRuntime.bulb, this.head);
+    const cm = this.toLamp.length() * 100;
+    const deg = (this.look.angleTo(this.toLamp) * 180) / Math.PI;
+    if (!this.atLamp && deg < 30) {
+      this.atLamp = true;
+      this.event({ e: 'lampglance', cm: round(cm), deg: round(deg), flare: round(stageRuntime.wakeFlare, 2) });
+    } else if (this.atLamp && deg > 45) this.atLamp = false;
   }
 
   private placement(stage: Entity): Item {
