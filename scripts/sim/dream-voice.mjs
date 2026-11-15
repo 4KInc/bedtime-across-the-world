@@ -78,8 +78,16 @@ async function pinch(page, id) {
   await sleep(400);
 }
 async function dream(page) {
-  await pinch(page, 'story-dream');
-  await pinch(page, 'dream-go');
+  // After a reload the stage may settle onto last night's wall a moment after entering
+  // (moving the panel): press again until the chooser is open.
+  for (let i = 0; i < 4 && !(await page.evaluate(() => __sp.view().dream.chooser.open)); i++) {
+    await pinch(page, 'story-dream');
+    await sleep(500);
+  }
+  for (let i = 0; i < 3 && !/^dreamed:/.test(await page.evaluate(() => __sp.get('StoryState', 'script'))); i++) {
+    await pinch(page, 'dream-go');
+    await sleep(1500);
+  }
   await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 15000 });
 }
 

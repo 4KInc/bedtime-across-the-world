@@ -52,6 +52,47 @@ export function checkDream(body: unknown): DreamRequest | null {
 }
 
 /** What the model is asked to write (and must return, exactly this shape). */
+/**
+ * Where each creature belongs. A dreamed story keeps the theme's place while a
+ * creature fits there, and otherwise moves to the creature's home first, so a
+ * fish never swims through a forest (Quest 3, Nov 15). The bird and cupped hands
+ * fit anywhere.
+ */
+const FITS: Readonly<Record<string, readonly string[]>> = {
+  fish: ['sea', 'river'],
+  swan: ['river', 'sea'],
+  crocodile: ['river'],
+  deer: ['forest', 'field'],
+  snail: ['forest', 'field', 'storm'],
+  rabbit: ['field', 'forest'],
+  dog: ['field', 'forest', 'storm', 'none'],
+};
+const HOME: Readonly<Record<string, string>> = { fish: 'river', swan: 'river', crocodile: 'river', deer: 'forest', snail: 'forest', rabbit: 'field', dog: 'field' };
+/** A place in the words given to the model. */
+const PLACE_WORDS: Readonly<Record<string, string>> = {
+  sea: 'by the sea',
+  river: 'beside a river',
+  forest: 'in the forest',
+  field: 'in a meadow',
+  storm: 'in the soft rain',
+  none: 'up in the night sky',
+};
+
+/**
+ * The scenery of each scene, in order: where the story is while the creature
+ * fits there; otherwise back to the theme's place if it fits that, else the
+ * creature's home.
+ */
+export function scenePlaces(req: DreamRequest): string[] {
+  const theme = THEMES[req.theme].scenery;
+  let here = theme;
+  return req.shapes.map((shape) => {
+    const fits = FITS[shape];
+    if (fits && !fits.includes(here)) here = fits.includes(theme) ? theme : HOME[shape];
+    return here;
+  });
+}
+
 interface DreamWords {
   title: string;
   opening: [string, string];
@@ -71,6 +112,9 @@ function prompt(req: DreamRequest): string {
   const scenes = req.shapes.map((s) => `{"shape":"${s}","setup":"...","ask":"...","ride":"...","after":"...","bow":"..."}`).join(',');
   return [
     `Write a new story set ${THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.join(', ')}.`,
+    `Where each scene happens, in order (the story travels there when the place changes; say so in that scene's setup): ${scenePlaces(req)
+      .map((place, i) => `${req.shapes[i]} ${PLACE_WORDS[place]}`)
+      .join(', ')}.`,
     'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
     'opening = two lines that begin the story; ending = two lines that say goodnight. title = 2 to 5 words.',
     `JSON: {"title":"...","opening":["...","..."],"scenes":[${scenes}],"ending":["...","..."]}`,
@@ -115,6 +159,8 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
     { id: 'dream-follow', type: 'follow', seconds: 3, text: 'Hold up your hand. Mo will follow your finger, slowly, slowly.' },
     { id: 'dream-open-2', type: 'narrate', text: opening[1] },
   ];
+  const places = scenePlaces(req);
+  let here = THEMES[req.theme].scenery;
   for (let i = 0; i < req.shapes.length; i++) {
     const shape = req.shapes[i];
     const s = words.scenes[i] as Record<string, unknown>;
@@ -123,6 +169,11 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
     if (s?.shape !== shape || !setup || !ask || !ride || !after || !bow) return null;
     if (!SHAPE_WORDS[shape].test(ask) || ride.split(' ').length > 8) return null;
     const n = i + 1;
+    // To the creature's own place first, if it does not belong where the story is.
+    if (places[i] !== here) {
+      here = places[i];
+      beats.push({ id: `dream-${n}-place`, type: 'scenery', set: here });
+    }
     beats.push({ id: `dream-${n}-setup`, type: 'narrate', text: setup });
     beats.push({ id: `dream-${n}-want`, type: 'request', shape, ...(shape === 'fish' ? { alt: 'dog' } : {}), text: ask });
     if (shape === 'cup') {
