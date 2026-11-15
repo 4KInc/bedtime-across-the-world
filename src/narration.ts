@@ -110,9 +110,11 @@ export class NarrationSystem extends createSystem({
     if (beat === this.lastBeat) return;
     this.lastBeat = beat;
     const text = story.getValue(StoryState, 'caption') ?? '';
-    // Beats without new words (moth, scenery, lamp...) keep the previous line.
+    // Beats without new words (moth, scenery, lamp...) keep the previous line: it plays on,
+    // and stays the current line, so the next spoken line stops it rather than overlapping
+    // it (Quest 3, Nov 15: a request line still playing under the next one).
     if (!text || text === this.lastText) {
-      this.finish(story, beat, '');
+      this.finish(story, beat, '', false);
       return;
     }
     this.lastText = text;
@@ -261,9 +263,12 @@ export class NarrationSystem extends createSystem({
     this.finish(story, beat, '');
   }
 
-  private finish(story: Entity, beat: string, source: string): void {
-    this.audio = null;
-    this.speaking = false;
+  /** Mark `beat`'s line as finished; `release` (the line is over) lets go of its audio. */
+  private finish(story: Entity, beat: string, source: string, release = true): void {
+    if (release) {
+      this.audio = null;
+      this.speaking = false;
+    }
     story.setValue(StoryState, 'voiceBeat', beat);
     story.setValue(StoryState, 'voiceSource', source);
     story.setValue(StoryState, 'voiceDone', true);
