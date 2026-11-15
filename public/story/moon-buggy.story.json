@@ -38,7 +38,7 @@
     {
       "id": "buggy-found",
       "type": "narrate",
-      "text": "Up here there is a long, bumpy road, and on it, a little moon buggy. Brrm... brrm... putt."
+      "text": "Up here there is a long, bumpy road, and on it, a little moon buggy. Brum... brum... putt."
     },
     {
       "id": "buggy-lost",
@@ -123,7 +123,7 @@
     {
       "id": "buggy-bird-bows",
       "type": "release",
-      "text": "The buggy rolls slowly round the crater. Brrm, brrm. The bird waves its wings goodbye."
+      "text": "The buggy rolls slowly round the crater. Brum, brum. The bird waves its wings goodbye."
     },
     {
       "id": "buggy-dim2",

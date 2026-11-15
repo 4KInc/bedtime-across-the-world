@@ -61,3 +61,15 @@ test('every scenery set a library story uses is one the stage can draw', () => {
     for (const b of read(entry.script).beats) if (b.type === 'scenery') assert.ok(SETS.has(b.set), `${b.id}: ${b.set}`);
   }
 });
+
+test('no library line has a word the narrator would spell out letter by letter', () => {
+  // Kokoro reads a word with no vowel as letters: "Shh" came out "S H H", "Brrm" "B R R M"
+  // (Quest 3S, Nov 15). Write a word it can say ("Hush", "Brum") instead.
+  for (const entry of library) {
+    for (const b of read(entry.script).beats) {
+      const words = (b.text ?? '').replace(/\{[^}]*\}/g, '').match(/[A-Za-z']+/g) ?? [];
+      const spelled = words.filter((w) => !/[aeiouy]/i.test(w) && w.length > 1);
+      assert.deepEqual(spelled, [], `${b.id}: ${b.text}`);
+    }
+  }
+});
