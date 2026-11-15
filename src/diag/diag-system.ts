@@ -20,6 +20,7 @@ import { shadowMapSize } from '../quality-levels.js';
 import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
 import { pairRuntime } from '../shape-match.js';
+import { audioState, soundRuntime } from '../sfx.js';
 
 /** Snapshot to the server every SNAPSHOT_MS; events within EVENT_FLUSH_MS. */
 const SNAPSHOT_MS = 5000;
@@ -83,7 +84,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0 };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0 };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -216,7 +217,14 @@ export class DiagSystem extends createSystem({
       this.last.tips = coachRuntime.tips;
       this.event({ e: 'coach', facts: coachRuntime.facts.slice(0, 2), source: coachRuntime.source, ms: coachRuntime.ms });
     }
+    // Sound effects: whether Web Audio runs (narration plays without it), and how many creature voices played.
+    const audio = audioState();
     const beat = story?.getValue(StoryState, 'beatId') ?? '';
+    if (audio !== this.last.audio || (beat !== this.last.beat && this.voices() !== this.last.voices)) {
+      this.last.audio = audio;
+      this.last.voices = this.voices();
+      this.event({ e: 'audio', state: audio, voices: this.last.voices });
+    }
     if (beat && beat !== this.last.beat) {
       // Hand-tracking flickers during the beat that just ended (a dim-room signal).
       if (this.last.beat && this.dropouts.flickers > 0) {
@@ -241,6 +249,12 @@ export class DiagSystem extends createSystem({
       }
       this.last.matched = matched;
     }
+  }
+
+  private voices(): number {
+    let n = 0;
+    for (const k in soundRuntime.creature) n += soundRuntime.creature[k];
+    return n;
   }
 
   private placement(stage: Entity): Item {
