@@ -12,7 +12,7 @@ import { checkCoach, Coach } from './coach.ts';
 import { checkSharedStory } from '../src/story-checks.ts';
 import { checkDream, Dreamer } from './dream.ts';
 import { DEFAULTS, Llm } from './llm.ts';
-import { MAX_CLIP_BYTES, SpeechToText } from './voice.ts';
+import { MAX_CLIP_BYTES, SpeechToText, type ClipPurpose } from './voice.ts';
 import { speakable, speechKey, TextToSpeech } from './speak.ts';
 
 /**
@@ -26,12 +26,13 @@ import { speakable, speechKey, TextToSpeech } from './speak.ts';
  *   GET  /api/stories/:code/replies   the replies to a story (for the storyteller)
  *   GET  /api/voice          { available }: whether spoken commands can be understood here
  *   POST /api/voice          a short spoken clip (audio/webm) -> { text } (Voice commands; nothing stored)
+ *   POST /api/voice?for=wish a spoken story idea, "Tell Mo your idea" (up to ~10 s) -> { text } (nothing stored)
  *   GET  /api/coach          { available }: whether Mo's tips are written by AI here
  *   POST /api/coach          { shape, facts, attempt } -> { line, source } (Mo the coach; no personal data)
  *   GET  /api/speak          { available }: whether lines without a recorded clip can be voiced here
  *   GET  /api/speak?text=    one story line, spoken (audio/mpeg; dreamed stories; cached in the bucket)
  *   GET  /api/dream          { available }: whether new stories can be dreamed up here
- *   POST /api/dream          { theme, shapes } -> a new story script (words by the AI_PROVIDER model, built and checked here)
+ *   POST /api/dream          { theme, shapes } or { wish } (a spoken idea, plain words) -> a new story script (words by the AI_PROVIDER model, built and checked here)
  *   POST /api/diag           device diagnostics from pages opened with ?diag (numbers and ids only)
  *   GET  /api/health (and /healthz locally: Cloud Run reserves paths ending in 'z')
  *   WS   /live                live rooms (see live.ts)
@@ -68,7 +69,7 @@ const PROVIDER_ENV = {
 const modelKey = process.env[PROVIDER_ENV[provider].key];
 const llm = modelKey ? new Llm(provider, modelKey, process.env[PROVIDER_ENV[provider].api] || undefined) : null;
 const coach = llm ? new Coach(llm, process.env.COACH_MODEL || DEFAULTS[provider].coachModel) : null;
-const dreamer = llm ? new Dreamer(llm, process.env.DREAM_MODEL || DEFAULTS[provider].dreamModel) : null;
+const dreamer = llm ? new Dreamer(llm, process.env.DREAM_MODEL || DEFAULTS[provider].dreamModel, process.env.COACH_MODEL || DEFAULTS[provider].coachModel) : null;
 if (llm) console.log(`[ai] Mo's tips and dreamed stories by ${llm.label}`);
 const speech = process.env.VOICE_STT === 'google' ? new SpeechToText(process.env.STT_API ?? undefined, process.env.STT_TOKEN_URL ?? undefined) : null;
 const tts = process.env.STORY_TTS === 'google' ? new TextToSpeech(process.env.TTS_API ?? undefined, process.env.TTS_TOKEN_URL ?? undefined) : null;
@@ -252,7 +253,7 @@ async function readBytes(req: IncomingMessage, limit: number): Promise<Buffer | 
   return Buffer.concat(chunks);
 }
 
-async function postVoice(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function postVoice(req: IncomingMessage, res: ServerResponse, purpose: ClipPurpose): Promise<void> {
   if (!speech) return json(res, 503, { error: 'Voice commands are not available here.' });
   if (!allowed('voice', req)) return json(res, 429, { error: 'Too many voice commands.' });
   if (!/^audio\/webm\b/.test(req.headers['content-type'] ?? '')) return json(res, 415, { error: 'Send audio/webm.' });
@@ -264,7 +265,7 @@ async function postVoice(req: IncomingMessage, res: ServerResponse): Promise<voi
   }
   if (clip.length < 200) return json(res, 400, { error: 'Nothing to hear.' });
   try {
-    return json(res, 200, { text: await speech.transcribe(clip) });
+    return json(res, 200, { text: await speech.transcribe(clip, purpose) });
   } catch (error) {
     console.warn('[voice]', error instanceof Error ? error.message : error);
     return json(res, 502, { error: 'Could not understand that just now.' });
@@ -419,7 +420,7 @@ const server = createServer((req, res) => {
     if (path === '/api/coach' && req.method === 'POST') return postCoach(req, res);
     if (path === '/api/speak' && req.method === 'GET') return getSpeak(req, res, url.searchParams.get('text'));
     if (path === '/api/voice' && req.method === 'GET') return json(res, 200, { available: speech !== null });
-    if (path === '/api/voice' && req.method === 'POST') return postVoice(req, res);
+    if (path === '/api/voice' && req.method === 'POST') return postVoice(req, res, url.searchParams.get('for') === 'wish' ? 'wish' : 'command');
     if (path === '/api/stories' && req.method === 'POST') return uploadStory(req, res);
     const m = /^\/api\/stories\/([^/]+)$/.exec(path);
     if (m && req.method === 'GET') return fetchStory(req, res, m[1]);

@@ -58,7 +58,10 @@ before(async () => {
       claudeSeen.push({ headers: req.headers, body: parsed });
       const content: string = parsed.messages[0].content;
       let text: string;
-      if (/shadow-puppet game/.test(parsed.system)) {
+      if (/grown-up's idea in their own words/.test(parsed.system)) {
+        // Choosing the place and shapes for a wish: a meadow with a dog and a bird (nonsense for a "muddle").
+        text = content.includes('muddle') ? 'I am not sure.' : '{"theme":"meadow","shapes":["dog","bird"]}';
+      } else if (/shadow-puppet game/.test(parsed.system)) {
         // A new story: the shapes asked for, in order; a "river" story comes back without the shapes' names.
         const shapes = /shapes: ([a-z, ]+)\./.exec(content)![1].split(', ');
         text = 'Here is your story:\n' + cannedWords(shapes, { broken: content.includes('silver river') });
@@ -334,6 +337,17 @@ test('voice: available, a short webm clip becomes text, with the command phrases
   assert.equal(Buffer.from(sent.audio?.content ?? '', 'base64').length, clip.length);
 });
 
+test('voice: a spoken story idea (?for=wish) uses an everyday speech model, with places and shapes as hints', async () => {
+  const headers = { 'X-Forwarded-For': '6.6.6.6, 10.9.9.7', 'Content-Type': 'audio/webm;codecs=opus' };
+  const res = await fetch(`${BASE}/api/voice?for=wish`, { method: 'POST', headers, body: Buffer.alloc(9000, 3) });
+  assert.equal(res.status, 200);
+  const sent = sttSeen.at(-1)!;
+  assert.equal((sent.config as { model?: string }).model, 'latest_short');
+  const hints = sent.config?.speechContexts?.[0].phrases ?? [];
+  assert.ok(hints.includes('forest') && hints.includes('story') && hints.includes('puppy'));
+  assert.ok(!hints.includes('open the journal'), 'not the command phrases');
+});
+
 test('voice: refuses other types, empty and over-long clips', async () => {
   const send = (body: Buffer, type = 'audio/webm') =>
     fetch(`${BASE}/api/voice`, { method: 'POST', headers: { 'X-Forwarded-For': '6.6.6.6, 10.9.9.8', 'Content-Type': type }, body });
@@ -446,4 +460,49 @@ test('static files: compressed, cached by kind, and HEAD works', async () => {
   const head = await fetch(`${BASE}/assets/index-abc123.js`, { method: 'HEAD', headers: { 'Accept-Encoding': 'br' } });
   assert.equal(head.status, 200);
   assert.ok(Number(head.headers.get('content-length')) > 0);
+});
+
+/** The story's shapes, in order, and its first scenery. */
+const shapesOf = (story: { beats: { type: string; shape?: string; set?: string }[] }) => ({
+  shapes: story.beats.filter((b) => b.type === 'request').map((b) => b.shape),
+  scenery: story.beats.find((b) => b.type === 'scenery')?.set,
+});
+const picks = () => claudeSeen.filter((c) => /grown-up's idea/.test(c.body.system ?? '')).length;
+
+test('dream from a wish in plain words: the place and shapes it names, and the idea goes to the model (never back out)', async () => {
+  const before = picks();
+  const wish = 'I need a forest story with a dog and a rabbit, and the dog is a bit shy';
+  const res = await as().post('/api/dream', { wish });
+  assert.equal(res.status, 200);
+  const story = await res.json();
+  assert.deepEqual(shapesOf(story), { shapes: ['dog', 'rabbit'], scenery: 'forest' });
+  assert.equal(picks(), before, 'everything was named: no need to ask the model to pick');
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /in a sleepy forest/);
+  assert.ok(sent.includes(wish), 'the idea, in the words said');
+  assert.ok(!JSON.stringify(story).includes('shy'), 'the wish itself is not in the story');
+});
+
+test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {
+  const before = picks();
+  const story = await (await as().post('/api/dream', { wish: 'Can you make a story about being brave' })).json();
+  assert.equal(picks(), before + 1);
+  assert.deepEqual(shapesOf(story), { shapes: ['dog', 'bird'], scenery: 'field' });
+  // What the wish names stays, first: a fish, then the model's pick.
+  const fish = await (await as().post('/api/dream', { wish: 'a story with a fish please' })).json();
+  assert.deepEqual(shapesOf(fish).shapes, ['fish', 'dog', 'bird']);
+  // An unusable pick: still a story, picked at random.
+  const muddle = await as().post('/api/dream', { wish: 'a muddle of a story by the sea' });
+  assert.equal(muddle.status, 200);
+  assert.ok(shapesOf(await muddle.json()).shapes.length >= 2);
+});
+
+test('dream from a wish the model must not see (brands, never-say words, odd characters): a story all the same, without it', async () => {
+  for (const wish of ['A Peppa Pig story with a dog', 'a story where the monster eats everyone', '<b>forest</b> story', 'x'.repeat(300), 42]) {
+    // (By the sea: the stand-in model spoils every river story on purpose.)
+    const res = await as().post('/api/dream', { wish, theme: 'sea' });
+    assert.equal(res.status, 200, String(wish));
+    const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+    assert.ok(!/peppa|monster|<b>|xxxx/i.test(sent), `${wish} was not sent`);
+  }
 });

@@ -12,6 +12,7 @@ import {
 } from './shadowplay-components.js';
 import { playClick } from './sfx.js';
 import { palette } from './panel-palette.js';
+import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
 import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
 
 const PANEL_NODE = 'settings-panel';
@@ -132,6 +133,9 @@ export class SettingsSystem extends createSystem({
   /** Whether the server can dream up stories (null: not asked yet), and a dream in progress. */
   private dreamAvailable: boolean | null = null;
   private dreaming = false;
+  /** "Say your idea": listening for a spoken story idea (null when not). */
+  private wishListening: WishListening | null = null;
+  private sayLabel: UIKit.Text | undefined;
   /** The dream chooser: open, and what it has picked. */
   private choosing = false;
   private dreamTheme: string = DREAM_THEMES[0];
@@ -171,10 +175,10 @@ export class SettingsSystem extends createSystem({
       this.applied = key;
     }
     if (dreamRuntime.request) {
-      const { theme, shapes } = dreamRuntime.request;
+      const { theme, shapes, wish } = dreamRuntime.request;
       dreamRuntime.request = null;
       this.closeDreamChooser();
-      this.dream(theme, shapes);
+      this.dream(theme, shapes, wish);
     }
     this.refreshStories();
     this.refreshChapters();
@@ -249,11 +253,61 @@ export class SettingsSystem extends createSystem({
     this.dreamTheme = DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
     this.dreamShapes = [...DREAM_SHAPES].sort(() => Math.random() - 0.5).slice(0, 2);
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'flex' });
-    this.status?.setProperties({ text: 'Pick a place and two or three shapes, then Dream it.' });
+    this.status?.setProperties({ text: 'Say your idea, or pick a place and two or three shapes, then Dream it.' });
     this.refreshDreamChooser();
   }
 
+  /**
+   * "Say your idea": the grown-up (or child) says what story they would like,
+   * in their own words ("a forest story with a dog and a rabbit"); Mo writes
+   * it. A second press while listening finishes early.
+   */
+  private sayWish(): void {
+    if (this.wishListening) return this.wishListening.finish();
+    if (this.dreaming) return;
+    const p = palette();
+    const button = this.buttons.get('dream-say');
+    const idle = () => {
+      this.wishListening = null;
+      dreamRuntime.wish.state = '';
+      button?.setProperties(p.unselected);
+      this.sayLabel?.setProperties({ text: 'Say your idea', color: p.cream });
+    };
+    void canHearWishes().then((ok) => {
+      if (!ok) {
+        this.status?.setProperties({ text: 'Mo cannot hear ideas in this browser. Pick a place and shapes instead.' });
+        return;
+      }
+      if (this.wishListening || !this.choosing) return;
+      const listening = listenForWish();
+      this.wishListening = listening;
+      dreamRuntime.wish.state = 'listening';
+      button?.setProperties(p.selected);
+      this.sayLabel?.setProperties({ text: 'Listening... (press when done)', color: p.ink });
+      this.status?.setProperties({ text: 'Tell Mo your idea, like: a forest story with a dog and a rabbit.' });
+      listening.words
+        .then((words) => {
+          if (this.wishListening !== listening) return;
+          idle();
+          dreamRuntime.wish.heard = words;
+          if (!words) {
+            this.status?.setProperties({ text: 'Mo did not hear an idea. Press Say your idea and try again.' });
+            return;
+          }
+          this.closeDreamChooser();
+          this.status?.setProperties({ text: `Heard: "${words}"` });
+          this.dream(undefined, [], words);
+        })
+        .catch(() => {
+          if (this.wishListening !== listening) return;
+          idle();
+          this.status?.setProperties({ text: 'Mo needs the microphone to hear your idea.' });
+        });
+    });
+  }
+
   private closeDreamChooser(): void {
+    this.wishListening?.cancel();
     this.choosing = false;
     dreamRuntime.chooser = { ...dreamRuntime.chooser, open: false };
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'none' });
@@ -286,25 +340,35 @@ export class SettingsSystem extends createSystem({
 
   /**
    * Ask Mo for a story about `theme` with `shapes` (in order). Missing parts are
-   * picked at random (a voice command may name only a place, or nothing).
+   * picked at random (a voice command may name only a place, or nothing), or,
+   * with a `wish` (an idea said in plain words), by the server's model from it.
    */
-  dream(theme?: string, shapes: readonly string[] = []): void {
+  dream(theme?: string, shapes: readonly string[] = [], wish?: string): void {
     const story = first(this.queries.stories.entities);
     if (!story || this.dreaming || story.getValue(StoryState, 'followMode')) return;
     if (!this.dreamAvailable) {
       this.status?.setProperties({ text: 'Mo can dream up new stories only where the app has AI.' });
       return;
     }
-    theme = theme && (DREAM_THEMES as readonly string[]).includes(theme) ? theme : DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
+    const known = theme && (DREAM_THEMES as readonly string[]).includes(theme) ? theme : '';
     const chosen = [...new Set(shapes.filter((x) => (DREAM_SHAPES as readonly string[]).includes(x)))].slice(0, 3);
-    const rest = DREAM_SHAPES.filter((x) => !chosen.includes(x)).sort(() => Math.random() - 0.5);
-    // Two at least: a one-shape (or no-shape) request is topped up at random.
-    shapes = chosen.length >= 2 ? chosen : [...chosen, ...rest].slice(0, chosen.length ? 2 : Math.random() < 0.5 ? 2 : 3);
+    let body: { theme?: string; shapes: string[]; wish?: string };
+    if (wish) {
+      // The server reads the place and shapes from the idea (its model picks what it leaves out).
+      body = { ...(known ? { theme: known } : {}), shapes: chosen, wish };
+    } else {
+      const rest = DREAM_SHAPES.filter((x) => !chosen.includes(x)).sort(() => Math.random() - 0.5);
+      // Two at least: a one-shape (or no-shape) request is topped up at random.
+      body = {
+        theme: known || DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)],
+        shapes: chosen.length >= 2 ? chosen : [...chosen, ...rest].slice(0, chosen.length ? 2 : Math.random() < 0.5 ? 2 : 3),
+      };
+    }
     this.dreaming = true;
-    this.status?.setProperties({ text: 'Mo is dreaming up a story...' });
-    dreamRuntime.asked = { theme, shapes: [...shapes] };
+    this.status?.setProperties({ text: wish ? `Heard: "${wish}". Mo is dreaming it up...` : 'Mo is dreaming up a story...' });
+    dreamRuntime.asked = { theme: body.theme ?? '', shapes: [...body.shapes], ...(wish ? { wish } : {}) };
     const t0 = performance.now();
-    fetch('/api/dream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ theme, shapes }), signal: AbortSignal.timeout(60000) })
+    fetch('/api/dream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) })
       .then(async (r) => {
         const script = r.ok ? ((await r.json()) as { version?: string; title?: string; beats?: unknown[] }) : null;
         if (!script || script.version !== 'shadowplay.story.v1' || !Array.isArray(script.beats)) throw new Error(`dream ${r.status}`);
@@ -434,6 +498,8 @@ export class SettingsSystem extends createSystem({
     for (const sh of DREAM_SHAPES) on(`dream-shape-${sh}`, () => this.toggleDreamShape(sh));
     on('dream-go', () => this.dreamChosen());
     on('dream-cancel', () => this.closeDreamChooser());
+    on('dream-say', () => this.sayWish());
+    this.sayLabel = panel.getElementById<UIKit.Text>('dream-say-label') ?? undefined;
     panel.getElementById('dream-section')?.setProperties({ display: 'none' });
     this.choosing = false;
     fetch('/api/dream')
@@ -546,9 +612,11 @@ export class SettingsSystem extends createSystem({
 
 /** For tests and diagnostics: the last dream asked for, and how dreaming has gone. */
 export const dreamRuntime = {
-  asked: null as { theme: string; shapes: string[] } | null,
+  asked: null as { theme: string; shapes: string[]; wish?: string } | null,
   /** A dream asked for elsewhere (a voice command): taken by the Settings system on its next update. */
-  request: null as { theme: string; shapes: string[] } | null,
+  request: null as { theme: string; shapes: string[]; wish?: string } | null,
+  /** "Say your idea": 'listening' from the press until the words are back, else ''; and the last words heard. */
+  wish: { state: '' as '' | 'listening', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
   chooser: { open: false, theme: '', shapes: [] as string[] },
   title: '',
