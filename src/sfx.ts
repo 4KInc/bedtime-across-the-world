@@ -39,6 +39,29 @@ export function audioRunning(): boolean {
   return ctx?.state === 'running';
 }
 
+/**
+ * Sound waits for a user gesture. Entering XR from the browser's own prompt (not
+ * the page's Enter XR button) is not one, so the Quest Browser kept every sound,
+ * the narrator too, silent until the first pinch (Quest 3S, Nov 15: 50 s of
+ * silence). `blocked`: a line could not play; the story asks for a pinch.
+ * `waived`: no pinch came, so the story goes on with captions only.
+ */
+export const soundLock = { blocked: false, waived: false };
+const gestureListeners = new Set<() => void>();
+
+/** Run `fn` inside each user gesture (a pinch, a tap, a key), while sound may start. */
+export function onGesture(fn: () => void): () => void {
+  gestureListeners.add(fn);
+  return () => gestureListeners.delete(fn);
+}
+
+/** A user gesture: start the audio context and let anything waiting for one play now. */
+export function gesture(): void {
+  wakeAudio();
+  soundLock.blocked = false;
+  for (const fn of gestureListeners) fn();
+}
+
 /** The audio context's state for diagnostics: 'none' before it exists, then suspended, running or closed. */
 export function audioState(): string {
   return ctx?.state ?? 'none';

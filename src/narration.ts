@@ -1,6 +1,7 @@
 import { createSystem, Entity } from '@iwsdk/core';
 import { onAway } from './away.js';
 import { StallWatch } from './narration-watch.js';
+import { onGesture, soundLock } from './sfx.js';
 import { LiveSession, PerformanceRecorder, Settings, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { storyRuntime } from './story-script.js';
 
@@ -45,6 +46,8 @@ export class NarrationSystem extends createSystem({
   /** Object URLs made, freed when the story changes. */
   private made: string[] = [];
   private prefetchScript = '';
+  /** The line refused for want of a gesture: its finish, called if the story goes on without it. */
+  private held: (() => void) | null = null;
 
   init(): void {
     // Browsers load the voice list lazily; ask early so the first line has a voice.
@@ -56,6 +59,10 @@ export class NarrationSystem extends createSystem({
       // Coming back, update() resumes the line once the story is playing again.
       onAway((isAway) => {
         if (isAway) this.pauseLine();
+      }),
+      // The pinch the story asked for: the held line starts inside it.
+      onGesture(() => {
+        if (this.held && this.audio) this.start(this.audio, this.held);
       }),
     );
   }
@@ -82,6 +89,13 @@ export class NarrationSystem extends createSystem({
         story.setValue(StoryState, 'voiceDone', true);
       }
       return;
+    }
+    // No pinch came: the held line ends on its caption and the story goes on.
+    if (this.held && soundLock.waived) {
+      const done = this.held;
+      this.held = null;
+      this.audio?.pause();
+      done();
     }
     this.resumeLine();
     if (this.audio) this.watchClip(story, delta);
@@ -180,11 +194,7 @@ export class NarrationSystem extends createSystem({
       audio.addEventListener('ended', done, { once: true });
       audio.addEventListener('error', done, { once: true });
       story.setValue(StoryState, 'voiceSource', 'clip');
-      // An AbortError only means a pause or a reload (the stall watch's retry) interrupted
-      // this attempt; the line is not over. Any other failure ends it.
-      void audio.play().catch((e: unknown) => {
-        if ((e as Error)?.name !== 'AbortError') done();
-      });
+      this.start(audio, done);
       return;
     }
 
@@ -200,9 +210,7 @@ export class NarrationSystem extends createSystem({
         this.watch.reset();
         audio.addEventListener('ended', done, { once: true });
         audio.addEventListener('error', done, { once: true });
-        void audio.play().catch((e: unknown) => {
-          if ((e as Error)?.name !== 'AbortError') done();
-        });
+        this.start(audio, done);
       };
       const ahead = this.ready.get(spoken);
       if (ahead) void ahead.then(play, () => play(spoken));
@@ -227,6 +235,30 @@ export class NarrationSystem extends createSystem({
       return;
     }
     this.finish(story, beat, '');
+  }
+
+  /**
+   * Plays a line. An AbortError only means a pause or a reload (the stall watch's
+   * retry) interrupted this attempt; the line is not over. Refused for want of a
+   * gesture (NotAllowedError), the line is held, not skipped: the story asks for a
+   * pinch, and the line starts with it. Any other failure ends it.
+   */
+  private start(audio: HTMLAudioElement, done: () => void): void {
+    void audio.play().then(
+      () => {
+        if (audio === this.audio) this.held = null;
+      },
+      (e: unknown) => {
+        const name = (e as Error)?.name;
+        if (name === 'AbortError') return;
+        if (name === 'NotAllowedError' && !soundLock.waived && audio === this.audio) {
+          this.held = done;
+          soundLock.blocked = true;
+          return;
+        }
+        done();
+      },
+    );
   }
 
   private finish(story: Entity, beat: string, source: string): void {
@@ -272,6 +304,10 @@ export class NarrationSystem extends createSystem({
   private stopLine(): void {
     this.line++;
     this.paused = false;
+    if (this.held) {
+      this.held = null;
+      soundLock.blocked = false;
+    }
     if (this.audio) {
       this.audio.pause();
       this.audio = null;
