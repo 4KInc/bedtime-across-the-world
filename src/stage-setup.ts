@@ -14,7 +14,7 @@ import {
   XRPlane,
 } from '@iwsdk/core';
 import { DeskLamp, ShadowJournal, Stage, StageModes } from './shadowplay-components.js';
-import { accessRuntime, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, reachStage, stageRuntime } from './stage-runtime.js';
 import {
   createDimShell,
   createLightPool,
@@ -35,6 +35,7 @@ import {
 } from './wall-choice.js';
 import { shadowMapSize } from './quality-levels.js';
 import { StageAnchor } from './stage-anchor.js';
+import { LampRig } from './lamp-behind.js';
 
 /** Behind the stage in a browser (no passthrough): a deep night blue. */
 const BROWSER_BACKGROUND = new Color(0x0d0a14);
@@ -57,8 +58,6 @@ const DIM_FADE_SECONDS = 2.5;
 /** The light swell when a creature wakes: peak gain over normal, and how fast it settles (per second). */
 const WAKE_FLARE_GAIN = 0.8;
 const WAKE_FLARE_DECAY = 1.1;
-/** Sliding the lamp sideways sweeps its aim across the wall this many times further. */
-const SWEEP_GAIN = 3.5;
 /** How dark the shadows on the wall are (high contrast makes them solid). */
 const SHADOW_OPACITY = 0.85;
 
@@ -109,7 +108,15 @@ export class StageSetupSystem extends createSystem({
   private lampMeshes: Mesh[] = [];
   /** Where the lamp was placed; dragging away from here sweeps the light. */
   private lampHome = new Vector3();
-  private sweep = new Vector3();
+  /** The lamp behind the viewer: its side table, the desk switch, and where the bulb goes. */
+  private rig = new LampRig();
+  private switchSpot = new Vector3();
+  /** Searching: where the light pool is (m along stage right), following the hand. */
+  private searchU = 0;
+  private searchPalm = new Vector3();
+  private searchHit = new Vector3();
+  private toStage = new Vector3();
+  private sideways = new Vector3();
   /** Keeps the stage on its wall and remembers the wall for next time (stage-anchor.ts). */
   private anchor = new StageAnchor();
   private anchorPose = new Matrix4();
@@ -207,6 +214,9 @@ export class StageSetupSystem extends createSystem({
     stageObj.add(this.paper, this.pool, this.surface, this.shell, this.spotTarget);
     const anchor = lampObj.getObjectByName('lamp-bulb-anchor') ?? lampObj;
     anchor.add(this.spot);
+    this.rig.measure(lampObj);
+    this.world.createTransformEntity(this.rig.table);
+    this.world.createTransformEntity(this.rig.deskSwitch);
     const bulb = lampObj.getObjectByName('lamp-bulb');
     if (bulb instanceof Mesh && bulb.material instanceof MeshStandardMaterial) {
       this.bulbMaterial = bulb.material.clone();
@@ -226,6 +236,7 @@ export class StageSetupSystem extends createSystem({
    */
   private applyBrowserLook(): void {
     for (const m of this.lampMeshes) m.visible = this.inXR;
+    this.rig.table.visible = this.rig.deskSwitch.visible = this.inXR;
     this.world.scene.background = this.inXR ? null : BROWSER_BACKGROUND;
   }
 
@@ -337,6 +348,7 @@ export class StageSetupSystem extends createSystem({
     stageObj.applyMatrix4(this.fix);
     lamp.object3D!.applyMatrix4(this.fix);
     this.lampHome.applyMatrix4(this.fix);
+    this.rig.shift(this.fix);
     for (const journal of this.queries.journals.entities) journal.object3D?.applyMatrix4(this.fix);
     stageObj.updateMatrixWorld(true);
     stageRuntime.center.copy(stageObj.position);
@@ -478,12 +490,12 @@ export class StageSetupSystem extends createSystem({
     u.uCosInner.value = Math.cos(half + (4 * Math.PI) / 180);
     u.uCosOuter.value = Math.cos(half + (20 * Math.PI) / 180);
 
-    // Lamp on the desk, between the player and the stage, facing the stage; the
-    // Shadow Journal on the other side. On the real desk or table when Room Setup
-    // found one under both (anchored to the detected surface), else at the usual
-    // seated desk height.
+    // The lamp's switch on the desk, where the lamp used to stand; the Shadow Journal
+    // on the other side. On the real desk or table when Room Setup found one under
+    // both (anchored to the detected surface), else at the usual seated desk height.
+    // The lamp itself stands behind the viewer (lamp-behind.ts).
     const lampForward = close ? 0.22 : 0.3;
-    lampObj.position
+    const switchSpot = this.switchSpot
       .copy(this.head)
       .addScaledVector(this.forward, lampForward)
       .addScaledVector(right, 0.16);
@@ -491,15 +503,14 @@ export class StageSetupSystem extends createSystem({
       .copy(this.head)
       .addScaledVector(this.forward, close ? 0.2 : 0.28)
       .addScaledVector(right, -0.2);
-    const surface = this.inXR ? findDesk(this.head, this.readRoom(), [lampObj.position, this.bookSpot]) : null;
+    const surface = this.inXR ? findDesk(this.head, this.readRoom(), [switchSpot, this.bookSpot]) : null;
     const deskY = surface ?? Math.max(0.4, this.head.y - EYE_TO_DESK);
     stageRuntime.desk = surface === null ? 'estimate' : 'surface';
-    lampObj.position.y = deskY;
-    if (!this.inXR) {
-      // Desktop browser: keep the lamp low and to the side, out of the frame.
-      lampObj.position.copy(this.head).addScaledVector(this.forward, 0.55).addScaledVector(right, 0.45);
-      lampObj.position.y = this.head.y - 0.62;
-    }
+    switchSpot.y = deskY;
+    // The light behind the viewer, toward the stage (also in the desktop browser, behind the camera).
+    this.toStage.subVectors(center, this.head).setY(0).normalize();
+    this.rig.place(this.head, this.toStage, up, this.sideways.crossVectors(this.toStage, up).normalize(), switchSpot);
+    this.rig.update(lampObj, this.head, this.toStage, up, this.sideways, center, 1, false);
     this.lampHome.copy(lampObj.position);
 
     // The Shadow Journal lies on the desk on the other side, front edge to the player.
@@ -520,19 +531,34 @@ export class StageSetupSystem extends createSystem({
     if (this.inXR) this.anchor.place(this.xrFrame, this.world.xrReferenceSpace, stageObj.matrixWorld, width, mode === StageModes.Wall);
   }
 
-  /** Aim the lamp (and the light pool) according to how far it was slid along the desk. */
-  private updateAim(lamp: Entity): void {
+  /**
+   * The lamp behind the viewer, aimed at the stage's centre: it stands on its
+   * side table with the bulb where the light belongs, which calibration moves
+   * once to shine through the viewer's own hands (lamp-behind.ts).
+   */
+  private updateAim(lamp: Entity, delta: number): void {
     const lampObj = lamp.object3D!;
-    this.sweep.subVectors(lampObj.position, this.lampHome);
-    const r = stageRuntime.right;
-    const half = stageRuntime.width * 0.45;
-    const du = Math.max(-half, Math.min(half, (this.sweep.x * r.x + this.sweep.z * r.z) * SWEEP_GAIN));
-    this.spotTarget.position.set(du, 0, 0);
-    this.pool.position.x = du;
-    stageRuntime.poolCenter.copy(stageRuntime.center).addScaledVector(r, du);
-    const p = lampObj.position;
-    const c = stageRuntime.poolCenter;
-    lampObj.rotation.set(0, Math.atan2(-(c.x - p.x), -(c.z - p.z)), 0);
+    // Searching the dark: the light follows a raised hand across the stage, like a torch.
+    let target = 0;
+    if (stageRuntime.searching) {
+      for (const side of ['right', 'left'] as const) {
+        const hand = handRuntime[side];
+        if (!hand.tracked) continue;
+        const j = hand.joints;
+        this.searchPalm.set((j[0] + j[33]) * 0.5, (j[1] + j[34]) * 0.5, (j[2] + j[35]) * 0.5);
+        if (reachStage(this.searchPalm, this.searchHit, 0.6) <= 0) continue;
+        const half = stageRuntime.width * 0.45;
+        target = Math.max(-half, Math.min(half, this.searchHit.sub(stageRuntime.center).dot(stageRuntime.right)));
+        break;
+      }
+    }
+    this.searchU += (target - this.searchU) * Math.min(1, delta * 4);
+    this.spotTarget.position.set(this.searchU, 0, 0);
+    this.pool.position.x = this.searchU;
+    stageRuntime.poolCenter.copy(stageRuntime.center).addScaledVector(stageRuntime.right, this.searchU);
+    this.toStage.subVectors(stageRuntime.center, this.head).setY(0).normalize();
+    this.sideways.crossVectors(this.toStage, stageRuntime.up).normalize();
+    this.rig.update(lampObj, this.head, this.toStage, stageRuntime.up, this.sideways, stageRuntime.poolCenter, delta, this.inXR);
   }
 
   /** Distance at which a paper screen of this stage width (plus caption) fits the view. */
@@ -582,7 +608,7 @@ export class StageSetupSystem extends createSystem({
   }
 
   private updateLighting(stage: Entity, lamp: Entity, delta: number): void {
-    if (this.placed) this.updateAim(lamp);
+    if (this.placed) this.updateAim(lamp, delta);
     const finale = stage.getValue(Stage, 'finale') ?? 0;
     const lampOn = Boolean(stage.getValue(Stage, 'lampOn'));
     const level = lampOn ? (stage.getValue(Stage, 'lampLevel') ?? 1) : 0;

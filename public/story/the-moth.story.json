@@ -175,7 +175,7 @@
     {
       "id": "grow-fish",
       "type": "grow",
-      "text": "Move your hand closer to the lamp. Make the fish big enough to carry Mo.",
+      "text": "Move your hand back toward you, closer to the lamp. Make the fish big enough to carry Mo.",
       "factor": 1.4,
       "minSize": 0.25
     },
@@ -286,7 +286,7 @@
     {
       "id": "dog-grow",
       "type": "grow",
-      "text": "Bring your hand close to the lamp. Grow, and grow, until you are huge!",
+      "text": "Bring your hand back toward you, closer to the lamp. Grow, and grow, until you are huge!",
       "factor": 1.8,
       "minSize": 0.4
     },
@@ -413,7 +413,7 @@
     {
       "id": "search",
       "type": "reveal",
-      "text": "Pinch the lamp and slide it along the desk to search the dark for shelter."
+      "text": "Hold up your hand and sweep it slowly across the wall. The light follows it. Search the dark for shelter."
     },
     {
       "id": "found-hollow",

@@ -9,6 +9,7 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   OneFactor,
   PlaneGeometry,
   Vector3,
@@ -22,7 +23,7 @@ import { storyRuntime } from './story-script.js';
 
 /** Creatures that step into the room (the cup is a light, the open hand is not a creature). */
 const CREATURES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'swan', 'deer', 'crocodile']);
-/** Places on the desk, between the Shadow Journal (0) and the lamp (1), a hand's width toward the wall. */
+/** Places on the desk, between the Shadow Journal (0) and the lamp's switch (1), a hand's width toward the wall. */
 const SLOTS = [0.3, 0.52, 0.74];
 const TOWARD_WALL = 0.11;
 /** A lantern creature's size on the desk (metres, like the wall puppets' scale). */
@@ -93,6 +94,7 @@ export class LanternSystem extends createSystem({
   private target = new Vector3();
   private head = new Vector3();
   private landed = -1;
+  private switchObj: Object3D | undefined;
 
   init(): void {
     this.seen = stageRuntime.releases;
@@ -106,7 +108,9 @@ export class LanternSystem extends createSystem({
   update(delta: number): void {
     this.time += delta;
     const inXR = this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
-    const lampObj = (this.queries.lamps.entities.values().next().value as Entity | undefined)?.object3D;
+    // The desk runs from the Shadow Journal to the lamp's switch (the lamp itself stands behind the viewer).
+    this.switchObj ??= this.world.scene.getObjectByName('desk-switch');
+    const lampObj = this.switchObj ?? (this.queries.lamps.entities.values().next().value as Entity | undefined)?.object3D;
     const bookObj = (this.queries.journals.entities.values().next().value as Entity | undefined)?.object3D;
     const ready = inXR && stageRuntime.ready && !!lampObj && !!bookObj;
     if (storyRuntime.script !== this.script) {

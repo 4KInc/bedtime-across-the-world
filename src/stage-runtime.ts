@@ -51,6 +51,8 @@ export const stageRuntime = {
   moAway: false,
   /** The story has reached its last beat ("The End"), set by the story system. */
   atEnd: false,
+  /** A search beat: the light pool follows the hand like a torch (the lamp behind the viewer is not slid). */
+  searching: false,
   /** Every creature let go after it was awake, counted, with where, how big (metres) and its colour: lanterns on the desk. */
   releases: 0,
   releaseAt: new Vector3(),

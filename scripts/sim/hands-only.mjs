@@ -1,8 +1,8 @@
 // Hands only, end to end (competition rule: "Can someone complete the entire
 // experience without ever pairing a controller?"). In the emulator with hand
 // input, no controllers: pinch the journal open, press every headset panel
-// button with the hand ray, pinch the lamp switch off and on, pinch-drag the
-// lamp along the desk.
+// button with the hand ray, pinch the lamp's switch on the desk off and on (the
+// lamp itself stands behind the viewer, out of reach, and is not dragged).
 //
 // Record, Send, Go live and Talk are not pressed here (they would open the
 // microphone or a Live room); they are the same panel buttons as the rest.
@@ -162,35 +162,25 @@ check('panel presses took effect (last tolerance and hint choices)', settings.to
 await page.waitForFunction(() => window.__sp.view().ready, null, { timeout: 15000 });
 await sleep(1000);
 
-// 3. Lamp switch: pinch it off, then on.
+// 3. The lamp's switch on the desk: pinch it off, then on.
 {
   await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
   await sleep(300);
   const before = await page.evaluate(() => __sp.get('Stage', 'lampOn'));
-  await pinchAt('lamp-switch');
+  await pinchAt('desk-switch');
   await sleep(300);
   const off = await page.evaluate(() => __sp.get('Stage', 'lampOn'));
-  await pinchAt('lamp-switch');
+  await pinchAt('desk-switch');
   await sleep(300);
   const on = await page.evaluate(() => __sp.get('Stage', 'lampOn'));
-  check('pinch the lamp switch: off, then on again', before === true && off === false && on === true, { before, off, on });
+  check('pinch the lamp switch on the desk: off, then on again', before === true && off === false && on === true, { before, off, on });
 }
 
-// 4. Lamp drag: pinch the lamp head, slide 15 cm, let go.
+// 4. The lamp stands behind the viewer: a pinch near the switch never grabs it.
 {
-  const start = await where('lamp-head');
-  await handTo({ x: start[0], y: start[1], z: start[2] });
-  await pinch(true);
-  const held = (await page.evaluate(() => __sp.get('DeskLamp', 'heldBy'))) === 'right';
-  const p = await page.evaluate(() => __sp.pinchPoint('right'));
-  for (let i = 1; i <= 5; i++) {
-    await remote('set_transform', { device: 'hand-right', position: { x: p[0] + 0.03 * i, y: p[1], z: p[2] } });
-    await sleep(80);
-  }
-  await pinch(false);
-  const end = await where('lamp-head');
-  const moved = Math.hypot(end[0] - start[0], end[2] - start[2]);
-  check('pinch and drag the lamp along the desk', held && moved > 0.08, { moved: +moved.toFixed(3) });
+  const lamp = await page.evaluate(() => __sp.view().lamp);
+  const held = await page.evaluate(() => __sp.get('DeskLamp', 'heldBy'));
+  check('the lamp stands behind the viewer and is not picked up', lamp.behind > 0.5 && held === 'none', { lamp, held });
 }
 
 await browser.close();

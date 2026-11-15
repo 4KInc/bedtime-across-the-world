@@ -252,9 +252,9 @@ for (const c of CASES) {
   };
   // (Planes are passed as they are: place() lifts only vertical planes to the eye height.)
   const on = await place([flat(0, 'floor'), wall(), desk]);
-  check('a table in front: the lamp and journal stand on it', on.desk === 'surface' && Math.abs(on.lampY - deskY) < 0.005, { desk: on.desk, lampY: on.lampY, deskY: +deskY.toFixed(3) });
+  check('a table in front: the lamp switch and journal stand on it', on.desk === 'surface' && Math.abs(on.deskY - deskY) < 0.005, { desk: on.desk, deskAt: on.deskY, deskY: +deskY.toFixed(3) });
   const off = await place([flat(0, 'floor'), wall()]);
-  check('no desk detected: the usual seated height', off.desk === 'estimate' && Math.abs(off.lampY - (eye - 0.45)) < 0.005, { desk: off.desk, lampY: off.lampY });
+  check('no desk detected: the usual seated height', off.desk === 'estimate' && Math.abs(off.deskY - (eye - 0.45)) < 0.005, { desk: off.desk, deskAt: off.deskY });
 }
 
 // Field-of-view aware: a narrower device view (the emulator's view narrowed) gets a smaller stage

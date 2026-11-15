@@ -10,13 +10,27 @@ import {
 } from './shadowplay-components.js';
 import { loadStoryScript, StoryBeat } from './story-script.js';
 import { handOverride, JOINT_COUNT, stageRuntime } from './stage-runtime.js';
+import { NATURAL_HAND } from './lamp-behind.js';
 
-/** Hands sit this far from the lamp towards the stage (1/magnification). */
-const REST_REACH = 0.22;
-/** Closer to the lamp for grow beats (bigger shadow). */
-const GROW_REACH = { fish: 0.12, dog: 0.08 } as const;
-/** Lamp slide (m along stage right) that sweeps the light onto the hidden hollow. */
-const LAMP_SEARCH = -0.11;
+/**
+ * How far along the line from the bulb to the stage a hand `ahead` metres in
+ * front of the eyes sits (1/magnification). The lamp stands behind the viewer
+ * (lamp-behind.ts), so hands rest at NATURAL_HAND, and grow by coming back
+ * toward the eyes (and the lamp).
+ */
+function reachAt(ahead: number): number {
+  const e = stageRuntime.eye;
+  const n = stageRuntime.normal;
+  const fwd = (p: { x: number; y: number; z: number }) => -((p.x - e.x) * n.x + (p.y - e.y) * n.y + (p.z - e.z) * n.z);
+  const b = fwd(stageRuntime.bulb);
+  const c = fwd(stageRuntime.center);
+  return c - b > 1e-3 ? Math.min(0.9, Math.max(0.05, (ahead - b) / (c - b))) : 0.4;
+}
+const restReach = () => reachAt(NATURAL_HAND);
+/** Pulled back toward the eyes for grow beats (bigger creature). */
+const GROW_AHEAD = { fish: 0.2, dog: 0.17 } as const;
+/** Where the light pool must go (m along stage right) to find the hidden hollow; the hand sweeps there. */
+const SEARCH_U = -0.385;
 /** Seconds to ease between hand targets. */
 const EASE = 1.6;
 const SEED = 37;
@@ -38,8 +52,9 @@ interface Performance {
  * screen-recorded from the emulator (the competition accepts simulator
  * footage). It reads the current beat and plays it like a careful player:
  * leads Mo with a fingertip, forms each requested shape on its outline, keeps
- * a living creature held through narration, carries, grows, flies, slides the
- * lamp to search, and opens the hands to continue or let the light go.
+ * a living creature held through narration, carries, grows (pulling the hand
+ * back toward the lamp behind the viewer), flies, sweeps an open hand to search
+ * the dark, and opens the hands to continue or let the light go.
  * Keys in dev builds: D play/stop, B Chapter Three ending, H show hands.
  * Never shipped.
  */
@@ -54,16 +69,14 @@ export class DemoDirectorSystem extends createSystem({
   private loading = false;
   private time = 0;
   private held: PoseFixture | null = null;
-  private target: Performance = { fixture: null, u: 0, v: 0, reach: REST_REACH, sway: false };
+  private target: Performance = { fixture: null, u: 0, v: 0, reach: 0.4, sway: false };
   private u = 0;
   private v = 0;
-  private reach = REST_REACH;
+  private reach = 0.4;
   private local = new Map<string, { right: V[] | null; left: V[] | null }>();
   private joints = { left: new Float32Array(JOINT_COUNT * 3), right: new Float32Array(JOINT_COUNT * 3) };
   private wrist = new Vector3();
   private base = new Vector3();
-  private lampStart = new Vector3();
-  private lampMoved = 0;
   private wasPlaying = false;
   private beatId = '';
   /** Seconds in the current beat (personas react to it). */
@@ -155,8 +168,6 @@ export class DemoDirectorSystem extends createSystem({
     const h = stageRuntime.height;
     t.sway = false;
     if (!beat) return;
-    // After the storm search, slide the lamp back home, as a player would.
-    if (beat.type !== 'reveal' && this.lampMoved > 0) this.slideLamp(-1);
     switch (beat.type) {
       case 'follow':
         this.held = null;
@@ -164,7 +175,7 @@ export class DemoDirectorSystem extends createSystem({
         // Low enough that the (magnified) fingertip shadow stays on the stage.
         t.u = 0.02;
         t.v = -0.05;
-        t.reach = REST_REACH;
+        t.reach = restReach();
         t.sway = true;
         return;
       case 'request':
@@ -186,14 +197,15 @@ export class DemoDirectorSystem extends createSystem({
         this.held = this.fixture(shape);
         t.fixture = this.held;
         // Shadow offset = hand offset x magnification, so aim the hand at the outline.
-        t.reach = REST_REACH;
-        t.u = ou * w * REST_REACH;
-        t.v = ov * h * REST_REACH;
+        const rest = restReach();
+        t.reach = rest;
+        t.u = ou * w * rest;
+        t.v = ov * h * rest;
         return;
       }
       case 'grow':
         t.fixture = this.held;
-        t.reach = this.held?.label === 'dog' ? GROW_REACH.dog : GROW_REACH.fish;
+        t.reach = reachAt(this.held?.label === 'dog' ? GROW_AHEAD.dog : GROW_AHEAD.fish);
         t.u = 0;
         t.v = 0;
         return;
@@ -202,15 +214,18 @@ export class DemoDirectorSystem extends createSystem({
         t.fixture = this.held;
         return;
       case 'reveal':
+        // Search the dark: an open hand sweeps across, and the light follows it.
         this.held = null;
-        t.fixture = null;
-        this.slideLamp();
+        t.fixture = this.fixture('open');
+        t.reach = restReach();
+        t.u = SEARCH_U * restReach();
+        t.v = 0;
         return;
       case 'continue':
       case 'letgo':
         this.held = beat.type === 'letgo' ? null : this.held;
         t.fixture = this.fixture('open');
-        t.reach = REST_REACH;
+        t.reach = restReach();
         t.u = 0;
         t.v = 0;
         return;
@@ -275,14 +290,6 @@ export class DemoDirectorSystem extends createSystem({
     this.target.v = Math.max(-0.15, Math.min(0.2, this.target.v + (targetV - v) * stageRuntime.height * k));
   }
 
-  /** Slide the lamp along the desk (towards the hollow tree, or back home with dir -1). */
-  private slideLamp(dir = 1): void {
-    const lamp = first(this.queries.lamps.entities)?.object3D;
-    if (!lamp) return;
-    if (this.lampMoved === 0 && dir > 0) this.lampStart.copy(lamp.position);
-    this.lampMoved = Math.max(0, Math.min(1, this.lampMoved + 0.008 * dir));
-    lamp.position.copy(this.lampStart).addScaledVector(stageRuntime.right, LAMP_SEARCH * this.lampMoved);
-  }
 
   private ease(delta: number): void {
     const k = Math.min(1, delta / EASE * 3);
@@ -319,13 +326,13 @@ export class DemoDirectorSystem extends createSystem({
       this.base
         .copy(stageRuntime.eye)
         .addScaledVector(stageRuntime.normal, -0.38)
-        .addScaledVector(stageRuntime.up, -0.12 + this.v * 0.2 + swayV)
-        .addScaledVector(stageRuntime.right, this.u * 0.2 + swayU);
+        .addScaledVector(stageRuntime.up, -0.12 + this.v + swayV)
+        .addScaledVector(stageRuntime.right, this.u + swayU);
     } else {
       this.base
         .copy(stageRuntime.bulb)
         .lerp(stageRuntime.center, this.reach)
-        .addScaledVector(stageRuntime.up, -0.06 * (this.reach / REST_REACH) + this.v + swayV)
+        .addScaledVector(stageRuntime.up, -0.06 * (this.reach / restReach()) + this.v + swayV)
         .addScaledVector(stageRuntime.right, this.u + swayU);
     }
     const place = (side: 'left' | 'right', local: V[] | null, at?: [number, number]) => {

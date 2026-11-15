@@ -45,7 +45,7 @@ await page.waitForFunction(() => __sp.view().lanterns.onDesk.length > 0, null, {
 await sleep(300);
 const landed = await lan();
 const book = await page.evaluate(() => __sp.where('journal-cover-top'));
-const lampY = await page.evaluate(() => __sp.view().lampY);
+const lampY = await page.evaluate(() => __sp.view().deskY);
 const fromBook = Math.hypot(landed.last[0] - book[0], landed.last[2] - book[2]);
 check('a creature let go hops off the wall and lands on the desk beside the Journal', hopped && landed.onDesk.length === 1 && Math.abs(landed.last[1] - (lampY + 0.07)) < 0.02 && fromBook < 0.4, { mid, landed, lampY, fromBook: +fromBook.toFixed(3) });
 
