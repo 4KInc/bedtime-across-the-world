@@ -109,7 +109,7 @@ function withServer(): WishListening {
     analyser.fftSize = 1024;
     audio.createMediaStreamSource(stream).connect(analyser);
     const samples = new Float32Array(analyser.fftSize);
-    // Speech needs little: 32 kbit/s keeps ten seconds well under the server's limit (MAX_CLIP_BYTES, 96 KB).
+    // Speech needs little: 32 kbit/s keeps ten seconds well under the server's limit (MAX_CLIP_BYTES, 224 KB).
     const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);

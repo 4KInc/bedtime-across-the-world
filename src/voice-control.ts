@@ -14,6 +14,7 @@ import {
 import { accessRuntime, gazeTargets, stageRuntime } from './stage-runtime.js';
 import { dreamRuntime } from './settings.js';
 import { describe, parseCommand, type VoiceCommand } from './voice-commands.js';
+import { downsample, encodeWav, joinParts, PcmRing } from './voice-clip.js';
 
 /** Speech onset: louder than this (RMS, 0-1) for ONSET_SECONDS starts a clip. */
 const SPEECH_RMS = 0.025;
@@ -69,8 +70,10 @@ export class VoiceControlSystem extends createSystem({
   private audio: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private samples = new Float32Array(1024);
-  private recorder: MediaRecorder | null = null;
-  private chunks: Blob[] = [];
+  /** Raw microphone audio (voice-clip.ts): the last half second always kept; a clip starts with it. */
+  private capture: ScriptProcessorNode | null = null;
+  private ring: PcmRing | null = null;
+  private clipParts: Float32Array[] | null = null;
   private loud = 0;
   private quiet = 0;
   private clipTime = 0;
@@ -128,8 +131,13 @@ export class VoiceControlSystem extends createSystem({
       this.recognition.abort();
       this.recognition = null;
     }
-    if (this.recorder && this.recorder.state !== 'inactive') this.recorder.stop();
-    this.recorder = null;
+    this.clipParts = null;
+    if (this.capture) {
+      this.capture.onaudioprocess = null;
+      this.capture.disconnect();
+      this.capture = null;
+    }
+    this.ring = null;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
     void this.audio?.close();
@@ -187,7 +195,20 @@ export class VoiceControlSystem extends createSystem({
       void this.audio.resume();
       this.analyser = this.audio.createAnalyser();
       this.analyser.fftSize = this.samples.length;
-      this.audio.createMediaStreamSource(stream).connect(this.analyser);
+      const source = this.audio.createMediaStreamSource(stream);
+      source.connect(this.analyser);
+      // Raw audio for the clips: the last half second is always at hand, so a clip
+      // includes the start of a word said before the loudness was noticed.
+      this.ring = new PcmRing(this.audio.sampleRate);
+      this.capture = this.audio.createScriptProcessor(2048, 1, 1);
+      this.capture.onaudioprocess = (e) => {
+        const samples = e.inputBuffer.getChannelData(0);
+        this.clipParts?.push(new Float32Array(samples));
+        this.ring?.push(samples);
+      };
+      source.connect(this.capture);
+      // (It only runs while connected to an output; it writes silence.)
+      this.capture.connect(this.audio.destination);
       accessRuntime.voiceState = 'server';
     } catch {
       if (generation !== this.generation) return;
@@ -202,7 +223,7 @@ export class VoiceControlSystem extends createSystem({
     let sum = 0;
     for (let i = 0; i < this.samples.length; i++) sum += this.samples[i] * this.samples[i];
     const speaking = Math.sqrt(sum / this.samples.length) > SPEECH_RMS && !this.suspended();
-    if (!this.recorder) {
+    if (!this.clipParts) {
       this.loud = speaking ? this.loud + delta : 0;
       if (this.loud >= ONSET_SECONDS) this.beginClip();
       return;
@@ -213,34 +234,25 @@ export class VoiceControlSystem extends createSystem({
   }
 
   private beginClip(): void {
-    if (!this.stream) return;
-    const type = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
-    if (!type) return this.unavailable('Voice commands are not available in this browser.');
-    this.chunks = [];
+    if (!this.stream || !this.ring) return;
+    // The clip begins with the half second before the speech was noticed.
+    this.clipParts = [this.ring.snapshot()];
     this.clipTime = 0;
     this.quiet = 0;
     this.loud = 0;
-    // 32 kbit/s: a longest clip (MAX_CLIP_SECONDS) stays well under the server's limit (96 KB).
-    const recorder = new MediaRecorder(this.stream, { mimeType: type, audioBitsPerSecond: 32000 });
-    recorder.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
-    this.recorder = recorder;
-    recorder.start();
   }
 
   private endClip(): void {
-    const recorder = this.recorder!;
+    const parts = this.clipParts;
     const seconds = this.clipTime;
-    this.recorder = null;
+    this.clipParts = null;
+    if (!parts || !this.audio || seconds < MIN_CLIP_SECONDS) return;
     const generation = this.generation;
-    recorder.onstop = () => {
-      if (generation !== this.generation || seconds < MIN_CLIP_SECONDS) return;
-      const clip = new Blob(this.chunks, { type: 'audio/webm' });
-      fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: clip })
-        .then((r) => (r.ok ? (r.json() as Promise<{ text?: string }>) : { text: '' }))
-        .then((r) => generation === this.generation && this.heard(r.text ?? ''))
-        .catch(() => undefined);
-    };
-    recorder.stop();
+    const wav = encodeWav(downsample(joinParts(parts), this.audio.sampleRate));
+    fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: new Blob([wav as BlobPart], { type: 'audio/wav' }) })
+      .then((r) => (r.ok ? (r.json() as Promise<{ text?: string }>) : { text: '' }))
+      .then((r) => generation === this.generation && this.heard(r.text ?? ''))
+      .catch(() => undefined);
   }
 
   // ------------------------------------------------------------ understanding and acting
