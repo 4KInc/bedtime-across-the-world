@@ -40,62 +40,61 @@
       "text": "That's it. Off she goes."
     },
     {
-      "id": "sea-hills-title",
+      "id": "sea-shore-title",
       "type": "chapter",
-      "chapter": "The Hills",
-      "text": "The Hills"
+      "chapter": "The Shore",
+      "text": "The Shore"
     },
     {
-      "id": "sea-hills-rest",
+      "id": "sea-shore-rest",
       "type": "moth",
       "mode": "resting",
-      "restU": -0.4,
-      "restV": 0.05
+      "restU": -0.42,
+      "restV": 0.08
     },
     {
-      "id": "sea-hills",
+      "id": "sea-shore",
       "type": "scenery",
-      "set": "field"
+      "set": "sea"
     },
     {
-      "id": "sea-hills-text",
+      "id": "sea-shore-text",
       "type": "narrate",
-      "text": "First, over the hills where the long grass sleeps."
+      "text": "First, along the shore, where the little waves whisper."
     },
     {
-      "id": "sea-want-rabbit",
+      "id": "sea-want-swan",
       "type": "request",
-      "shape": "rabbit",
-      "alt": "ears",
-      "text": "Make a rabbit with your hand. Rabbits know every path through the grass."
+      "shape": "swan",
+      "text": "Make a swan: a flat hand, bent down at the wrist, like a long neck and a beak. Swans glide along the water."
     },
     {
-      "id": "sea-rabbit-yes",
+      "id": "sea-swan-yes",
       "type": "narrate",
-      "text": "A rabbit, soft and quick. Hold on tight, Mo."
+      "text": "A swan, white and still. Climb on, Mo."
     },
     {
-      "id": "sea-rabbit-ride",
+      "id": "sea-swan-ride",
       "type": "moth",
       "mode": "riding"
     },
     {
-      "id": "sea-rabbit-carry",
+      "id": "sea-swan-carry",
       "type": "carry",
-      "toU": 0.32,
-      "text": "Hop across the hills."
+      "toU": 0.2,
+      "text": "Glide along the shore."
     },
     {
-      "id": "sea-rabbit-land",
+      "id": "sea-swan-land",
       "type": "moth",
       "mode": "resting",
-      "restU": 0.42,
-      "restV": 0.05
+      "restU": 0.22,
+      "restV": 0.06
     },
     {
-      "id": "sea-rabbit-bows",
+      "id": "sea-swan-bows",
       "type": "release",
-      "text": "The rabbit hops home to its burrow, to sleep."
+      "text": "The swan tucks its head under its wing, to sleep."
     },
     {
       "id": "sea-sea-title",
@@ -118,7 +117,7 @@
     {
       "id": "sea-sea-text",
       "type": "narrate",
-      "text": "Then the sea, wide and silver under the moon. The same moon that is shining on them, far away."
+      "text": "Then out over the sea, wide and silver under the moon. The same moon that is shining on them, far away."
     },
     {
       "id": "sea-want-fish",
