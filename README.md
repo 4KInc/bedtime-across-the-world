@@ -33,7 +33,7 @@ fixed, and checked again on the headset.
 
 **Meets the 60 fps minimum on both headsets.** Every session held the requested
 72 Hz: median 71.3 to 72 fps, frame-time 95th percentile around 15 ms (under
-the 16.7 ms that 60 fps allows). 432 of 433 five-second windows stayed at
+the 16.7 ms that 60 fps allows). 481 of 482 five-second windows stayed at
 60 fps or above; the one exception (47 fps) was a Quest 3 waking after three
 hours asleep and finding the room again.
 
@@ -45,12 +45,11 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | Session | Headset | Started (UTC) | In the headset | What was played | fps (median, lowest 5 s) | Frame p95 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `cdj3st58rm` | Quest 3 | Nov 14, 22:56 | 12 min | Counting Stars: 12 minutes waiting on the opening bird, made the textbook way (the evidence behind recognising shapes as people really make them) | 71.8, 46.9 | 15.0 ms |
-| `aytdvcb38s` | Quest 3 | Nov 15, 02:19 | - | The page reopened; did not enter the headset view (logged error: the XR session was offered twice) | - | - |
+| `49768whrpd` | Quest 3 | Nov 15, 02:20 | 26 min | Counting Stars, The Brave Little Dog, The Night Garden and The Letter That Took the Slow Way (the opening bird in 22 s, then 6 s). Only its last half minute (16:28) survives in `docs/diag`: the rest was overwritten when the page was reopened, a server bug now fixed, so the numbers here are that half minute's | 72.0, 61.1 | 15.5 ms |
 | `32kbw476u2` | Quest 3S | Nov 15, 07:19 | 0.3 min | A dreamed story; stage found on a labelled wall (27 room planes) | 71.4, 68.0 | 16.2 ms |
-| `49768whrpd` | Quest 3 | Nov 15, 16:28 | 0.6 min | A dreamed story, on the paper screen (no room data) | 72.0, 61.1 | 15.5 ms |
+| `xhz96jhkv9` | Quest 3 | Nov 15, 16:28 | 4.6 min | Two dreamed stories, each to The End | 71.6, 67.4 | 14.8 ms |
 | `xnhuwf56d6` | Quest 3S | Nov 15, 16:38 | 0.6 min | The Night Garden | 71.5, 68.3 | 15.5 ms |
 | `afthmamdpn` | Quest 3S | Nov 15, 16:39 | 8.4 min | The Night Garden, The Moth, Mo and the Midnight Moon Buggy (to The End), Goodnight Across the Sea | 71.6, 67.5 | 14.8 ms |
-| `xhz96jhkv9` | Quest 3 | Nov 15, 19:25 | 0.5 min | A dreamed story | 71.3, 70.7 | 15.9 ms |
 | `m3zdndu6vq` | Quest 3 | Nov 15, 19:25 | 11.7 min | A dreamed story, Moon Buggy, Sleepy Little Dinosaur and Little Lost Spaceship, each to The End; six of Mo's AI tips in 0.6 to 0.9 s | 71.8, 70.4 | 14.8 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
