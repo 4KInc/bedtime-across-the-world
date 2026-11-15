@@ -33,6 +33,8 @@ await context.addInitScript(() => {
   const orig = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
     const el = this;
+    // Narration only: the creatures' voices (sfx files) are meant to play over a line.
+    if (el.src.includes('/sfx/')) return orig.call(this);
     const mark = () => {
       window.__playing.add(el);
       if (window.__playing.size > 1) window.__overlaps.push([...window.__playing].map((e) => e.src.slice(-12)));
