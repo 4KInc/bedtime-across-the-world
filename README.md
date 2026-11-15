@@ -164,8 +164,8 @@ Quest (WebXR, IWSDK)                                  Phone / tablet (same web a
   joint angles matched to per-shape templates, with pair rules for two-hand
   shapes and a resting-hand reject; a shape must be held half a second. When a
   story asks for a shape, a hand close to it counts even if a neighbouring
-  shape fits a little better (hooked-thumb birds, relaxed fish, tilted snails,
-  flat antlers).
+  shape fits a little better (tuned from Quest 3 and 3S sessions: hooked-thumb
+  birds, relaxed fish, tilted snails, flat antlers, palms-up cups).
 - **Performance stream** (`src/performance/`): both hands at 30 Hz in
   stage-relative millimetres, story beats, creature wakes and releases, lamp and
   staging events, plus voice. It replays on any stage, any size.
@@ -245,7 +245,9 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls
-and 38k triangles, with a budget enforced by the playtest.
+and 38k triangles, with a budget enforced by the playtest. On the headsets, every
+`?diag` session on Quest 3 and Quest 3S held the requested 72 Hz (median 71.5 to
+72 fps, no 5-second window under 60 fps).
 
 ### Device testing
 
@@ -262,5 +264,6 @@ their own URL (see [docs/DEPLOY.md](docs/DEPLOY.md)); the checklist is
 Complete and deployed, and hardened for the competition: diagnostics,
 performance, cold start (about 560 KB to first render), recognition, untested
 rooms, the first five minutes, and compliance with the rules. Tested in the IWSDK
-Quest emulator and in simulation.
-Not yet run on a physical Quest.
+Quest emulator, in simulation, and on Meta Quest 3 and Quest 3S (`?diag`
+sessions, November 2026), with recognition, the lamp, narration and sound tuned
+from those sessions.
