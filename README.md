@@ -26,6 +26,11 @@ in a real room, with hand tracking only. Every headset session ran with
 privacy-safe diagnostics (`?diag`), so each problem was found in the numbers,
 fixed, and checked again on the headset.
 
+| On Meta Quest 3 or Quest 3S (Quest Browser) | |
+| --- | --- |
+| Play it | https://shadowplay-1031148889398.us-central1.run.app |
+| Play it with live diagnostics on screen | https://shadowplay-1031148889398.us-central1.run.app/?diag |
+
 **Smooth on both headsets.** Every session held the requested 72 Hz: median
 71.5 to 72 fps, a frame-time 95th percentile around 15 ms, and not one
 5-second window under 60 fps, on Quest 3 and Quest 3S alike.
