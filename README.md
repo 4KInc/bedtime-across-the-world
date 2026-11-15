@@ -4,7 +4,6 @@
 
 Hands only, no controllers. Seated. Works on any wall, or none.
 
-**Video:** _link added with the submission_
 <!-- Hero image: docs/hero.jpg, a still from the headset capture (added after the device sessions). -->
 
 A parent puts on a Meta Quest and tells a shadow-puppet story on their own wall:
@@ -19,6 +18,42 @@ grandparent across an ocean.
 
 Built with [IWSDK](https://iwsdk.dev) (WebXR) for the Meta VR Start Developer
 Competition 2026 (Entertainment track, New Experience division).
+
+## Built on real Quest hardware, not just the emulator
+
+Shadowplay was played and tuned on a **Meta Quest 3** and a **Meta Quest 3S**,
+in a real room, with hand tracking only. Every headset session ran with
+privacy-safe diagnostics (`?diag`), so each problem was found in the numbers,
+fixed, and checked again on the headset.
+
+**Smooth on both headsets.** Every session held the requested 72 Hz: median
+71.5 to 72 fps, a frame-time 95th percentile around 15 ms, and not one
+5-second window under 60 fps, on Quest 3 and Quest 3S alike.
+
+**What real hands and real rooms taught us** (things an emulator cannot show):
+
+| On the headset | What changed |
+| --- | --- |
+| Hands were in the lamp's light only about 15% of the time: the desk lamp stood where hands are naturally held, so shadows meant reaching far forward to a window about 14 x 9 cm | **The lamp moved behind you**, as in real shadow theatre, aimed once through your own hands: modelled over natural hand positions, 80% now cast their shadow on the stage (it was 2%) |
+| The opening bird took 15 minutes: real birds are made with thumbs hooked and fingers relaxed, not the textbook pose | Shapes recognised **as people really make them**: hooked-thumb birds, relaxed fish, tilted snails, palms-up cupped hands, two-finger antlers. The same bird then woke in 6 seconds |
+| A shape still missing after about a minute was given up | The story helps sooner, at 15, 30 and 45 seconds, and after 45 any hand held still in front of you wakes the creature |
+| "Open your hands" waited 75 seconds: people open their hands flat, fingers together | Any open hand counts |
+| Entering from the Quest's own Enter VR prompt kept every sound back for the first 50 seconds | The story waits on its line and asks for one pinch to turn the sound on |
+| Creature voices were played but not heard over the room, while the narrator was | Each voice is now a small sound file, played exactly like the narration and as loud |
+| The narrator read "Shh" as the letters S-H-H | Lines are written for the voice ("Hush") |
+| Two narration lines could overlap when a shape was made mid-sentence; creatures on the desk bumped into each other; a dreamed fish swam through a forest | One line at a time; creatures stand side by side; a dreamed story moves to where each creature belongs |
+
+The room side works on real Room Setup data: the stage finds a labelled wall
+(or falls back to a floating paper screen) and the desk props stand on the
+detected table, anchored so they are in the same place the next time.
+
+**How the diagnostics work.** Opening the app with `?diag` adds a small overlay
+and sends anonymous technical data: frame times, the quality level, hand
+tracking and what the recognizer saw (including the measurements behind each
+two-hand shape), room detection, story timings and the sound engine's state.
+Never audio, video, names or family codes. `scripts/diag/pull.sh` turns a
+session into a one-screen report: how long each request took, how often hands
+were in the light, whether sound was running.
 
 ## Try it
 
@@ -132,6 +167,27 @@ hand held still in front of you will do.
   grown-up switches it on, your voice; choose colours for Mo, and draw a
   creature with your finger for the next story.
 
+## How Shadowplay uses AI
+
+AI helps the storyteller; it never replaces them, never sees the child, and
+never puts a word on the wall that the app has not checked.
+
+| | What it does | What it is given | Guardrails |
+| --- | --- | --- | --- |
+| **Mo the coach** (Gemini 3.5 Flash Lite) | When a hand is stuck on a shape, Mo gives one short, warm tip in about 0.7 s ("curl your ring finger down") | Only the shape's name and a few fixed facts the headset worked out from the hand's joints | The facts come from the app's own recognition, not from the model; the reply must fit them, pass the content checks (no brands, Mo is "she", no pose from another shape), or the app's own words are used |
+| **Dream a new story** (Gemini 3.8 Flash) | A new bedtime story for the place and shapes the storyteller picks, in about 4 s | A theme and shape names, never names or anything typed or said | The model writes only lines of narration into a fixed shape; the app builds the story itself (scenes, requests, scenery that fits each creature), checks every line, and refuses anything off. Shared, it is checked again by the server and the family's device |
+| **A voice for every line** | The library is read by five narrators recorded offline with **Kokoro**, an open model (Apache-2.0); a dreamed story is read live by **Google Cloud Text-to-Speech**, saying the child's name | Story lines only | Only plain story lines that pass the content checks are spoken; each is cached and deleted after 30 days. When a parent records, *they* are the narrator |
+| **Voice commands** | Say the shape, "pause", "go on", "music off" | A spoken phrase of a second or two (the browser's own recognition, else **Google Cloud Speech-to-Text**) | Only on when switched on; the clip is forgotten; ignored while recording or talking live |
+| **The child's hands** | The family viewer turns the phone's camera into hand positions with **MediaPipe**, on the device | Camera frames, on the device only | Video never leaves the device; a grown-up allows the camera first |
+
+What is *not* AI: the hand-shape recognition in the headset is the app's own,
+joint angles matched to templates and rules tuned on real headset sessions. It
+is instant, works offline, explains itself (that is where Mo's facts come
+from), and cannot be talked into a wrong answer.
+
+The model provider is one setting on the server (`AI_PROVIDER`): Gemini for the
+submission, with Claude and Meta's models also supported.
+
 ## Age rating: 10+
 
 Bedtime stories meant to be shared by a grown-up and a child. The only peril is
@@ -176,12 +232,40 @@ are private to the family and deleted after 30 days.
 
 ## How it works
 
-```
-Quest (WebXR, IWSDK)                                  Phone / tablet (same web app, ?viewer)
-  hand joints -> capsule shadow casters                  recorded or live hands -> the same stage
-  joint-angle shape recognition                          MediaPipe hands (camera, on device)
-  story engine (JSON beats)  --story tap-->  recorder ----> /api/stories (family code)
-                                         \-> Live -------> /live WebSocket room <---- Live
+```mermaid
+flowchart LR
+  subgraph Q["Meta Quest 3 / 3S: Quest Browser, WebXR (IWSDK)"]
+    HT["Hand tracking: 25 joints per hand"] --> REC["Shape recognition: joint angles and rules"]
+    HT --> SHD["Shadows on the wall, lamp behind you"]
+    RS["Room Setup: walls, table, anchors"] --> STG["Stage on your wall, props on your desk"]
+    REC --> ST["Story engine: JSON beats"]
+    ST --> FX["Creatures, Mo, scenery, music"]
+    ST --> NAR["Narration"]
+    DG["Diagnostics overlay (?diag)"]
+  end
+  subgraph V["Phone or tablet: family viewer (?viewer)"]
+    MP["MediaPipe hands, on the device"] --> VS["The same stage: watch, join in, Live"]
+  end
+  subgraph S["Google Cloud Run: one Node service"]
+    API["/api: stories, goodnights, dream, coach, speak, voice, diag"]
+    LV["/live: WebSocket rooms"]
+    GCS[("Cloud Storage: stories, spoken lines, diagnostics. Deleted after 30 days")]
+  end
+  subgraph AI["AI services"]
+    GEM["Gemini: Mo's tips, dreamed stories"]
+    TTS["Cloud Text-to-Speech: dreamed narration"]
+    STT["Cloud Speech-to-Text: voice commands"]
+  end
+  KK["Kokoro, offline: library narration"] -.-> NAR
+  ST -- "record, send" --> API
+  VS -- "watch, send a goodnight" --> API
+  ST <-->|live hands and voice| LV
+  LV <-->|live hands and voice| VS
+  DG --> API
+  API --> GCS
+  API --> GEM
+  API --> TTS
+  API --> STT
 ```
 
 - **Stage** (`src/stage-setup.ts`, `src/wall-choice.ts`): picks the wall straight
@@ -266,6 +350,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/session-life.mjs` | First-screen options, Quest menu and headset off mid-line, the first ghost hand, continuing next launch |
 | `node scripts/sim/hands-only.mjs` | Every interaction with emulated hands and no controllers: journal and lamp switch by pinch, every panel button by hand ray |
 | `node scripts/sim/narration-stall.mjs` | A narration clip whose download stalls does not stall the story |
+| `node scripts/sim/narration-overlap.mjs` | Narration never plays two lines at once (dreamed and library stories, shapes made while a line is still being read) |
 | `node scripts/sim/first-minutes.mjs` | Time from Enter XR to the first creature on a first launch |
 | `node scripts/sim/comfortable-hands.mjs` | Hands held where people hold them (not in the lamp's beam): every story with a shape told to the end, each shape in under a second |
 | `node scripts/sim/lamp-behind.mjs` | The lamp behind the viewer, its switch on the desk, the light aimed through the viewer's hands |

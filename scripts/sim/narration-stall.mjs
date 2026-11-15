@@ -29,6 +29,10 @@ async function scenario(name, holdFirstOnly) {
   await page.goto(APP + '/', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
   await page.getByRole('button', { name: /Enter XR/i }).click();
+  // The Moth (a first launch opens Counting Stars).
+  await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().ready, null, { timeout: 30000 });
+  await page.evaluate(() => __sp.set('StoryState', 'script', 'story/the-moth.story.json'));
+  await page.waitForFunction(() => __sp.get('StoryState', 'script') === 'story/the-moth.story.json' && __sp.get('StoryState', 'beatId'), null, { timeout: 30000 });
   await page.evaluate(() => {
     __sp.set('DemoDirector', 'persona', 'perfect');
     __sp.set('DemoDirector', 'playing', true);
