@@ -20,6 +20,42 @@ grandparent across an ocean.
 Built with [IWSDK](https://iwsdk.dev) (WebXR) for the Meta VR Start Developer
 Competition 2026 (Entertainment track, New Experience division).
 
+## Built on real Quest hardware, not just the emulator
+
+Shadowplay was played and tuned on a **Meta Quest 3** and a **Meta Quest 3S**,
+in a real room, with hand tracking only. Every headset session ran with
+privacy-safe diagnostics (`?diag`), so each problem was found in the numbers,
+fixed, and checked again on the headset.
+
+**Smooth on both headsets.** Every session held the requested 72 Hz: median
+71.5 to 72 fps, a frame-time 95th percentile around 15 ms, and not one
+5-second window under 60 fps, on Quest 3 and Quest 3S alike.
+
+**What real hands and real rooms taught us** (things an emulator cannot show):
+
+| On the headset | What changed |
+| --- | --- |
+| Hands were in the lamp's light only about 15% of the time: the desk lamp stood where hands are naturally held, so shadows meant reaching far forward to a window about 14 x 9 cm | **The lamp moved behind you**, as in real shadow theatre, aimed once through your own hands: modelled over natural hand positions, 80% now cast their shadow on the stage (it was 2%) |
+| The opening bird took 15 minutes: real birds are made with thumbs hooked and fingers relaxed, not the textbook pose | Shapes recognised **as people really make them**: hooked-thumb birds, relaxed fish, tilted snails, palms-up cupped hands, two-finger antlers. The same bird then woke in 6 seconds |
+| A shape still missing after about a minute was given up | The story helps sooner, at 15, 30 and 45 seconds, and after 45 any hand held still in front of you wakes the creature |
+| "Open your hands" waited 75 seconds: people open their hands flat, fingers together | Any open hand counts |
+| Entering from the Quest's own Enter VR prompt kept every sound back for the first 50 seconds | The story waits on its line and asks for one pinch to turn the sound on |
+| Creature voices were played but not heard over the room, while the narrator was | Each voice is now a small sound file, played exactly like the narration and as loud |
+| The narrator read "Shh" as the letters S-H-H | Lines are written for the voice ("Hush") |
+| Two narration lines could overlap when a shape was made mid-sentence; creatures on the desk bumped into each other; a dreamed fish swam through a forest | One line at a time; creatures stand side by side; a dreamed story moves to where each creature belongs |
+
+The room side works on real Room Setup data: the stage finds a labelled wall
+(or falls back to a floating paper screen) and the desk props stand on the
+detected table, anchored so they are in the same place the next time.
+
+**How the diagnostics work.** Opening the app with `?diag` adds a small overlay
+and sends anonymous technical data: frame times, the quality level, hand
+tracking and what the recognizer saw (including the measurements behind each
+two-hand shape), room detection, story timings and the sound engine's state.
+Never audio, video, names or family codes. `scripts/diag/pull.sh` turns a
+session into a one-screen report: how long each request took, how often hands
+were in the light, whether sound was running.
+
 ## Try it
 
 | | |
