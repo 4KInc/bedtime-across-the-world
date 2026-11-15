@@ -53,13 +53,15 @@ export function audioState(): string {
 const PLACED_FULL_LEVEL = 3;
 
 /** Where a sound goes: an HRTF panner at `pos`, or straight out when unplaced. */
-function output(a: AudioContext, pos?: Point3): AudioNode {
+function output(a: AudioContext, pos?: Point3, clear = false): AudioNode {
   if (!pos) return a.destination;
   const panner = a.createPanner();
-  panner.panningModel = 'HRTF';
+  // `clear`: left/right only and no fall-off, for creature voices (HRTF filtering dulled
+  // their short high chirps on the Quest's speakers).
+  panner.panningModel = clear ? 'equalpower' : 'HRTF';
   panner.distanceModel = 'inverse';
   panner.refDistance = PLACED_FULL_LEVEL;
-  panner.rolloffFactor = 1;
+  panner.rolloffFactor = clear ? 0 : 1;
   panner.positionX.value = pos.x;
   panner.positionY.value = pos.y;
   panner.positionZ.value = pos.z;
@@ -67,7 +69,7 @@ function output(a: AudioContext, pos?: Point3): AudioNode {
   return panner;
 }
 
-function tone(freq: number, start: number, duration: number, gain: number, type: OscillatorType, pos?: Point3): void {
+function tone(freq: number, start: number, duration: number, gain: number, type: OscillatorType, pos?: Point3, clear = false): void {
   const a = audio();
   if (!a) return;
   const t0 = a.currentTime + start;
@@ -78,7 +80,7 @@ function tone(freq: number, start: number, duration: number, gain: number, type:
   amp.gain.setValueAtTime(0, t0);
   amp.gain.linearRampToValueAtTime(gain, t0 + 0.01);
   amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-  osc.connect(amp).connect(output(a, pos));
+  osc.connect(amp).connect(output(a, pos, clear));
   osc.start(t0);
   osc.stop(t0 + duration + 0.05);
 }
@@ -171,7 +173,7 @@ export function startLampHum(): Hum | null {
 // ------------------------------------------------------------------ creature voices
 
 /** A pitch glide (for chirps, boings and bubbles). */
-function slide(f0: number, f1: number, start: number, duration: number, gain: number, type: OscillatorType, pos?: Point3): void {
+function slide(f0: number, f1: number, start: number, duration: number, gain: number, type: OscillatorType, pos?: Point3, clear = false): void {
   const a = audio();
   if (!a) return;
   const t0 = a.currentTime + start;
@@ -183,7 +185,7 @@ function slide(f0: number, f1: number, start: number, duration: number, gain: nu
   amp.gain.setValueAtTime(0, t0);
   amp.gain.linearRampToValueAtTime(gain, t0 + 0.012);
   amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-  osc.connect(amp).connect(output(a, pos));
+  osc.connect(amp).connect(output(a, pos, clear));
   osc.start(t0);
   osc.stop(t0 + duration + 0.05);
 }
@@ -192,52 +194,69 @@ function slide(f0: number, f1: number, start: number, duration: number, gain: nu
 export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0 };
 
 /**
- * Each creature's little voice, from where it is on the wall: soft and short,
- * a bedtime voice rather than a cartoon one, but clearly above the lullaby
- * (its notes peak near 0.045). `quiet` for the occasional sounds while it is awake.
+ * Each creature's little voice, from its side of the wall: soft in character, a
+ * bedtime voice rather than a cartoon one, but clearly heard. On a Quest 3S
+ * (Nov 15, session xnhuwf56d6) 14 voices played and none was clearly heard: they
+ * were short (60-200 ms), started with the wake chime, and the lullaby played
+ * under them. Now they are louder and longer, come just after the chime, play
+ * without HRTF filtering, and the lullaby dips while one speaks. `quiet` for the
+ * occasional sounds while it is awake.
  */
-const CREATURE_LEVEL = 2.5;
+const CREATURE_LEVEL = 5;
+/** After the wake chime's first note, so the voice is not lost under it. */
+const AFTER_CHIME = 0.45;
+/** How long the lullaby dips for a creature's voice (s), and to what share. */
+const DUCK_SECONDS = 1.6;
+const DUCK_LEVEL = 0.25;
+let duckUntil = 0;
+
 export function playCreature(shape: string, pos?: Point3, quiet = false): void {
+  const a = audio();
+  if (!a) return;
   const g = (quiet ? 0.6 : 1) * CREATURE_LEVEL;
+  const d = quiet ? 0 : AFTER_CHIME;
+  const s = (f0: number, f1: number, at: number, dur: number, gain: number, type: OscillatorType) => slide(f0, f1, d + at, dur, gain * g, type, pos, true);
+  const t = (f: number, at: number, dur: number, gain: number, type: OscillatorType) => tone(f, d + at, dur, gain * g, type, pos, true);
   switch (shape) {
     case 'rabbit':
     case 'ears':
-      slide(520, 880, 0, 0.18, 0.07 * g, 'sine', pos);
-      slide(600, 980, 0.2, 0.14, 0.05 * g, 'sine', pos);
+      s(520, 880, 0, 0.26, 0.07, 'sine');
+      s(600, 980, 0.3, 0.22, 0.05, 'sine');
       break;
     case 'fish':
-      for (let i = 0; i < 3; i++) slide(380 + i * 90, 900 + i * 120, i * 0.11, 0.09, 0.05 * g, 'sine', pos);
+      for (let i = 0; i < 3; i++) s(380 + i * 90, 900 + i * 120, i * 0.16, 0.14, 0.05, 'sine');
       break;
     case 'dog':
-      slide(260, 150, 0, 0.16, 0.08 * g, 'triangle', pos);
-      slide(240, 140, 0.22, 0.14, 0.06 * g, 'triangle', pos);
+      s(260, 150, 0, 0.22, 0.08, 'triangle');
+      s(240, 140, 0.3, 0.2, 0.06, 'triangle');
       break;
     case 'bird':
-      for (let i = 0; i < 3; i++) slide(1900, 2700, i * 0.14, 0.12, 0.045 * g, 'sine', pos);
+      for (let i = 0; i < 3; i++) s(1900, 2700, i * 0.18, 0.16, 0.045, 'sine');
       break;
     case 'cup':
-      tone(2093, 0, 0.6, 0.04 * g, 'sine', pos);
-      tone(2637, 0.08, 0.6, 0.035 * g, 'sine', pos);
-      tone(3136, 0.16, 0.8, 0.03 * g, 'sine', pos);
+      t(2093, 0, 0.7, 0.04, 'sine');
+      t(2637, 0.1, 0.7, 0.035, 'sine');
+      t(3136, 0.2, 0.9, 0.03, 'sine');
       break;
     case 'snail':
-      slide(300, 420, 0, 0.6, 0.05 * g, 'sine', pos);
+      s(300, 420, 0, 0.7, 0.05, 'sine');
       break;
     case 'swan':
-      slide(340, 300, 0, 0.22, 0.06 * g, 'triangle', pos);
-      slide(360, 310, 0.28, 0.2, 0.05 * g, 'triangle', pos);
+      s(340, 300, 0, 0.3, 0.06, 'triangle');
+      s(360, 310, 0.36, 0.26, 0.05, 'triangle');
       break;
     case 'deer':
-      tone(820, 0, 0.06, 0.06 * g, 'sine', pos);
-      tone(760, 0.14, 0.06, 0.05 * g, 'sine', pos);
+      t(820, 0, 0.12, 0.06, 'sine');
+      t(760, 0.2, 0.12, 0.05, 'sine');
       break;
     case 'crocodile':
-      tone(120, 0, 0.08, 0.09 * g, 'square', pos);
-      tone(95, 0.1, 0.12, 0.07 * g, 'triangle', pos);
+      t(120, 0, 0.14, 0.06, 'square');
+      t(95, 0.18, 0.18, 0.07, 'triangle');
       break;
     default:
       return;
   }
+  duckUntil = Math.max(duckUntil, a.currentTime + d + DUCK_SECONDS);
   soundRuntime.creature[shape] = (soundRuntime.creature[shape] ?? 0) + 1;
 }
 
@@ -316,7 +335,8 @@ export function startLullaby(): Lullaby | null {
   return {
     setLevel(level) {
       soundRuntime.lullabyLevel = Math.round(level * 100) / 100;
-      master.gain.setTargetAtTime(0.5 * level, a.currentTime, 0.25);
+      const duck = a.currentTime < duckUntil ? DUCK_LEVEL : 1;
+      master.gain.setTargetAtTime(0.5 * level * duck, a.currentTime, duck < 1 ? 0.08 : 0.25);
     },
   };
 }
