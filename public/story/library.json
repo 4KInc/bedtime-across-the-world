@@ -101,7 +101,8 @@
       "script": "story/moon-buggy.story.json",
       "minutes": 4,
       "blurb": "A little buggy has lost its way home. Help it reach its garage.",
-      "world": "adventure"
+      "world": "adventure",
+      "narrator": "am_michael"
     }
   ]
 }

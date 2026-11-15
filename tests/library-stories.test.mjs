@@ -34,7 +34,7 @@ test('the newer stories pass the content checks (no brands, Mo is "she", the rig
 });
 
 test('every spoken line of the newer stories has its narration, read by the story\'s narrator', () => {
-  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm']) {
+  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy']) {
     const entry = library.find((s) => s.id === id);
     assert.equal(narration.narrators[id], entry.narrator, `${id} narrator`);
     for (const b of read(entry.script).beats) {
