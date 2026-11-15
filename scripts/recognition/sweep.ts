@@ -137,7 +137,7 @@ class HandPipeline {
  */
 function twoHands(l: Frame, r: Frame, hidden: boolean, target: string): string {
   // As in the app: a requested bird gets the looser two-hand rule.
-  const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer');
+  const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer', target === 'crocodile');
   if (pair) return pair;
   return r.shape === target || l.shape === target ? target : ShapeIds.None;
 }
@@ -395,9 +395,9 @@ const VARIANTS: Variant[] = [
   { name: 'relaxed + tilted', pose: (p) => relax({ ...p, roll: (p.roll ?? 0) + 20 }) },
   { name: 'apart +6 cm', pose: (p) => p, apart: 0.03 },
 ];
-const LEVELS: [string, number, number][] = [['Normal', TOLERANCE, 0], ['20 s', TOLERANCE + 0.1, 0.1], ['40 s', TOLERANCE + 0.2, 0.2]];
+const LEVELS: [string, number, number][] = [['Normal', TOLERANCE, 0], ['15 s', TOLERANCE + 0.1, 0.1], ['30 s', TOLERANCE + 0.2, 0.2]];
 const NV = 20;
-console.log(`\n7. Real-hand variations (triggers within ${TRIGGER_WITHIN} s, of ${NV}; Normal / after 20 s / after 40 s):`);
+console.log(`\n7. Real-hand variations (triggers within ${TRIGGER_WITHIN} s, of ${NV}; Normal / after 15 s / after 30 s):`);
 const realRows: { shape: string; variant: string; rates: number[] }[] = [];
 for (const fx of [...oneHand.filter((f) => STORY_SHAPES.includes(f.label)).map((f) => ({ label: f.label, right: f.right!, left: null as HandPose | null, rightAt: [0, 0] as [number, number], leftAt: [0, 0] as [number, number] })), ...pairFixtures]) {
   for (const v of VARIANTS) {
@@ -428,7 +428,7 @@ tolerance = TOLERANCE;
 pairAssist = 0;
 for (const r of realRows) {
   const cells = r.rates.map((x) => `${Math.round(x * 100)}%`.padStart(7)).join('');
-  console.log(`   ${r.shape.padEnd(18)}${r.variant.padEnd(18)}${cells}${r.rates[2] < 0.9 ? '   <-- weak even after 40 s' : r.rates[0] < 0.75 ? '   <-- weak at Normal' : ''}`);
+  console.log(`   ${r.shape.padEnd(18)}${r.variant.padEnd(18)}${cells}${r.rates[2] < 0.9 ? '   <-- weak even after 30 s' : r.rates[0] < 0.75 ? '   <-- weak at Normal' : ''}`);
 }
 
 // ---------------------------------------------------------------- 5. the gate

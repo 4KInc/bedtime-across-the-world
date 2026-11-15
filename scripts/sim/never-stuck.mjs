@@ -1,6 +1,6 @@
 // Never stuck, with real-looking hands: a player who never makes the bird (a
 // fist, with a 1 cm hand tremor like real tracking) still gets the bird after
-// the story's last assist (60 s): a hand held still in the light. The old
+// the story's last assist (45 s): a hand held still in the light. The old
 // frame-to-frame speed test never saw a shaky hand as still (Quest 3, Nov 14).
 //
 //   node scripts/sim/never-stuck.mjs [--gpu]
@@ -46,7 +46,7 @@ while (Date.now() - t0 < 100000) {
   await sleep(250);
 }
 const seconds = +((Date.now() - t0) / 1000).toFixed(1);
-check('a shaky hand that never makes the bird still gets it after the last assist (about a minute)', woke && maxAssist === 3 && seconds >= 55 && seconds <= 75, { woke, seconds, maxAssist });
+check('a shaky hand that never makes the bird still gets it after the last assist (about 45 s)', woke && maxAssist === 3 && seconds >= 42 && seconds <= 60, { woke, seconds, maxAssist });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

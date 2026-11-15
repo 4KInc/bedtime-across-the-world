@@ -257,6 +257,7 @@ export class StageSetupSystem extends createSystem({
     const headObj = this.inXR ? this.player.head : this.world.camera;
     headObj.updateWorldMatrix(true, false);
     this.head.setFromMatrixPosition(headObj.matrixWorld);
+    stageRuntime.eye.copy(this.head);
     headObj.getWorldDirection(this.forward);
     // Object3D.getWorldDirection returns +Z (the viewer looks down -Z); cameras
     // already return their look direction.

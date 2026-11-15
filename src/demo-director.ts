@@ -313,11 +313,21 @@ export class DemoDirectorSystem extends createSystem({
     }
     const swayU = this.target.sway ? Math.sin(this.time * 0.5) * 0.015 : 0;
     const swayV = this.target.sway ? Math.sin(this.time * 0.8) * 0.01 : 0;
-    this.base
-      .copy(stageRuntime.bulb)
-      .lerp(stageRuntime.center, this.reach)
-      .addScaledVector(stageRuntime.up, -0.06 * (this.reach / REST_REACH) + this.v + swayV)
-      .addScaledVector(stageRuntime.right, this.u + swayU);
+    if (this.persona === 'comfortable') {
+      // Where people hold their hands: about 38 cm in front of the eyes, a little low,
+      // not on the line from the lamp's bulb to the stage (the lamp is at about this depth).
+      this.base
+        .copy(stageRuntime.eye)
+        .addScaledVector(stageRuntime.normal, -0.38)
+        .addScaledVector(stageRuntime.up, -0.12 + this.v * 0.2 + swayV)
+        .addScaledVector(stageRuntime.right, this.u * 0.2 + swayU);
+    } else {
+      this.base
+        .copy(stageRuntime.bulb)
+        .lerp(stageRuntime.center, this.reach)
+        .addScaledVector(stageRuntime.up, -0.06 * (this.reach / REST_REACH) + this.v + swayV)
+        .addScaledVector(stageRuntime.right, this.u + swayU);
+    }
     const place = (side: 'left' | 'right', local: V[] | null, at?: [number, number]) => {
       if (!local) return null;
       this.wrist

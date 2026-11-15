@@ -128,10 +128,18 @@ export interface PairHand {
  * fingers up and spread), crocodile (flat hands stacked), bird (open, wrists
  * side by side), cup (both cupped, side by side). Deer and crocodile only when
  * `hidden` (Free Stage, or a story that asks for one). `birdWanted` /
- * `deerWanted`: that shape is asked for (more room for real hands); `assist`:
- * the story's extra tolerance.
+ * `deerWanted` / `crocWanted`: that shape is asked for (more room for real
+ * hands); `assist`: the story's extra tolerance.
  */
-export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWanted = false, assist = 0, deerWanted = false): string | null {
+export function classifyPair(
+  l: PairHand,
+  r: PairHand,
+  hidden: boolean,
+  birdWanted = false,
+  assist = 0,
+  deerWanted = false,
+  crocWanted = false,
+): string | null {
   const dx = l.joints[0] - r.joints[0];
   const dy = l.joints[1] - r.joints[1];
   const dz = l.joints[2] - r.joints[2];
@@ -143,27 +151,35 @@ export function classifyPair(l: PairHand, r: PairHand, hidden: boolean, birdWant
   // A bent thumb is fine unless it touches its own index tip (an OK sign, not an antler hand).
   const antlers = l.curl <= DEER_MAX_CURL && r.curl <= DEER_MAX_CURL && antlerThumb(l) && antlerThumb(r);
   // Only when a deer is asked for, so a crocodile's level hands never become antlers.
+  // When asked for, the assist also lets fingers held together count (Quest 3, Nov 15: antlers made flat).
   const up = DEER_MIN_UP - (deerWanted ? assist : 0);
+  const spread = DEER_MIN_SPREAD - (deerWanted ? assist * 2.5 : 0);
   if (
     hidden &&
     antlers &&
     gap < DEER_WRIST_GAP &&
     lf[8] >= up &&
     rf[8] >= up &&
-    lf[5] >= DEER_MIN_SPREAD &&
-    rf[5] >= DEER_MIN_SPREAD
+    lf[5] >= spread &&
+    rf[5] >= spread
   ) {
     return ShapeIds.Deer;
   }
-  const flat = l.curl <= CROC_MAX_CURL && r.curl <= CROC_MAX_CURL && lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB;
+  // When asked for, the assist lets the jaws be less exactly stacked, level and flat, thumbs anywhere
+  // (Quest 3, Nov 15: two flat hands near each other, not quite one above the other).
+  const ca = crocWanted ? assist : 0;
+  const flat =
+    l.curl <= CROC_MAX_CURL + ca * 0.5 &&
+    r.curl <= CROC_MAX_CURL + ca * 0.5 &&
+    ((lf[0] <= PAIR_MAX_THUMB && rf[0] <= PAIR_MAX_THUMB) || ca > 0);
   if (
     hidden &&
     flat &&
-    Math.abs(dy) >= CROC_MIN_DY &&
+    Math.abs(dy) >= CROC_MIN_DY - ca * 0.1 &&
     Math.abs(dy) <= CROC_MAX_DY &&
-    sideways <= CROC_MAX_SIDEWAYS &&
-    Math.abs(lf[8] - 0.5) <= CROC_LEVEL &&
-    Math.abs(rf[8] - 0.5) <= CROC_LEVEL
+    sideways <= CROC_MAX_SIDEWAYS + ca &&
+    Math.abs(lf[8] - 0.5) <= CROC_LEVEL + ca &&
+    Math.abs(rf[8] - 0.5) <= CROC_LEVEL + ca
   ) {
     return ShapeIds.Crocodile;
   }

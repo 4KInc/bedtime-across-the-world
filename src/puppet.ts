@@ -11,7 +11,7 @@ import {
   ShapeIds,
   ShapeRecognizer,
 } from './shadowplay-components.js';
-import { accessRuntime, handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
 
 const HAND_LENGTH = 0.18;
 /** Characters read best a little smaller than the raw hand shadow. */
@@ -269,8 +269,8 @@ export class PuppetSystem extends createSystem({
       this.palmOf(hand, this.palm);
       const other = side === 'left' ? handRuntime.right : handRuntime.left;
       if (rt.twoHanded && other.tracked) this.palm.lerp(this.palmOf(other, this.palm2), 0.5);
-      const t = projectToStage(this.palm, this.hit);
-      onStage = t > 0 && isOnStage(this.hit, 0.3);
+      const t = reachStage(this.palm, this.hit, 0.3);
+      onStage = t > 0;
       const shape = rec?.getValue(ShapeRecognizer, side === 'left' ? 'leftShape' : 'rightShape');
       released = shape === ShapeIds.Open && !onStage && rt.lostFor + delta > RELEASE_OPEN_SECONDS;
       if (onStage) {

@@ -24,6 +24,8 @@ export const stageRuntime = {
   quality: 0,
   /** The headset's answer to our 72 Hz request: '' (not asked yet), 'granted', 'refused', 'unsupported'. */
   frameRateRequest: '',
+  /** The viewer's eyes (head), world space, updated every frame by stage setup. */
+  eye: new Vector3(),
   /** Distance from the eyes to the stage, metres. */
   distance: 2,
   /** The headset's horizontal field of view in degrees (0 until measured in XR). */
@@ -211,6 +213,61 @@ export function projectToStage(point: Vector3, out: Vector3): number {
   if (t < 1) return 0;
   out.set(b.x + dx * t, b.y + dy * t, b.z + dz * t);
   return t;
+}
+
+/**
+ * Where a hand meets the stage. The lamp's shadow when it lands on the stage;
+ * otherwise where the hand appears over the stage from the viewer's eyes; else
+ * its place in the performance zone in front of the viewer (reachZone). The
+ * lamp stands on the desk at about the depth a hand is comfortably held, so a
+ * relaxed hand is often level with the bulb and its shadow misses the stage
+ * (Quest 3, Nov 15: hands counted in the lamp's light about 20% of the time).
+ * Returns the magnification (surface distance over hand distance from the
+ * source), or 0 when neither lands on the stage within the margin.
+ */
+export function reachStage(point: Vector3, out: Vector3, margin = 0.15): number {
+  const t = projectToStage(point, out);
+  if (t > 0 && isOnStage(out, margin)) return t;
+  const e = stageRuntime.eye;
+  const n = stageRuntime.normal;
+  const dx = point.x - e.x;
+  const dy = point.y - e.y;
+  const dz = point.z - e.z;
+  const denom = dx * n.x + dy * n.y + dz * n.z;
+  if (denom > -1e-5) return 0;
+  const c = stageRuntime.center;
+  const s = ((c.x - e.x) * n.x + (c.y - e.y) * n.y + (c.z - e.z) * n.z) / denom;
+  if (s < 1) return 0;
+  out.set(e.x + dx * s, e.y + dy * s, e.z + dz * s);
+  if (isOnStage(out, margin)) return s;
+  return reachZone(point, out);
+}
+
+/**
+ * The performance zone: a hand held up in front of the viewer, anywhere from a
+ * little above the eyes to chest height, counts, and its place in the zone maps
+ * onto the stage (raise the hand and the creature rises). The stage is at eye
+ * level 2 m away, so a hand at chest height is neither in the lamp's beam nor
+ * over the stage from the eyes. A hand in the lap or on the desk is below it.
+ */
+const ZONE = { near: 0.15, far: 0.8, side: 0.35, below: 0.4, above: 0.25 };
+
+function reachZone(point: Vector3, out: Vector3): number {
+  const e = stageRuntime.eye;
+  const dx = point.x - e.x;
+  const dy = point.y - e.y;
+  const dz = point.z - e.z;
+  const n = stageRuntime.normal;
+  const forward = -(dx * n.x + dy * n.y + dz * n.z);
+  if (forward < ZONE.near || forward > ZONE.far) return 0;
+  const u = dx * stageRuntime.right.x + dy * stageRuntime.right.y + dz * stageRuntime.right.z;
+  const v = dx * stageRuntime.up.x + dy * stageRuntime.up.y + dz * stageRuntime.up.z;
+  if (Math.abs(u) > ZONE.side || v < -ZONE.below || v > ZONE.above) return 0;
+  const su = (u / ZONE.side) * 0.5 * stageRuntime.width;
+  const sv = ((v + ZONE.below) / (ZONE.below + ZONE.above) - 0.5) * stageRuntime.height;
+  out.copy(stageRuntime.center).addScaledVector(stageRuntime.right, su).addScaledVector(stageRuntime.up, sv);
+  // Size as if seen from the eyes.
+  return stageRuntime.distance / forward;
 }
 
 /** True when a projected point falls on the lit stage area (with margin). */
