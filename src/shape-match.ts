@@ -2,10 +2,10 @@ import { createSystem, Entity, Vector3 } from '@iwsdk/core';
 import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore } from './hand-features.js';
 import { Hands, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, requested, stepHold } from './recognition-rules.js';
-import { handRuntime, HandSample, isOnStage, projectToStage, stageRuntime } from './stage-runtime.js';
+import { handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
 
-/** For device diagnostics: the two-hand measurements (wrist gap m, finger curl, thumb bend, in the light). */
-export const pairRuntime = { gap: 0, lCurl: 0, rCurl: 0, lThumb: 0, rThumb: 0, lLight: false, rLight: false };
+/** For device diagnostics: the two-hand measurements (wrist gap and height difference m, finger curl, thumb bend, spread, fingers up, in the light). */
+export const pairRuntime = { gap: 0, dy: 0, lCurl: 0, rCurl: 0, lThumb: 0, rThumb: 0, lSpread: 0, rSpread: 0, lUp: 0, rUp: 0, lLight: false, rLight: false };
 
 /** Player tolerance plus assist never goes beyond this. */
 const MAX_TOLERANCE = 0.6;
@@ -77,8 +77,11 @@ export class ShapeMatchSystem extends createSystem({
       const deerWanted =
         entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Deer ||
         entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Deer;
+      const crocWanted =
+        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Crocodile ||
+        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Crocodile;
       const assist = entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0;
-      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist, deerWanted);
+      const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist, deerWanted, crocWanted);
       const twoHanded = pair !== null;
       if (pair) this.left.shape = this.right.shape = pair;
       this.publish(entity);
@@ -155,7 +158,7 @@ export class ShapeMatchSystem extends createSystem({
       // Palm centre: midway between the wrist and the middle-finger knuckle.
       const j = hand.joints;
       this.palm.set((j[0] + j[33]) * 0.5, (j[1] + j[34]) * 0.5, (j[2] + j[35]) * 0.5);
-      out.inLight = projectToStage(this.palm, this.hit) > 0 && isOnStage(this.hit);
+      out.inLight = reachStage(this.palm, this.hit) > 0;
     }
   }
 
@@ -223,7 +226,7 @@ export class ShapeMatchSystem extends createSystem({
   }
 
   /** Two-hand shapes (recognition-rules.ts), both hands tracked and in the light. */
-  private detectPair(hidden: boolean, birdWanted: boolean, assist: number, deerWanted: boolean): string | null {
+  private detectPair(hidden: boolean, birdWanted: boolean, assist: number, deerWanted: boolean, crocWanted: boolean): string | null {
     const l = handRuntime.left;
     const r = handRuntime.right;
     pairRuntime.lLight = this.left.inLight;
@@ -237,6 +240,11 @@ export class ShapeMatchSystem extends createSystem({
     pairRuntime.rCurl = this.right.curl;
     pairRuntime.lThumb = l.features[0];
     pairRuntime.rThumb = r.features[0];
+    pairRuntime.dy = lj[1] - rj[1];
+    pairRuntime.lSpread = l.features[5];
+    pairRuntime.rSpread = r.features[5];
+    pairRuntime.lUp = l.features[8];
+    pairRuntime.rUp = r.features[8];
     if (!this.left.inLight || !this.right.inLight) return null;
     this.pairL.joints = this.smoothL.joints;
     this.pairL.features = l.features;
@@ -248,7 +256,7 @@ export class ShapeMatchSystem extends createSystem({
     this.pairR.curl = this.right.curl;
     this.pairR.shape = this.right.shape;
     this.pairR.best = r.jointBest;
-    return classifyPair(this.pairL, this.pairR, hidden, birdWanted, assist, deerWanted);
+    return classifyPair(this.pairL, this.pairR, hidden, birdWanted, assist, deerWanted, crocWanted);
   }
 
   private publish(entity: Entity): void {

@@ -358,7 +358,7 @@ export const DemoDirector = createComponent('DemoDirector', {
    */
   persona: {
     type: Types.Enum,
-    enum: { Perfect: 'perfect', Slow: 'slow', Wrong: 'wrong', Wanderer: 'wanderer', Shaky: 'shaky', Small: 'small', Dim: 'dim', Stuck: 'stuck' },
+    enum: { Perfect: 'perfect', Slow: 'slow', Wrong: 'wrong', Wanderer: 'wanderer', Shaky: 'shaky', Small: 'small', Dim: 'dim', Stuck: 'stuck', Comfortable: 'comfortable' },
     default: 'perfect',
   },
   status: { type: Types.String, default: '' },

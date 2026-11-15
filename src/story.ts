@@ -56,7 +56,8 @@ const DEFAULT_SCRIPT = 'story/the-moth.story.json';
  */
 const FIRST_LAUNCH_SCRIPT = 'story/counting-stars.story.json';
 /** 'Never stuck' assist: seconds a player beat may wait before each assist level. */
-const ASSIST_AFTER = [20, 40, 60] as const;
+// (Quest 3, Nov 15: people gave up on a shape at about a minute, so the last assist comes at 45 s.)
+const ASSIST_AFTER = [15, 30, 45] as const;
 /** Extra recognition tolerance at assist levels 1 and 2. */
 const ASSIST_TOLERANCE = [0, 0.1, 0.2] as const;
 /**
@@ -797,9 +798,21 @@ function openInLight(stage: Entity, side: 'left' | 'right'): boolean {
 }
 
 /** Hands opened (one open hand, or both as the open-winged pair). */
+/**
+ * "Open your hands": fingers open, however they are held. People open their
+ * hands flat with the fingers together (read as a fish), not spread, so this
+ * looks at how curled the fingers are rather than at the shape (Quest 3, Nov 15:
+ * open hands waited 75 s for a spread-finger pose).
+ */
+const OPEN_MAX_CURL = 0.3;
+
 function handOpened(stage: Entity, side: 'left' | 'right'): boolean {
   const shape = stage.getValue(ShapeRecognizer, side === 'left' ? 'leftShape' : 'rightShape');
-  return shape === ShapeIds.Open || shape === ShapeIds.Bird;
+  if (shape === ShapeIds.Open || shape === ShapeIds.Bird) return true;
+  const hand = handRuntime[side];
+  if (!hand.tracked) return false;
+  const f = hand.features;
+  return (f[1] + f[2] + f[3] + f[4]) / 4 <= OPEN_MAX_CURL;
 }
 
 function first<T>(set: Iterable<T>): T | undefined {

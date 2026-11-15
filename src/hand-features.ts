@@ -237,12 +237,17 @@ const NEIGHBOURS: Readonly<Record<string, readonly string[]>> = {
 /** Flat-hand shapes: a relaxed one can lose to the resting-hand template, but its fingers are straighter than a resting hand's (~0.3). */
 const FLAT = new Set<string>([ShapeIds.Fish, ShapeIds.Swan, ShapeIds.Dog]);
 const FLATTER_THAN_REST = 0.26;
+/** The story's assist level from which any best match may give way to the requested shape. */
+const LATE_ASSIST = 0.2;
 
 export function rescuesRequested(features: Float32Array, best: MatchResult, target: string, tolerance: number, assist: number): boolean {
   if (target === ShapeIds.None || target === best.id) return false;
   // The story's assist lets a little more bend through (after 60 s any still hand counts anyway).
   const fromRest = best.id === ShapeIds.None && FLAT.has(target) && (features[1] + features[2] + features[3] + features[4]) / 4 <= FLATTER_THAN_REST + assist * 0.3;
-  if (!fromRest && !NEIGHBOURS[target]?.includes(best.id)) return false;
+  // After the story's second assist (30 s), from whatever fits best (Quest 3, Nov 15: a swan with a
+  // curled beak read as a cup); a minute is too long to wait, and at 45 s any still hand counts anyway.
+  const late = assist >= LATE_ASSIST && target !== ShapeIds.Cup;
+  if (!fromRest && !late && !NEIGHBOURS[target]?.includes(best.id)) return false;
   const score = templateScore(features, target);
   return score >= acceptScore(target, tolerance) && score >= best.score - (REQUEST_MARGIN + assist * 0.5);
 }
