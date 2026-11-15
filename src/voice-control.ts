@@ -21,7 +21,8 @@ const SPEECH_RMS = 0.025;
 const ONSET_SECONDS = 0.06;
 /** A clip ends after this much quiet, or at MAX_CLIP_SECONDS; shorter than MIN_CLIP_SECONDS is a noise. */
 const END_SILENCE_SECONDS = 0.6;
-const MAX_CLIP_SECONDS = 3.5;
+/** Long enough for a story asked for in plain words ("I need a forest story with a dog and a rabbit"). */
+const MAX_CLIP_SECONDS = 6;
 const MIN_CLIP_SECONDS = 0.25;
 
 type Recognition = {
@@ -94,8 +95,10 @@ export class VoiceControlSystem extends createSystem({
     if (this.analyser) this.listen(delta);
   }
 
-  /** Speech meant for the family (recording with voice, or Talk in a live story) is not a command. */
+  /** Speech meant for the family (recording with voice, or Talk in a live story), or a story idea, is not a command. */
   private suspended(): boolean {
+    // "Say your idea" is listening for a story idea: that is not a command either.
+    if (dreamRuntime.wish.state === 'listening') return true;
     for (const r of this.queries.recorders.entities) {
       if (r.getValue(PerformanceRecorder, 'recording') && r.getValue(PerformanceRecorder, 'withVoice')) return true;
     }
@@ -300,7 +303,7 @@ export class VoiceControlSystem extends createSystem({
         return true;
       case 'dream':
         // The Settings system dreams it (it knows whether the server can).
-        dreamRuntime.request = { theme: c.theme, shapes: c.shapes };
+        dreamRuntime.request = { theme: c.theme, shapes: c.shapes, ...(c.wish ? { wish: c.wish } : {}) };
         return true;
       case 'press': {
         const target = gazeTargets.get(c.id);

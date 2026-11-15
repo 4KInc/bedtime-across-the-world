@@ -11,6 +11,7 @@
  * On when the server has a model key (main.ts; DREAM_MODEL picks the model).
  */
 import { contentProblems } from '../src/story-checks.ts';
+import { MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
 import type { Llm } from './llm.ts';
 
 export const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
@@ -38,17 +39,100 @@ const SHAPE_WORDS: Readonly<Record<string, RegExp>> = {
 export interface DreamRequest {
   theme: string;
   shapes: string[];
+  /**
+   * The grown-up's idea in their own words ("a forest story with a dog and a
+   * rabbit"), checked by cleanWish. Only ever sent to the model, as an idea;
+   * never stored, logged or put in the story.
+   */
+  wish?: string;
 }
 
-/** A dream request from untrusted JSON, or null. */
+/** A wish's characters: plain words, as speech-to-text writes them. */
+const WISH = /^[A-Za-z0-9 ,.!?'’-]{3,240}$/;
+
+/**
+ * A spoken wish fit to show the model, or '' when it is not: plain words, at
+ * most MAX_WISH_WORDS, nothing on the never-say list, no brands or
+ * well-known characters (the story would have to drop them anyway).
+ */
+export function cleanWish(wish: unknown): string {
+  if (typeof wish !== 'string') return '';
+  const t = wish.trim().replace(/\s+/g, ' ');
+  if (!WISH.test(t) || t.split(' ').length > MAX_WISH_WORDS || NEVER.test(t) || contentProblems(t).length) return '';
+  return t;
+}
+
+const isShape = (s: unknown): s is string => typeof s === 'string' && (DREAM_SHAPES as readonly string[]).includes(s);
+
+/**
+ * A dream request from untrusted JSON, or null. Either a theme and two or
+ * three shapes (the chooser), or a wish in plain words, with any place and
+ * shapes already read from it; what a wish leaves out, Dreamer.resolve fills in.
+ */
 export function checkDream(body: unknown): DreamRequest | null {
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
+  const wish = cleanWish(b.wish);
+  if (b.wish !== undefined) {
+    // A wish that will not do still makes a story (Mo picks), just without the idea.
+    const read = readWish(wish);
+    const theme = typeof b.theme === 'string' && Object.hasOwn(THEMES, b.theme) ? b.theme : read.theme;
+    const given = Array.isArray(b.shapes) ? b.shapes.filter(isShape) : [];
+    const shapes = [...new Set([...given, ...read.shapes])].slice(0, 3);
+    return { theme, shapes, ...(wish ? { wish } : {}) };
+  }
   if (typeof b.theme !== 'string' || !Object.hasOwn(THEMES, b.theme)) return null;
   if (!Array.isArray(b.shapes) || b.shapes.length < 2 || b.shapes.length > 3) return null;
   if (new Set(b.shapes).size !== b.shapes.length) return null;
-  if (!b.shapes.every((s) => typeof s === 'string' && (DREAM_SHAPES as readonly string[]).includes(s))) return null;
+  if (!b.shapes.every(isShape)) return null;
   return { theme: b.theme, shapes: b.shapes as string[] };
+}
+
+/** True when the request names a place and two or three shapes (ready to write). */
+export function complete(req: DreamRequest): boolean {
+  return Object.hasOwn(THEMES, req.theme) && req.shapes.length >= 2 && req.shapes.length <= 3;
+}
+
+/** The rest of a request picked at random: a place if none, shapes up to two (or as many as there are). */
+export function fillAtRandom(req: DreamRequest, random = Math.random): DreamRequest {
+  const themes = Object.keys(THEMES);
+  const theme = Object.hasOwn(THEMES, req.theme) ? req.theme : themes[Math.floor(random() * themes.length)];
+  const shapes = [...req.shapes];
+  const rest = DREAM_SHAPES.filter((s) => !shapes.includes(s));
+  while (shapes.length < 2) shapes.push(rest.splice(Math.floor(random() * rest.length), 1)[0]);
+  return { ...req, theme, shapes };
+}
+
+const PICK_SYSTEM = [
+  'You help choose a bedtime story for a hand shadow-puppet game, from a grown-up\'s idea in their own words.',
+  'Choose only from the lists given. Reply with JSON only.',
+].join(' ');
+
+function pickPrompt(req: DreamRequest): string {
+  return [
+    `The idea: ${req.wish}`,
+    `Choose the place that fits it best, one of: ${Object.keys(THEMES).join(', ')}.${req.theme ? ` (Already chosen: ${req.theme}.)` : ''}`,
+    `Choose two or three shadow shapes that fit it best, from: ${DREAM_SHAPES.join(', ')} (cup means cupped hands holding something small, like a star or a firefly).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
+    'JSON: {"theme":"...","shapes":["...","..."]}',
+  ].join('\n');
+}
+
+/** The model's pick (text) for this request, or null when it is not a usable one. Keeps what was already chosen. */
+export function readPick(req: DreamRequest, reply: string): DreamRequest | null {
+  const start = reply.indexOf('{');
+  const end = reply.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  let pick: { theme?: unknown; shapes?: unknown };
+  try {
+    pick = JSON.parse(reply.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  const theme = req.theme || (typeof pick.theme === 'string' && Object.hasOwn(THEMES, pick.theme) ? pick.theme : '');
+  const picked = Array.isArray(pick.shapes) ? pick.shapes.filter(isShape) : [];
+  const shapes = [...new Set([...req.shapes, ...picked])].slice(0, 3);
+  const out = { ...req, theme, shapes };
+  return complete(out) ? out : null;
 }
 
 /** What the model is asked to write (and must return, exactly this shape). */
@@ -112,6 +196,12 @@ function prompt(req: DreamRequest): string {
   const scenes = req.shapes.map((s) => `{"shape":"${s}","setup":"...","ask":"...","ride":"...","after":"...","bow":"..."}`).join(',');
   return [
     `Write a new story set ${THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.join(', ')}.`,
+    ...(req.wish
+      ? [
+          `The grown-up asked for it in their own words: ${req.wish}`,
+          'Let that idea shape the story (its feeling, what Mo is looking for, small details) where it is gentle and fits the rules; leave out anything that does not. Do not use anyone\'s name from it.',
+        ]
+      : []),
     `Where each scene happens, in order (the story travels there when the place changes; say so in that scene's setup): ${scenePlaces(req)
       .map((place, i) => `${req.shapes[i]} ${PLACE_WORDS[place]}`)
       .join(', ')}.`,
@@ -206,14 +296,36 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
 export class Dreamer {
   private llm: Llm;
   private model: string;
+  private pickModel: string;
 
-  constructor(llm: Llm, model: string) {
+  /** `pickModel` (a quick one) chooses the place and shapes a wish leaves out; the main model writes. */
+  constructor(llm: Llm, model: string, pickModel = model) {
     this.llm = llm;
     this.model = model;
+    this.pickModel = pickModel;
+  }
+
+  /**
+   * A request ready to write: as it is when it names a place and two or three
+   * shapes; otherwise the model picks the rest from the wish, else at random.
+   */
+  async resolve(req: DreamRequest): Promise<DreamRequest> {
+    if (complete(req)) return req;
+    if (req.wish) {
+      try {
+        const reply = await this.llm.text({ model: this.pickModel, system: PICK_SYSTEM, user: pickPrompt(req), maxTokens: 200, effort: 'low', timeoutMs: 15000 });
+        const picked = readPick(req, reply);
+        if (picked) return picked;
+      } catch {
+        // Picked at random instead.
+      }
+    }
+    return fillAtRandom(req);
   }
 
   /** A new story, or null if the model's words did not pass (one retry). */
-  async dream(req: DreamRequest): Promise<Record<string, unknown> | null> {
+  async dream(asked: DreamRequest): Promise<Record<string, unknown> | null> {
+    const req = await this.resolve(asked);
     for (let attempt = 0; attempt < 2; attempt++) {
       const text = await this.llm.text({ model: this.model, system: SYSTEM, user: prompt(req), maxTokens: 1500, effort: 'medium', timeoutMs: 50000 });
       const story = assembleStory(req, text);

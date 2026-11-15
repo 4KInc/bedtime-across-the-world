@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { COMMAND_PHRASES, describe, MAX_WORDS, parseCommand } from '../src/voice-commands.ts';
+import { COMMAND_PHRASES, describe, MAX_WORDS, parseCommand, readWish } from '../src/voice-commands.ts';
 
 test('shapes by name, with everyday words around them', () => {
   assert.deepEqual(parseCommand('rabbit'), { kind: 'shape', shape: 'rabbit' });
@@ -52,6 +52,8 @@ test('every command can be described, and phrase hints are unique', () => {
 test('dreaming by voice: the place and shapes named, in the order said', () => {
   assert.deepEqual(parseCommand('Dream a story about the river with a fish and a bird'), { kind: 'dream', theme: 'river', shapes: ['fish', 'bird'] });
   assert.deepEqual(parseCommand("Mo, dream about the stars with a bunny, a dog and a cup please"), { kind: 'dream', theme: 'sky', shapes: ['rabbit', 'dog', 'cup'] });
+  // An idea beyond the place and shapes goes to the model too, in plain words.
+  assert.deepEqual(parseCommand('Dream about a fish who is shy'), { kind: 'dream', theme: '', shapes: ['fish'], wish: 'dream about a fish who is shy' });
   assert.deepEqual(parseCommand('dream a new story'), { kind: 'dream', theme: '', shapes: [] });
   assert.deepEqual(parseCommand("let's dream in the forest"), { kind: 'dream', theme: 'forest', shapes: [] });
   // Only shapes a dreamed story can ask for; at most three.
@@ -59,4 +61,25 @@ test('dreaming by voice: the place and shapes named, in the order said', () => {
   // A story line that says "dream" is not a command.
   assert.notEqual(parseCommand('The fish drifts off to dream')?.kind, 'dream');
   assert.equal(parseCommand('Close your eyes and dream of the sea'), null);
+});
+
+test('a story asked for in plain words: the place and shapes read from it, and the words kept as the idea', () => {
+  assert.deepEqual(parseCommand('I need a forest story with dog and rabbit'), {
+    kind: 'dream', theme: 'forest', shapes: ['dog', 'rabbit'], wish: 'i need a forest story with dog and rabbit',
+  });
+  assert.deepEqual(parseCommand("Can we have a story about puppies at the beach? Make it funny."), {
+    kind: 'dream', theme: 'sea', shapes: ['dog'], wish: 'can we have a story about puppies at the beach make it funny',
+  });
+  // Nothing named: the server's model picks from the idea.
+  assert.deepEqual(parseCommand("I'd like a bedtime story about being brave"), { kind: 'dream', theme: '', shapes: [], wish: 'i d like a bedtime story about being brave' });
+  // Narration that mentions a story is not someone asking for one.
+  assert.equal(parseCommand('This is the story of a little dog in the forest')?.kind === 'dream', false);
+  assert.equal(parseCommand('Once upon a time, in a story far away, a rabbit hopped'), null);
+  // Too long to be a request.
+  assert.equal(parseCommand(`I want a story ${'and then '.repeat(15)}`), null);
+});
+
+test('readWish: places and shapes in any wording, plurals too, in the order said', () => {
+  assert.deepEqual(readWish('A story in the woods with bunnies, birds and a puppy'), { theme: 'forest', shapes: ['rabbit', 'bird', 'dog'] });
+  assert.deepEqual(readWish('something calm'), { theme: '', shapes: [] });
 });
