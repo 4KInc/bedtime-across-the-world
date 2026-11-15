@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "Mo and the Little Lost Spaceship",
+  "beats": [
+    {
+      "id": "space-title",
+      "type": "chapter",
+      "chapter": "Mo and the Little Lost Spaceship",
+      "text": "Mo and the Little Lost Spaceship"
+    },
+    {
+      "id": "space-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "space-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying higher than ever before. Past the clouds, past the moon, all the way to the stars."
+    },
+    {
+      "id": "space-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "space-stars",
+      "type": "scenery",
+      "set": "star-port"
+    },
+    {
+      "id": "space-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "space-found",
+      "type": "narrate",
+      "text": "Whirr... whirr... beep. Look, a little round spaceship, with a friendly visitor inside. Its name is Pip."
+    },
+    {
+      "id": "space-lost",
+      "type": "narrate",
+      "text": "Pip has been exploring all day. Now Pip is sleepy, and cannot remember which planet is home."
+    },
+    {
+      "id": "space-help",
+      "type": "narrate",
+      "text": "Mo has an idea. We can help Pip find the way home."
+    },
+    {
+      "id": "space-want-rabbit",
+      "type": "request",
+      "shape": "rabbit",
+      "text": "Make a rabbit with your hand. Moon rabbits know every rock on the moon.",
+      "alt": "ears"
+    },
+    {
+      "id": "space-rabbit-yes",
+      "type": "narrate",
+      "text": "A moon rabbit! Long ears, soft paws. Hop on, Mo."
+    },
+    {
+      "id": "space-rabbit-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "space-rabbit-carry",
+      "type": "carry",
+      "toU": 0.02,
+      "text": "Hop, hop, over the moon rocks. Pip's little spaceship follows behind."
+    },
+    {
+      "id": "space-rabbit-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.05,
+      "restV": 0.06
+    },
+    {
+      "id": "space-rabbit-bows",
+      "type": "release",
+      "text": "The moon rabbit sits down by a crater, and twitches its nose goodbye."
+    },
+    {
+      "id": "space-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "space-river",
+      "type": "narrate",
+      "text": "Now there is a long river of stars, sparkling all across the sky. How do we get across?"
+    },
+    {
+      "id": "space-want-fish",
+      "type": "request",
+      "shape": "fish",
+      "text": "Make a fish: a flat hand, fingers together. Swim through the river of stars."
+    },
+    {
+      "id": "space-fish-yes",
+      "type": "narrate",
+      "text": "A star fish! It swims through the sky, as if the stars were water."
+    },
+    {
+      "id": "space-fish-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "space-fish-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Swish, swish, through the twinkling stars."
+    },
+    {
+      "id": "space-fish-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.06
+    },
+    {
+      "id": "space-fish-bows",
+      "type": "release",
+      "text": "The star fish swims away, leaving a trail of sparkles."
+    },
+    {
+      "id": "space-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "space-far",
+      "type": "narrate",
+      "text": "Pip's planet is very far up, with a ring around it, like a hoop. We need someone who can glide high."
+    },
+    {
+      "id": "space-want-swan",
+      "type": "request",
+      "shape": "swan",
+      "text": "Make a swan: a flat hand, bent down at the wrist, like a long neck and a beak."
+    },
+    {
+      "id": "space-swan-yes",
+      "type": "narrate",
+      "text": "A swan! Did you know there is a swan made of stars, up in the real night sky?"
+    },
+    {
+      "id": "space-swan-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "space-swan-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Glide up, up, gently, toward the planet with the ring.",
+      "minV": 0.12
+    },
+    {
+      "id": "space-swan-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "space-swan-bows",
+      "type": "release",
+      "text": "The swan folds its wings, and sails back to its place among the stars."
+    },
+    {
+      "id": "space-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "space-dark",
+      "type": "narrate",
+      "text": "There is Pip's planet. But it is all dark. The little home light has gone out."
+    },
+    {
+      "id": "space-falling",
+      "type": "narrate",
+      "text": "Look! A tiny shooting star is zooming by, just for us."
+    },
+    {
+      "id": "space-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch the shooting star."
+    },
+    {
+      "id": "space-caught",
+      "type": "narrate",
+      "text": "You caught it. It is warm and tingly, and very bright."
+    },
+    {
+      "id": "space-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and send the star up to light Pip's home."
+    },
+    {
+      "id": "space-free",
+      "type": "release",
+      "text": "The little window on the planet glows. Pip can see the way home now."
+    },
+    {
+      "id": "space-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "space-home",
+      "type": "narrate",
+      "text": "Whirr, whirr. Pip's spaceship flies up and lands, softly, on the planet with the ring. Home at last."
+    },
+    {
+      "id": "space-dim4",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "space-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "space-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, Pip. Goodnight, stars. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "space-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "space-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

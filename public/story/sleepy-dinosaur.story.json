@@ -1,0 +1,251 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "Mo and the Sleepy Little Dinosaur",
+  "beats": [
+    {
+      "id": "dino-title",
+      "type": "chapter",
+      "chapter": "Mo and the Sleepy Little Dinosaur",
+      "text": "Mo and the Sleepy Little Dinosaur"
+    },
+    {
+      "id": "dino-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "dino-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying a long, long way back in time. To a land of giant ferns and sleepy dinosaurs."
+    },
+    {
+      "id": "dino-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "dino-valley",
+      "type": "scenery",
+      "set": "dino-valley"
+    },
+    {
+      "id": "dino-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.14
+    },
+    {
+      "id": "dino-found",
+      "type": "narrate",
+      "text": "Stomp... stomp... stomp. Look, a little dinosaur with a long, long neck, and a long, long tail."
+    },
+    {
+      "id": "dino-lost",
+      "type": "narrate",
+      "text": "It is yawning a big dinosaur yawn. It wants to go to bed, but it has lost the way to its cosy cave."
+    },
+    {
+      "id": "dino-help",
+      "type": "narrate",
+      "text": "Mo has an idea. We can help the little dinosaur find its way home."
+    },
+    {
+      "id": "dino-want-croc",
+      "type": "request",
+      "shape": "crocodile",
+      "text": "Make a crocodile: two flat hands, one on top of the other, like a long snappy mouth."
+    },
+    {
+      "id": "dino-croc-yes",
+      "type": "narrate",
+      "text": "A crocodile! Crocodiles lived with the dinosaurs, long ago. They are very old cousins. Climb on, Mo."
+    },
+    {
+      "id": "dino-croc-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "dino-croc-carry",
+      "type": "carry",
+      "toU": 0.02,
+      "text": "Swim across the warm, muddy swamp. Splish, splash. The little dinosaur stomps along behind."
+    },
+    {
+      "id": "dino-croc-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.05,
+      "restV": 0.06
+    },
+    {
+      "id": "dino-croc-bows",
+      "type": "release",
+      "text": "The crocodile slides back into the water, and blows a sleepy bubble."
+    },
+    {
+      "id": "dino-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "dino-tracks",
+      "type": "narrate",
+      "text": "Now the path splits in two. Which way is home? Look closely at the stones."
+    },
+    {
+      "id": "dino-want-snail",
+      "type": "request",
+      "shape": "snail",
+      "text": "Make a snail: a fist for the shell, and two fingers poking forward for its eyes."
+    },
+    {
+      "id": "dino-snail-yes",
+      "type": "narrate",
+      "text": "A snail! Its shell has a spiral, just like the old stone shells hidden in these rocks. They are called fossils."
+    },
+    {
+      "id": "dino-snail-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "dino-snail-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Slowly, slowly, follow the fossils along the stony path."
+    },
+    {
+      "id": "dino-snail-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.06
+    },
+    {
+      "id": "dino-snail-bows",
+      "type": "release",
+      "text": "The snail found the right path. It tucks itself into its shell, for a little sleep."
+    },
+    {
+      "id": "dino-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "dino-tall",
+      "type": "narrate",
+      "text": "The ferns are very tall here. Too tall to see over. Who can fly up high and look?"
+    },
+    {
+      "id": "dino-want-bird",
+      "type": "request",
+      "shape": "bird",
+      "text": "Make a bird with two hands, side by side. Fly up high above the ferns."
+    },
+    {
+      "id": "dino-bird-yes",
+      "type": "narrate",
+      "text": "A bird! Here is a secret: birds are the great, great grandchildren of the dinosaurs."
+    },
+    {
+      "id": "dino-bird-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "dino-bird-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Up, up, over the ferns. Look, there is the cave, just over there.",
+      "minV": 0.12
+    },
+    {
+      "id": "dino-bird-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "dino-bird-bows",
+      "type": "release",
+      "text": "The bird flaps its wings, and the little dinosaur stomps after it, stomp, stomp."
+    },
+    {
+      "id": "dino-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "dino-dark",
+      "type": "narrate",
+      "text": "But the cave is very dark inside, and the little dinosaur is a tiny bit scared."
+    },
+    {
+      "id": "dino-firefly",
+      "type": "narrate",
+      "text": "Look! A little firefly, glowing softly. It wants to help too."
+    },
+    {
+      "id": "dino-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and carry the firefly to the cave."
+    },
+    {
+      "id": "dino-caught",
+      "type": "narrate",
+      "text": "You have it. Hold it close, so its light is warm and gentle."
+    },
+    {
+      "id": "dino-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let the firefly light up the cave."
+    },
+    {
+      "id": "dino-free",
+      "type": "release",
+      "text": "The cave glows, warm and golden, and there is the little dinosaur's nest."
+    },
+    {
+      "id": "dino-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "dino-home",
+      "type": "narrate",
+      "text": "The little dinosaur stomps inside, curls its long tail round, and closes its eyes. Safe and snug."
+    },
+    {
+      "id": "dino-dim4",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "dino-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "dino-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little dinosaur. Goodnight, sleepy volcano. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "dino-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "dino-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

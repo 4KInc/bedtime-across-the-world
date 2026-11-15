@@ -11,7 +11,7 @@ import {
   ShaderMaterial,
   ZeroFactor,
 } from '@iwsdk/core';
-import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
+import { Scenery, ScenerySets, Stage, StoryState } from './shadowplay-components.js';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 
 /** Sky colours per scene (top of the stage, bottom of the stage): light added to the wall, like coloured gels. */
@@ -22,9 +22,18 @@ export const SKIES: Readonly<Record<string, readonly [number, number]>> = {
   [ScenerySets.Forest]: [0x2f8f6a, 0xffb45a], // deep green to lantern amber
   [ScenerySets.Storm]: [0x6a5acd, 0x8fa3c7], // lilac to slate
   [ScenerySets.Sea]: [0x1f6fb8, 0x2cc5b5], // ocean blue to teal
+  [ScenerySets.MoonRoad]: [0x2b2fa8, 0xc58cff], // deep indigo to moon-dust lavender
+  [ScenerySets.DinoValley]: [0x2e9e4f, 0xff7a3a], // jungle green to volcano orange
+  [ScenerySets.StarPort]: [0x5a2fd6, 0x2fd6e0], // cosmic violet to nebula cyan
 };
+/**
+ * How much of tonight's story's own sky (library.json "sky", else its world's)
+ * colours a scene's sky, so the same river or field looks different from one
+ * story, and one world, to the next. Scenes with no set ("none") take all of it.
+ */
+const STORY_TINT = 0.3;
 /** How strongly the sky colours the wall at full lamp light (the lamp pool stays warmer and brighter). */
-const GAIN = 0.4;
+const GAIN = 0.5;
 /** The lamp's own warm light; its centre keeps most of it, its edge takes the scene's colour. */
 const WARM = new Color(0xffa43a);
 /** How much of the scene's colour the lamp light takes at its centre. */
@@ -49,7 +58,12 @@ export const twilightRuntime = { top: '', bottom: '', intensity: 0 };
 export class TwilightSystem extends createSystem({
   stages: { required: [Stage] },
   scenery: { required: [Scenery] },
+  stories: { required: [StoryState] },
 }) {
+  /** Each library story's sky (its own, else its world's), by script path. */
+  private storySkies = new Map<string, readonly [number, number]>();
+  private storyTop = new Color();
+  private storyBottom = new Color();
   private material = new ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -101,11 +115,28 @@ export class TwilightSystem extends createSystem({
     this.mesh.frustumCulled = false;
     this.top.copy(this.material.uniforms.uTop.value);
     this.bottom.copy(this.material.uniforms.uBottom.value);
+    this.loadSkies();
     this.cleanupFuncs.push(() => {
       this.mesh.removeFromParent();
       this.mesh.geometry.dispose();
       this.material.dispose();
     });
+  }
+
+  /** Story and world skies from the library ("#rrggbb" pairs, top then bottom). */
+  private loadSkies(): void {
+    type Sky = [string, string];
+    fetch(`${import.meta.env.BASE_URL}story/library.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ worlds?: { id: string; sky?: Sky }[]; stories?: { script: string; world?: string; sky?: Sky }[] }>) : null))
+      .then((lib) => {
+        const hex = (sky: Sky | undefined) => (sky?.length === 2 ? ([parseInt(sky[0].slice(1), 16), parseInt(sky[1].slice(1), 16)] as const) : undefined);
+        const worlds = new Map((lib?.worlds ?? []).map((w) => [w.id, hex(w.sky)]));
+        for (const s of lib?.stories ?? []) {
+          const sky = hex(s.sky) ?? worlds.get(s.world ?? 'nature');
+          if (sky) this.storySkies.set(s.script, sky);
+        }
+      })
+      .catch(() => undefined);
   }
 
   update(delta: number): void {
@@ -122,9 +153,15 @@ export class TwilightSystem extends createSystem({
 
     const scenery = this.queries.scenery.entities.values().next().value as Entity | undefined;
     const set = (scenery?.getValue(Scenery, 'set') as string | undefined) ?? ScenerySets.None;
-    const [top, bottom] = SKIES[set] ?? SKIES[ScenerySets.None];
+    const script = (this.queries.stories.entities.values().next().value as Entity | undefined)?.getValue(StoryState, 'script') ?? '';
+    const own = this.storySkies.get(script);
+    const [top, bottom] = (set === ScenerySets.None && own) || (SKIES[set] ?? SKIES[ScenerySets.None]);
     this.target[0].setHex(top);
     this.target[1].setHex(bottom);
+    if (own && set !== ScenerySets.None) {
+      this.target[0].lerp(this.storyTop.setHex(own[0]), STORY_TINT);
+      this.target[1].lerp(this.storyBottom.setHex(own[1]), STORY_TINT);
+    }
     const k = Math.min(1, delta / BLEND_SECONDS);
     this.top.lerp(this.target[0], k);
     this.bottom.lerp(this.target[1], k);

@@ -278,11 +278,12 @@ function headlightShape(): Shape {
   return s;
 }
 
-/** The moon road also has a buggy that follows Mo along it: where Mo is, in stage widths. */
-export interface MoonRoadSet extends ScenerySet {
-  /** Mo's position along the stage (stage widths, centre 0); the buggy trundles after her. */
+/** A set with a character that follows Mo along the stage (the buggy, the little dinosaur, Pip's spaceship). */
+export interface FollowerSet extends ScenerySet {
+  /** Mo's position along the stage (stage widths, centre 0); the set's character goes after her. */
   follow(u: number): void;
 }
+export type MoonRoadSet = FollowerSet;
 
 /**
  * Cars & Adventure: a moon road with craters, the buggy's garage, and the little
@@ -359,6 +360,390 @@ export function buildMoonRoad(ink: MeshBasicMaterial): MoonRoadSet {
       bodyGeo.dispose();
       lightGeo.dispose();
       lightMat.dispose();
+    },
+  };
+}
+
+// ---------------------------------------------------------------- dino valley (Dinosaurs & Discovery)
+
+/** Low rolling ground with a few fern fans along it. */
+function valleyGround(): Shape[] {
+  const ground = new Shape();
+  ground.moveTo(-0.62, 0);
+  for (let x = -0.62; x <= 0.62 + 1e-6; x += 0.02) ground.lineTo(x, 0.07 + Math.sin(x * 4.2 + 1.1) * 0.02 + Math.sin(x * 17) * 0.005);
+  ground.lineTo(0.62, 0);
+  ground.closePath();
+  const ferns: Shape[] = [];
+  for (const [x, h] of [[-0.3, 0.1], [-0.12, 0.07], [0.08, 0.09], [0.26, 0.08]] as const) {
+    // A fan of thin fronds, curving out from one root.
+    for (let i = 0; i < 5; i++) {
+      const a = -0.9 + i * 0.45;
+      const tipX = x + Math.sin(a) * h * 0.8;
+      const tipY = 0.06 + Math.cos(a) * h;
+      const f = new Shape();
+      f.moveTo(x - 0.004, 0.06);
+      f.quadraticCurveTo(x + Math.sin(a) * h * 0.2, 0.06 + h * 0.6, tipX, tipY);
+      f.quadraticCurveTo(x + Math.sin(a) * h * 0.3, 0.06 + h * 0.5, x + 0.004, 0.06);
+      f.closePath();
+      ferns.push(f);
+    }
+  }
+  return [ground, ...ferns];
+}
+
+/** A sleepy volcano far off on the left, with a notch at its top. */
+function volcanoShape(): Shape {
+  const s = new Shape();
+  s.moveTo(-0.62, 0.05);
+  s.lineTo(-0.62, 0.2);
+  s.lineTo(-0.47, 0.44);
+  s.lineTo(-0.44, 0.42);
+  s.lineTo(-0.41, 0.44);
+  s.lineTo(-0.24, 0.12);
+  s.lineTo(-0.2, 0.05);
+  s.closePath();
+  return s;
+}
+
+/** A tall palm-like tree at the right edge: a leaning trunk and drooping leaves. */
+function palmShapes(): Shape[] {
+  const x = 0.58;
+  const trunk = new Shape();
+  trunk.moveTo(x - 0.012, 0);
+  trunk.quadraticCurveTo(x - 0.03, 0.3, x - 0.05, 0.55);
+  trunk.lineTo(x - 0.036, 0.55);
+  trunk.quadraticCurveTo(x - 0.014, 0.3, x + 0.012, 0);
+  trunk.closePath();
+  const leaves = [-2.6, -2.0, -1.2, -0.5, 0.2].map((a) => {
+    const l = new Shape();
+    const cx = x - 0.043;
+    const cy = 0.55;
+    const ex = cx + Math.cos(a) * 0.13;
+    const ey = cy + Math.sin(a) * 0.05 + 0.02;
+    l.moveTo(cx, cy);
+    l.quadraticCurveTo((cx + ex) / 2, cy + 0.07, ex, ey - 0.04);
+    l.quadraticCurveTo((cx + ex) / 2, cy + 0.03, cx, cy);
+    return l;
+  });
+  return [trunk, ...leaves];
+}
+
+/** The little dinosaur's cave: a rocky mound on the right with a round doorway. */
+function caveShape(): Shape {
+  const x = 0.42;
+  const s = new Shape();
+  s.moveTo(x - 0.16, 0.05);
+  s.quadraticCurveTo(x - 0.15, 0.27, x, 0.3);
+  s.quadraticCurveTo(x + 0.12, 0.31, x + 0.2, 0.2);
+  s.lineTo(x + 0.2, 0.05);
+  s.closePath();
+  const door = new Shape();
+  door.moveTo(x - 0.055, 0.05);
+  door.lineTo(x - 0.055, 0.12);
+  door.absarc(x, 0.12, 0.055, Math.PI, 0, true);
+  door.lineTo(x + 0.055, 0.05);
+  door.closePath();
+  s.holes.push(door);
+  return s;
+}
+
+/** The cave's doorway, centred on its own origin (placed at the door, 0.42, 0.1, so it can be found there). */
+function caveDoorShape(): Shape {
+  const door = new Shape();
+  door.moveTo(-0.055, -0.05);
+  door.lineTo(-0.055, 0.02);
+  door.absarc(0, 0.02, 0.055, Math.PI, 0, false);
+  door.lineTo(0.055, -0.05);
+  door.closePath();
+  return door;
+}
+
+/** A little long-neck dinosaur in profile, facing right: body, neck, head, tail, four legs. */
+function dinoShapes(): Shape[] {
+  const body = new Shape();
+  body.absellipse(0, 0.06, 0.055, 0.032, 0, Math.PI * 2, false, 0);
+  const neck = new Shape();
+  neck.moveTo(0.03, 0.07);
+  neck.quadraticCurveTo(0.07, 0.09, 0.075, 0.14);
+  neck.lineTo(0.092, 0.14);
+  neck.quadraticCurveTo(0.09, 0.08, 0.05, 0.05);
+  neck.closePath();
+  const head = new Shape();
+  head.absellipse(0.092, 0.145, 0.022, 0.013, 0, Math.PI * 2, false, 0.15);
+  const tail = new Shape();
+  tail.moveTo(-0.045, 0.075);
+  tail.quadraticCurveTo(-0.1, 0.07, -0.135, 0.04);
+  tail.quadraticCurveTo(-0.09, 0.05, -0.045, 0.045);
+  tail.closePath();
+  const legs = [-0.035, -0.015, 0.018, 0.036].map((lx) => {
+    const l = new Shape();
+    l.moveTo(lx - 0.008, 0.045);
+    l.lineTo(lx - 0.008, 0);
+    l.lineTo(lx + 0.008, 0);
+    l.lineTo(lx + 0.008, 0.045);
+    l.closePath();
+    return l;
+  });
+  return [body, neck, head, tail, ...legs];
+}
+
+/** Smoke puffs above the volcano. */
+const PUFFS = 4;
+
+/**
+ * Dinosaurs & Discovery: a fern valley under a sleepy volcano, a palm at the
+ * edge and a cave on the right. The little dinosaur stomps after Mo; at the
+ * finale it walks into its cave and the doorway glows warm.
+ */
+export function buildDinoValley(ink: MeshBasicMaterial): FollowerSet {
+  const group = new Group();
+  group.name = 'scenery-dino-valley';
+  const backGeo = new ShapeGeometry([volcanoShape(), ...palmShapes()], 8);
+  const back = new Mesh(backGeo, ink);
+  back.name = 'scenery-dino-valley-volcano';
+  back.renderOrder = 3;
+  const groundGeo = new ShapeGeometry(valleyGround(), 6);
+  const ground = new Mesh(groundGeo, ink);
+  ground.name = 'scenery-dino-valley-ground';
+  ground.renderOrder = 4;
+  const caveGeo = new ShapeGeometry(caveShape(), 12);
+  const cave = new Mesh(caveGeo, ink);
+  cave.name = 'scenery-dino-valley-cave';
+  cave.renderOrder = 4;
+
+  const doorMat = glow(0xffb45a);
+  const doorGeo = new ShapeGeometry(caveDoorShape(), 12);
+  const door = new Mesh(doorGeo, doorMat);
+  door.name = 'scenery-dino-valley-cave-door';
+  door.position.set(0.42, 0.1, 0.0005);
+  door.renderOrder = 2;
+
+  const lavaMat = glow(0xff6a2a);
+  const lavaGeo = new PlaneGeometry(0.05, 0.03);
+  const lava = new Mesh(lavaGeo, lavaMat);
+  lava.name = 'scenery-dino-valley-lava';
+  lava.position.set(-0.44, 0.43, -0.0005);
+  lava.renderOrder = 2;
+
+  const puffShape = new Shape();
+  puffShape.absellipse(0, 0, 0.022, 0.015, 0, Math.PI * 2, false, 0);
+  const puffGeo = new ShapeGeometry(puffShape, 10);
+  const puffs = Array.from({ length: PUFFS }, (_, i) => {
+    const m = new Mesh(puffGeo, ink);
+    m.name = `scenery-dino-valley-puff-${i}`;
+    m.renderOrder = 3;
+    return m;
+  });
+
+  const dino = new Group();
+  dino.name = 'scenery-dino-valley-dino';
+  const dinoGeo = new ShapeGeometry(dinoShapes(), 8);
+  const dinoBody = new Mesh(dinoGeo, ink);
+  dinoBody.name = 'scenery-dino-valley-dino-body';
+  dinoBody.renderOrder = 5;
+  dino.add(dinoBody);
+  dino.position.set(-0.36, 0.06, 0.0008);
+
+  group.add(back, lava, ...puffs, door, cave, ground, dino);
+  let target = -0.36;
+  let lastTime = -1;
+  return {
+    group,
+    follow(u) {
+      // A little behind Mo, and never past the cave door.
+      target = Math.min(0.28, Math.max(-0.48, u - 0.12));
+    },
+    update(time, level, finale) {
+      const dt = lastTime < 0 ? 0 : Math.min(0.1, time - lastTime);
+      lastTime = time;
+      const goal = finale > 0.01 ? 0.42 : target;
+      const before = dino.position.x;
+      dino.position.x += (goal - before) * Math.min(1, dt * 0.7);
+      // Stomp, stomp: a heavier, slower bob than the buggy's.
+      const moving = Math.min(1, Math.abs(dino.position.x - before) / Math.max(dt, 1e-3) / 0.05);
+      dino.position.y = 0.06 + Math.abs(Math.sin(time * 4)) * 0.006 * moving;
+      // Into the cave: it shrinks a little into the dark as it goes in.
+      const inside = Math.max(0, Math.min(1, (finale - 0.6) / 0.38));
+      dino.scale.setScalar(1 - 0.4 * inside);
+      dino.visible = finale < 0.98;
+      puffs.forEach((p, i) => {
+        const t = (time * 0.05 + i / PUFFS) % 1;
+        p.position.set(-0.44 + Math.sin(t * 5 + i) * 0.02 + t * 0.04, 0.46 + t * 0.3, -0.0002);
+        p.scale.setScalar(0.6 + t * 1.6);
+        p.visible = t < 0.9;
+      });
+      lavaMat.color.setHex(0xff6a2a).multiplyScalar(level * (0.35 + 0.15 * Math.sin(time * 1.3)));
+      doorMat.color.setHex(0xffb45a).multiplyScalar(0.05 * level + 0.9 * level * finale);
+    },
+    dispose() {
+      backGeo.dispose();
+      groundGeo.dispose();
+      caveGeo.dispose();
+      doorGeo.dispose();
+      doorMat.dispose();
+      lavaGeo.dispose();
+      lavaMat.dispose();
+      puffGeo.dispose();
+      dinoGeo.dispose();
+    },
+  };
+}
+
+// ---------------------------------------------------------------- star port (Space & Exploration)
+
+const STARS = 26;
+
+/** Moon rocks along the bottom: a low cratered surface with a few boulders. */
+function moonRocks(): Shape[] {
+  const s = new Shape();
+  s.moveTo(-0.62, 0);
+  for (let x = -0.62; x <= 0.62 + 1e-6; x += 0.02) s.lineTo(x, 0.05 + Math.sin(x * 7 + 0.4) * 0.012 + Math.sin(x * 23) * 0.004);
+  s.lineTo(0.62, 0);
+  s.closePath();
+  const rocks = [[-0.45, 0.025], [-0.2, 0.016], [0.12, 0.02], [0.4, 0.03]].map(([x, r]) => {
+    const b = new Shape();
+    b.absellipse(x, 0.055, r * 1.4, r, 0, Math.PI, false, 0);
+    return b;
+  });
+  return [s, ...rocks];
+}
+
+/** Pip's home planet, top right, with a tilted ring (a band with a hole), and a tiny far planet. */
+function planetShapes(): Shape[] {
+  const planet = new Shape();
+  planet.absarc(0.36, 0.74, 0.075, 0, Math.PI * 2, false);
+  const ring = new Shape();
+  ring.absellipse(0.36, 0.74, 0.135, 0.03, 0, Math.PI * 2, false, -0.25);
+  const inner = new Shape();
+  inner.absellipse(0.36, 0.74, 0.105, 0.018, 0, Math.PI * 2, true, -0.25);
+  ring.holes.push(inner);
+  const far = new Shape();
+  far.absarc(-0.38, 0.82, 0.03, 0, Math.PI * 2, false);
+  return [planet, ring, far];
+}
+
+/** Pip's little round spaceship: a dome on a saucer, with a short antenna. */
+function saucerShapes(): Shape[] {
+  const disk = new Shape();
+  disk.absellipse(0, 0, 0.075, 0.018, 0, Math.PI * 2, false, 0);
+  const dome = new Shape();
+  dome.absarc(0, 0.008, 0.035, 0, Math.PI, false);
+  dome.lineTo(0.035, 0.008);
+  const antenna = new Shape();
+  antenna.moveTo(-0.002, 0.04);
+  antenna.lineTo(-0.002, 0.062);
+  antenna.lineTo(0.002, 0.062);
+  antenna.lineTo(0.002, 0.04);
+  antenna.closePath();
+  const tip = new Shape();
+  tip.absarc(0, 0.066, 0.006, 0, Math.PI * 2, false);
+  return [disk, dome, antenna, tip];
+}
+
+/**
+ * Space & Exploration: moon rocks, a ringed home planet and a tiny far one,
+ * twinkling stars, and Pip's little spaceship following Mo. At the finale it
+ * flies up to the ringed planet, whose window lights.
+ */
+export function buildStarPort(ink: MeshBasicMaterial): FollowerSet {
+  const group = new Group();
+  group.name = 'scenery-star-port';
+  const rand = makeRandom(97);
+  const rocksGeo = new ShapeGeometry(moonRocks(), 8);
+  const rocks = new Mesh(rocksGeo, ink);
+  rocks.name = 'scenery-star-port-rocks';
+  rocks.renderOrder = 4;
+  const planetGeo = new ShapeGeometry(planetShapes(), 24);
+  const planets = new Mesh(planetGeo, ink);
+  planets.name = 'scenery-star-port-planet';
+  planets.renderOrder = 3;
+
+  const homeMat = glow(0xffd36b);
+  const homeGeo = new PlaneGeometry(0.02, 0.022);
+  const home = new Mesh(homeGeo, homeMat);
+  home.name = 'scenery-star-port-home-window';
+  home.position.set(0.36, 0.74, 0.001);
+  home.renderOrder = 5;
+
+  const starMat = glow(0xffffff);
+  const starGeo = new PlaneGeometry(0.008, 0.012);
+  const stars = new InstancedMesh(starGeo, starMat, STARS);
+  stars.name = 'scenery-star-port-stars';
+  stars.renderOrder = 2;
+  stars.frustumCulled = false;
+  const starSeeds = Array.from({ length: STARS }, () => ({
+    x: rand() * 1.16 - 0.58,
+    y: 0.3 + rand() * 0.65,
+    phase: rand() * Math.PI * 2,
+    speed: 0.6 + rand() * 1.4,
+  }));
+  const m = new Matrix4();
+  const q = new Quaternion();
+  const one = new Vector3(1, 1, 1);
+  const p = new Vector3();
+  starSeeds.forEach((st, i) => {
+    stars.setMatrixAt(i, m.compose(p.set(st.x, st.y, -0.0005), q, one));
+    stars.setColorAt(i, starMat.color);
+  });
+
+  const ship = new Group();
+  ship.name = 'scenery-star-port-ship';
+  const shipGeo = new ShapeGeometry(saucerShapes(), 12);
+  const shipBody = new Mesh(shipGeo, ink);
+  shipBody.name = 'scenery-star-port-ship-body';
+  shipBody.renderOrder = 5;
+  const lightsMat = glow(0x9cf6ff);
+  const lightsGeo = new PlaneGeometry(0.008, 0.006);
+  const lights = new InstancedMesh(lightsGeo, lightsMat, 3);
+  lights.name = 'scenery-star-port-ship-lights';
+  lights.renderOrder = 6;
+  [-0.04, 0, 0.04].forEach((x, i) => lights.setMatrixAt(i, m.compose(p.set(x, -0.002, 0.0005), q, one)));
+  ship.add(shipBody, lights);
+  ship.position.set(-0.36, 0.2, 0.0008);
+
+  group.add(stars, planets, home, rocks, ship);
+  let target = -0.36;
+  let lastTime = -1;
+  const tint = starMat.color.clone();
+  return {
+    group,
+    follow(u) {
+      target = Math.min(0.3, Math.max(-0.48, u - 0.12));
+    },
+    update(time, level, finale) {
+      const dt = lastTime < 0 ? 0 : Math.min(0.1, time - lastTime);
+      lastTime = time;
+      // Home at the finale: up to the ringed planet, getting smaller as it flies away.
+      const flying = finale > 0.01;
+      const gx = flying ? 0.36 : target;
+      const gy = flying ? 0.74 : 0.2;
+      const k = Math.min(1, dt * (flying ? 0.9 : 0.8));
+      ship.position.x += (gx - ship.position.x) * k;
+      const baseY = ship.userData.baseY ?? 0.2;
+      ship.userData.baseY = baseY + (gy - baseY) * k;
+      ship.position.y = ship.userData.baseY + Math.sin(time * 1.6) * 0.008;
+      ship.rotation.z = Math.sin(time * 1.1) * 0.06;
+      ship.scale.setScalar(1 - 0.75 * Math.min(1, finale));
+      ship.visible = finale < 0.98;
+      for (let i = 0; i < STARS; i++) {
+        const st = starSeeds[i];
+        const b = 0.25 + 0.2 * Math.sin(time * st.speed + st.phase);
+        stars.setColorAt(i, tint.setScalar(Math.max(0, b * level)));
+      }
+      if (stars.instanceColor) stars.instanceColor.needsUpdate = true;
+      lightsMat.color.setHex(0x9cf6ff).multiplyScalar(level * (0.3 + 0.2 * Math.sin(time * 3)));
+      homeMat.color.setHex(0xffd36b).multiplyScalar(0.04 * level + 0.95 * level * finale);
+    },
+    dispose() {
+      rocksGeo.dispose();
+      planetGeo.dispose();
+      homeGeo.dispose();
+      homeMat.dispose();
+      starGeo.dispose();
+      starMat.dispose();
+      shipGeo.dispose();
+      lightsGeo.dispose();
+      lightsMat.dispose();
     },
   };
 }

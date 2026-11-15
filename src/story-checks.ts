@@ -38,7 +38,7 @@ const PLAIN = /^[A-Za-z0-9 ,.!?'’;:-]{1,200}$/;
 const BEAT_ID = /^[a-z0-9-]{1,40}$/;
 /** ...and it can only be made of what Mo's dreams are made of (server/dream.ts). */
 const SHAPES = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
-const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road']);
+const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);
 const MOTH = new Set(['hidden', 'arriving', 'hovering', 'following', 'riding', 'resting']);
 const MAX_BEATS = 80;
 
