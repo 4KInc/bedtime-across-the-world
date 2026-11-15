@@ -5,8 +5,9 @@
 //     waking the creature, pause and continue, the whole of Counting Stars told
 //     by voice with controllers in hand, and "voice commands off".
 //  B. no speech recognition in the browser: Chromium's synthetic audio device
-//     (a beep) is cut into short clips that are posted to /api/voice (answered
-//     here by the test), and the answer acted on.
+//     (a beep) is cut into short 16 kHz WAV clips, each starting half a second
+//     before the speech was noticed, posted to /api/voice (answered here by the
+//     test), and the answer acted on.
 //
 //   node scripts/sim/voice-commands.mjs [--gpu]
 // Needs the dev server (npm run dev) on https://localhost:8082.
@@ -150,7 +151,10 @@ const browser = await chromium.launch({
   for (let i = 0; i < 40 && !posts.length; i++) await sleep(250);
   await sleep(800);
   const opened = await page.evaluate(() => __sp.get('ShadowJournal', 'open'));
-  check('no browser recognition: short webm clips go to /api/voice and the answer is acted on', state === 'server' && posts.length >= 1 && /^audio\/webm/.test(posts[0].type) && posts[0].bytes > 200 && opened === true, {
+  // 16 kHz WAV, starting half a second before the speech was noticed (so "fish" is not sent as "ish"):
+  // at least 0.5 s + the shortest clip (0.25 s) of 16-bit samples, plus the header.
+  const minBytes = 44 + Math.round((0.5 + 0.25) * 16000) * 2;
+  check('no browser recognition: WAV clips (with the half second before the speech) go to /api/voice and the answer is acted on', state === 'server' && posts.length >= 1 && /^audio\/wav/.test(posts[0].type) && posts[0].bytes >= minBytes && opened === true, {
     state,
     clips: posts.length,
     first: posts[0],

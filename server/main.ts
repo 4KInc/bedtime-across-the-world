@@ -25,7 +25,7 @@ import { speakable, speechKey, TextToSpeech } from './speak.ts';
  *   POST /api/stories/:code/replies   a goodnight back from the family (up to MAX_REPLIES)
  *   GET  /api/stories/:code/replies   the replies to a story (for the storyteller)
  *   GET  /api/voice          { available }: whether spoken commands can be understood here
- *   POST /api/voice          a short spoken clip (audio/webm) -> { text } (Voice commands; nothing stored)
+ *   POST /api/voice          a short spoken clip (audio/wav, 16 kHz, or audio/webm) -> { text } (Voice commands; nothing stored)
  *   GET  /api/coach          { available }: whether Mo's tips are written by AI here
  *   POST /api/coach          { shape, facts, attempt } -> { line, source } (Mo the coach; no personal data)
  *   GET  /api/speak          { available }: whether lines without a recorded clip can be voiced here
@@ -255,7 +255,9 @@ async function readBytes(req: IncomingMessage, limit: number): Promise<Buffer | 
 async function postVoice(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!speech) return json(res, 503, { error: 'Voice commands are not available here.' });
   if (!allowed('voice', req)) return json(res, 429, { error: 'Too many voice commands.' });
-  if (!/^audio\/webm\b/.test(req.headers['content-type'] ?? '')) return json(res, 415, { error: 'Send audio/webm.' });
+  const type = req.headers['content-type'] ?? '';
+  const format = /^audio\/(wav|wave|x-wav)\b/.test(type) ? 'wav' : /^audio\/webm\b/.test(type) ? 'webm' : null;
+  if (!format) return json(res, 415, { error: 'Send audio/wav or audio/webm.' });
   const clip = await readBytes(req, MAX_CLIP_BYTES);
   if (clip === null) {
     // The rest of the upload is left unread: close the connection rather than reuse it.
@@ -264,7 +266,7 @@ async function postVoice(req: IncomingMessage, res: ServerResponse): Promise<voi
   }
   if (clip.length < 200) return json(res, 400, { error: 'Nothing to hear.' });
   try {
-    return json(res, 200, { text: await speech.transcribe(clip) });
+    return json(res, 200, { text: await speech.transcribe(clip, format) });
   } catch (error) {
     console.warn('[voice]', error instanceof Error ? error.message : error);
     return json(res, 502, { error: 'Could not understand that just now.' });
