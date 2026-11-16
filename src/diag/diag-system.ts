@@ -318,6 +318,8 @@ export class DiagSystem extends createSystem({
       anchor: stageRuntime.anchor,
       anchorLast: stageRuntime.anchorFromLastTime,
       meshes: this.queries.meshes.entities.size,
+      // Each wall at the last search and why it could not hold the stage (wall-choice.ts judge).
+      walls: [...stageRuntime.wallWhy],
     };
   }
 

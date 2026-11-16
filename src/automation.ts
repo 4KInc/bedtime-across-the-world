@@ -279,6 +279,7 @@ export class AutomationSystem extends createSystem({
           anchorLastTime: stageRuntime.anchorFromLastTime,
           anchorFixes: stageRuntime.anchorFixes,
           center: stageRuntime.center.toArray().map((v) => Math.round(v * 1000) / 1000),
+          walls: [...stageRuntime.wallWhy],
           // The desk's height, where the lamp's switch stands (the lamp itself is behind the viewer).
           deskY: Math.round((this.world.scene.getObjectByName('desk-switch')?.position.y ?? 0) * 1000) / 1000,
         };

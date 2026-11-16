@@ -62,6 +62,8 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   console.log(`quality: ${q.length ? q.map((e) => `-> ${e.level} at ${e.t}s (${e.fps} fps)`).join(', ') : 'stayed at 0'}   final shadow map ${snaps.at(-1)?.shadowMap ?? '-'}`);
   for (const p of ev('placed')) {
     console.log(`placed: ${p.place}  wall ${p.wallW} m wide at ${p.wallD} m  stage ${p.stageW} m  planes ${p.planes} (vertical ${p.vplanes})${p.labels?.length ? ' labels: ' + p.labels.join(', ') : p.vlabels ? ': ' + p.vlabels : ''}  meshes ${p.meshes}${p.desk ? `  desk ${p.desk}` : ''}${p.fovH ? `  view ${p.fovH}°` : ''}  at ${p.t}s`);
+    // Why each wall could or could not hold the stage (label, distance, angle from the view, verdict).
+    if (p.walls?.length) console.log(`   walls: ${p.walls.join(' | ')}`);
   }
   const tips = ev('coach');
   if (tips.length) console.log(`Mo's tips: ${tips.length} (${tips.filter((t) => t.source === 'ai').length} by AI), median ${pct(tips.map((t) => t.ms), 0.5)} ms; facts: ${count(tips.flatMap((t) => t.facts ?? []))}`);

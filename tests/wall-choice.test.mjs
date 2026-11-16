@@ -259,3 +259,33 @@ test('restoreOnWall: rejected when behind, off to the side, too close, too far, 
   assert.equal(restoreOnWall(head, ahead, { x: 0, y: 1.25, z: -5 }, n, 0.9), null);
   assert.equal(restoreOnWall(head, ahead, { x: 0, y: 1.25, z: -2 }, { x: 0, y: 0.6, z: 0.8 }, 0.9), null);
 });
+
+test('diagnostics: each wall with its distance, angle and why it could or could not hold the stage', () => {
+  const why = [];
+  const planes = [
+    wall({ dist: 2 }), // straight ahead: ok
+    wall({ dist: 5, label: 'WALL_FACE' }), // too far
+    wall({ dist: 0.4, width: 1 }), // too near
+    wall({ dist: 2.5, yaw: 50 }), // turned 50 degrees from the view
+    wall({ dist: 2, width: 1, cx: 3 }), // off to the side: the point ahead is not on it
+    wall({ dist: 2, height: 0.5, y0: 2.4 }), // above eye height
+    wall({ dist: 2.05, width: 0.8, cx: 1.5, label: 'door frame' }), // a door, off to the right
+    floor(), // not vertical: not listed
+  ];
+  const choice = chooseWall(head, ahead, planes, undefined, why);
+  assert.ok(choice && Math.abs(choice.dist - 2) < 1e-6);
+  assert.equal(why.length, 7);
+  assert.deepEqual(
+    why.map((w) => w.split(' ').at(-1)),
+    ['ok', 'far', 'near', 'angle', 'aside', 'height', 'opening'],
+  );
+  assert.equal(why[0], 'wall 2.0m 0d ok');
+  assert.match(why[1], /^wall_face 5\.0m 0d far$/);
+  assert.match(why[3], / 50d angle$/);
+  // A door straight ahead leaves no room on the wall it is in.
+  const blocked = [];
+  assert.equal(chooseWall(head, ahead, [wall({ dist: 2, width: 1.2 }), wall({ dist: 2.05, width: 1, label: 'door' })], undefined, blocked), null);
+  assert.deepEqual(blocked.map((w) => w.split(' ').at(-1)), ['nofit', 'opening']);
+  // Every entry fits the diagnostics' plain-text rule.
+  for (const w of why) assert.match(w, /^[\w .:/()+,-]{0,64}$/);
+});
