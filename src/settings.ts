@@ -274,6 +274,7 @@ export class SettingsSystem extends createSystem({
       dreamRuntime.wish.state = '';
       button?.setProperties(p.unselected);
       this.sayLabel?.setProperties({ text: 'Say your idea', color: p.cream });
+      dreamRuntime.wish.label = 'Say your idea';
     };
     void canHearWishes().then((ok) => {
       if (!ok) {
@@ -285,8 +286,18 @@ export class SettingsSystem extends createSystem({
       this.wishListening = listening;
       dreamRuntime.wish.state = 'listening';
       button?.setProperties(p.selected);
-      this.sayLabel?.setProperties({ text: 'Listening... (press when done)', color: p.ink });
-      this.status?.setProperties({ text: 'Tell Mo your idea, like: a forest story with a dog and a rabbit.' });
+      // The same button finishes: it says so (Quest 3, Nov 16: "click done", but no Done button to be seen).
+      this.sayLabel?.setProperties({ text: 'Done', color: p.ink });
+      dreamRuntime.wish.label = 'Done';
+      this.status?.setProperties({ text: 'Listening... Tell Mo your idea, like: a forest story with a dog and a rabbit. Then press Done, or just stop talking.' });
+      void listening.stopped.then(() => {
+        if (this.wishListening !== listening) return;
+        // The microphone is off: say so while the words are worked out.
+        dreamRuntime.wish.state = 'understanding';
+        this.sayLabel?.setProperties({ text: 'Got it', color: p.ink });
+        dreamRuntime.wish.label = 'Got it';
+        this.status?.setProperties({ text: 'Got it. Mo is working out your words...' });
+      });
       listening.words
         .then((words) => {
           if (this.wishListening !== listening) return;
@@ -297,7 +308,6 @@ export class SettingsSystem extends createSystem({
             return;
           }
           this.closeDreamChooser();
-          this.status?.setProperties({ text: `Heard: "${words}"` });
           this.dream(undefined, [], words);
         })
         .catch(() => {
@@ -617,8 +627,8 @@ export const dreamRuntime = {
   asked: null as { theme: string; shapes: string[]; wish?: string } | null,
   /** A dream asked for elsewhere (a voice command): taken by the Settings system on its next update. */
   request: null as { theme: string; shapes: string[]; wish?: string } | null,
-  /** "Say your idea": 'listening' from the press until the words are back, else ''; and the last words heard. */
-  wish: { state: '' as '' | 'listening', heard: '', listen: wishListenRuntime },
+  /** "Say your idea": 'listening' while the microphone is on, 'understanding' while the words are worked out, else ''; and the last words heard. */
+  wish: { state: '' as '' | 'listening' | 'understanding', label: 'Say your idea', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
   chooser: { open: false, theme: '', shapes: [] as string[] },
   title: '',

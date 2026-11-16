@@ -38,6 +38,8 @@ export const wishListenRuntime = { seconds: 0, peak: 0, heard: false, bytes: 0, 
 export interface WishListening {
   /** The words said ('' when nothing was understood); rejects when the microphone could not be used. */
   words: Promise<string>;
+  /** Resolves when the microphone stops (a pause, the time limit, or Done); the words may take a moment more. */
+  stopped: Promise<void>;
   /** Finish now (the second press): what was said so far is used. */
   finish(): void;
   /** Stop without using it. */
@@ -90,6 +92,10 @@ function withBrowser(Recognition: RecognitionClass): WishListening {
   });
   return {
     words,
+    stopped: words.then(
+      () => undefined,
+      () => undefined,
+    ),
     finish: () => r.stop(),
     cancel: () => {
       cancelled = true;
@@ -101,6 +107,8 @@ function withBrowser(Recognition: RecognitionClass): WishListening {
 function withServer(): WishListening {
   let finish = () => {};
   let cancel = () => {};
+  let micStopped = () => {};
+  const stoppedSignal = new Promise<void>((resolve) => (micStopped = resolve));
   const words = (async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     const audio = new AudioContext();
@@ -148,6 +156,7 @@ function withServer(): WishListening {
       stop();
     };
     await stopped;
+    micStopped();
     clearInterval(tick);
     wishListenRuntime.seconds = (performance.now() - started) / 1000;
     stream.getTracks().forEach((track) => track.stop());
@@ -159,5 +168,7 @@ function withServer(): WishListening {
     const res = await fetch('/api/voice?for=wish', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: new Blob(chunks, { type: 'audio/webm' }) });
     return res.ok ? (((await res.json()) as { text?: string }).text ?? '').trim() : '';
   })();
-  return { words, finish: () => finish(), cancel: () => cancel() };
+  // A microphone that never started counts as stopped too.
+  words.catch(() => micStopped());
+  return { words, stopped: stoppedSignal, finish: () => finish(), cancel: () => cancel() };
 }

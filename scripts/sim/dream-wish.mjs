@@ -60,6 +60,8 @@ async function session({ browserSpeech }) {
     const req = route.request();
     if (req.method() === 'GET') return route.fulfill({ json: { available: true } });
     clips.push({ url: req.url(), bytes: req.postDataBuffer()?.length ?? 0, type: req.headers()['content-type'] });
+    // A moment to work out the words, as the server takes (the button says Got it meanwhile).
+    await sleep(1500);
     return route.fulfill({ json: { text: 'Can we have a story about being brave' } });
   });
   await context.addInitScript((browserSpeech) => {
@@ -170,8 +172,10 @@ const shapesOf = (story) => ({
   await pinch('dream-say');
   await sleep(2500);
   const listening = await page.evaluate(() => __sp.view().dream.wish.state);
+  const whileListening = await page.evaluate(() => __sp.view().dream.wish.label);
   if (process.env.DEBUG) console.log('  presses', await page.evaluate(() => __sp.presses()));
   await pinch('dream-say'); // done
+  const afterDone = await page.evaluate(() => ({ ...__sp.view().dream.wish, listen: undefined }));
   if (process.env.DEBUG) {
     for (let i = 0; i < 8; i++) {
       console.log('  wish', JSON.stringify(await page.evaluate(() => __sp.view().dream.wish)), await page.evaluate(() => __sp.presses().slice(-3)));
@@ -182,6 +186,8 @@ const shapesOf = (story) => ({
   const picked = prompts.slice(before).filter((p) => /grown-up's idea/.test(p.system));
   const story = asked.length ? await dreamer.dream(checkDream(asked[0])) : null;
   check('Quest path: the microphone records until the second press', listening === 'listening', { listening });
+  // Quest 3, Nov 16: the hint said to press Done, but no button said Done, and nothing showed the listening had ended.
+  check('Quest path: the button says Done while listening, then Got it while the words are worked out', whileListening === 'Done' && afterDone.state === 'understanding' && afterDone.label === 'Got it', { whileListening, afterDone });
   check('Quest path: one clip goes to /api/voice?for=wish as audio/webm', clips.length === 1 && /for=wish/.test(clips[0].url) && clips[0].bytes > 1000 && /audio\/webm/.test(clips[0].type), clips);
   check('Quest path: what it heard is dreamed as the idea', asked.length === 1 && asked[0].wish === 'Can we have a story about being brave', { asked });
   check('an idea that names nothing: the model picks the place and shapes', picked.length >= 1 && !!story && JSON.stringify(shapesOf(story)) === JSON.stringify({ shapes: ['dog', 'bird'], scenery: 'field' }), story && shapesOf(story));
