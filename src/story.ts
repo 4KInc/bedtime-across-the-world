@@ -95,6 +95,13 @@ const MAX_STEP_SECONDS = 0.25;
  * off, the headset is removed or the journal is open, and saves progress at
  * each chapter so a returning player resumes where they left off.
  */
+/**
+ * Why the story is paused now, for diagnostics: '' (playing), 'lamp' (the lamp
+ * switched off), 'away' (Quest menu or headset off), 'journal' (the Shadow
+ * Journal open), 'hands' (waiting to see hands) or 'sound' (waiting for a gesture to start sound).
+ */
+export const pauseRuntime = { why: '' as '' | 'lamp' | 'away' | 'journal' | 'hands' | 'sound' };
+
 export class StorySystem extends createSystem({
   stories: { required: [StoryState] },
   stages: { required: [Stage, ShapeRecognizer] },
@@ -371,6 +378,7 @@ export class StorySystem extends createSystem({
     }
     const needSound = soundLock.blocked && !soundLock.waived;
     const paused = !stage.getValue(Stage, 'lampOn') || away.now || journalOpen || needHands || needSound;
+    pauseRuntime.why = !paused ? '' : away.now ? 'away' : !stage.getValue(Stage, 'lampOn') ? 'lamp' : journalOpen ? 'journal' : needHands ? 'hands' : 'sound';
     if (paused) {
       setIfChanged(story, 'status', StoryStatuses.Paused);
       setIfChanged(
