@@ -40,6 +40,24 @@ function mediapipeVendor(): Plugin {
   };
 }
 
+type ModuleInfo = { isEntry: boolean; importedIds: readonly string[] } | null;
+let startupModules: Set<string> | null = null;
+
+/** Modules reached from the page entry by static imports alone (worked out once per build). */
+function loadedAtStartup(id: string, getModuleIds: () => IterableIterator<string>, getModuleInfo: (id: string) => ModuleInfo): boolean {
+  if (!startupModules) {
+    startupModules = new Set();
+    const todo = [...getModuleIds()].filter((m) => getModuleInfo(m)?.isEntry);
+    while (todo.length) {
+      const m = todo.pop()!;
+      if (startupModules.has(m)) continue;
+      startupModules.add(m);
+      todo.push(...(getModuleInfo(m)?.importedIds ?? []));
+    }
+  }
+  return startupModules.has(id);
+}
+
 export default defineConfig({
   plugins: [iwsdkDev(), mediapipeVendor()],
   server: {
@@ -56,7 +74,21 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV !== 'production',
     target: 'esnext',
-    rollupOptions: { input: './index.html' },
+    rollupOptions: {
+      input: './index.html',
+      output: {
+        // The framework that loads at startup, split out of the 2.6 MB main file
+        // into two pieces the browser fetches in parallel: three (which imports
+        // nothing back) and the rest of the framework (IWSDK and uikit import each
+        // other, so they share one piece). Only modules the page loads at startup
+        // are moved: lazily loaded ones (the font, the MSDF and locomotion workers,
+        // the world initializer) stay in their own chunks, loaded when needed.
+        manualChunks(id, { getModuleIds, getModuleInfo }) {
+          if (!id.includes('node_modules') || !loadedAtStartup(id, getModuleIds, getModuleInfo)) return undefined;
+          return /node_modules\/three\//.test(id) ? 'three' : 'framework';
+        },
+      },
+    },
   },
   esbuild: { target: 'esnext' },
   // @drawcall/uikitml otherwise pulls a second three/@pmndrs/uikit graph
