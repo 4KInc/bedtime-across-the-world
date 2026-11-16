@@ -40,6 +40,20 @@ function mediapipeVendor(): Plugin {
   };
 }
 
+type ModuleInfoLookup = (id: string) => { isEntry: boolean; importers: readonly string[] } | null;
+const startupMemo = new Map<string, boolean>();
+
+/** Whether a module is reached from the page entry by static imports alone (memoised; cycles count as not reached). */
+function loadedAtStartup(id: string, getModuleInfo: ModuleInfoLookup): boolean {
+  const known = startupMemo.get(id);
+  if (known !== undefined) return known;
+  startupMemo.set(id, false);
+  const info = getModuleInfo(id);
+  const result = !!info && (info.isEntry || info.importers.some((i) => loadedAtStartup(i, getModuleInfo)));
+  startupMemo.set(id, result);
+  return result;
+}
+
 export default defineConfig({
   plugins: [iwsdkDev(), mediapipeVendor()],
   server: {
@@ -56,7 +70,21 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV !== 'production',
     target: 'esnext',
-    rollupOptions: { input: './index.html' },
+    rollupOptions: {
+      input: './index.html',
+      output: {
+        // The framework that loads at startup, split out of the 2.6 MB main file
+        // into two pieces the browser fetches in parallel: three (which imports
+        // nothing back) and the rest of the framework (IWSDK and uikit import each
+        // other, so they share one piece). Only modules the page loads at startup
+        // are moved: lazily loaded ones (the font, the MSDF and locomotion workers,
+        // the world initializer) stay in their own chunks, loaded when needed.
+        manualChunks(id, { getModuleInfo }) {
+          if (!id.includes('node_modules') || !loadedAtStartup(id, getModuleInfo)) return undefined;
+          return /node_modules\/three\//.test(id) ? 'three' : 'framework';
+        },
+      },
+    },
   },
   esbuild: { target: 'esnext' },
   // @drawcall/uikitml otherwise pulls a second three/@pmndrs/uikit graph

@@ -4,12 +4,17 @@ Shadowplay as submitted to the Meta VR Start Developer Competition 2026. These
 are the limits we know of, stated plainly. Items found on a headset are added
 with the session that showed them.
 
-## Not yet verified on a headset
+## What the headsets have shown
 
-- The app has been built and tested in the IWSDK Quest emulator and in
-  simulation (bot players, room cases, network faults). On-device frame rate,
-  real-hand recognition rates, room-plane labels and audio start-up are being
-  checked on Quest 3 and Quest 3S; see `docs/DEVICE-TEST.md`.
+Shadowplay has been played on a Meta Quest 3 and a Meta Quest 3S with `?diag`
+on; the sessions and what each one covered are in `docs/DEVICE-RESULTS.md`,
+with their raw data in `docs/diag/`. In short: 72 Hz granted and held (no
+5-second window under 60 fps outside the headset's own sleep, wake and menu
+transitions), the quality level never stepped down, no errors, and nine shapes
+woken by real hands (rabbit, fish, dog, bird, cup, deer, crocodile, snail and
+swan). What the headsets have not yet covered is listed
+in `docs/DEVICE-RESULTS.md` under "Not yet covered on a headset", and in the
+items below.
 
 ## Design limits
 
@@ -34,7 +39,8 @@ with the session that showed them.
 - **The stage remembers its wall** with a WebXR anchor where the browser
   supports anchors (Quest Browser does), and comes back to it on the next
   launch when that wall is still in front of the seat; otherwise the room is
-  scanned as usual. Tested with the emulator's anchors, not yet on a headset.
+  scanned as usual. On a headset the anchor is created and saved; coming back
+  to it on a later launch has so far been tested only with the emulator.
 - **Look to press uses head gaze**, the centre of the view, not eye tracking
   (Quest 3 and 3S have none). Its Settings toggle adds a row: the panel is
   about one degree taller at each end. Tested in the emulator only.
@@ -46,12 +52,14 @@ with the session that showed them.
 - **Mo's tips are as good as the hand tracker's view.** The facts come from
   the same joint angles the recogniser uses, so a hand the headset sees poorly
   gets a poorer tip. Worded by Gemini where the server has a key, otherwise by
-  fixed lines. Tested with synthetic hands, a stand-in for the AI service and
-  30 real Gemini tips (none fell back); not yet on a headset.
-- **Dreamed stories are captions only** (narration audio exists only for the
-  library stories): when recorded or told live, the storyteller's own voice
-  is the narration. Only the latest dreamed story is kept on the headset.
-  Dreaming needs the server's AI key; without it the button says so.
+  fixed lines. On the headsets: 11 tips in three sessions, 10 worded by
+  Gemini (one fell back to the app's own words), arriving in a median of
+  0.7 to 0.8 s.
+- **Dreamed stories are read by a voice made live** (Cloud Text-to-Speech, on
+  the server), not by the narrators recorded for the library; when recorded or
+  told live, the storyteller's own voice is the narration. Only the latest
+  dreamed story is kept on the headset. Dreaming needs the server's AI key;
+  without it the button says so and Mo's tips use the app's own words.
 - **Live is one storyteller and one family member**, and Live rooms run on a
   single server instance (in memory). That is plenty for judging; a larger
   launch would need a shared room service.
