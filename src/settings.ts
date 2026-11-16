@@ -86,7 +86,9 @@ const DEFAULT_WORLD = 'nature';
 const MOTH_SCRIPT = 'story/the-moth.story.json';
 /** "Dream a new one": what the app asks Mo for (server/dream.ts accepts exactly these). */
 const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky'] as const;
+/** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
+const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail']);
 
 /** Buttons with their own look (the rest are options and toggles). */
 const REPLAY_BUTTONS = new Set(['replay-button']);
@@ -351,7 +353,7 @@ export class SettingsSystem extends createSystem({
       return;
     }
     const known = theme && (DREAM_THEMES as readonly string[]).includes(theme) ? theme : '';
-    const chosen = [...new Set(shapes.filter((x) => (DREAM_SHAPES as readonly string[]).includes(x)))].slice(0, 3);
+    const chosen = [...new Set(shapes.filter((x) => DREAM_ANY_SHAPE.has(x)))].slice(0, 3);
     let body: { theme?: string; shapes: string[]; wish?: string };
     if (wish) {
       // The server reads the place and shapes from the idea (its model picks what it leaves out).

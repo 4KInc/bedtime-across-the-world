@@ -495,6 +495,25 @@ test('dream from a wish in plain words: the place and shapes it names, and the i
   assert.ok(!JSON.stringify(story).includes('shy'), 'the wish itself is not in the story');
 });
 
+test('dream from a wish naming a creature the chooser does not offer: a fish and a crocodile (Quest 3, Nov 15)', async () => {
+  const before = picks();
+  const res = await as().post('/api/dream', { wish: 'Tell me a story with a fish and a crocodile' });
+  assert.equal(res.status, 200);
+  const story = await res.json();
+  assert.deepEqual(shapesOf(story).shapes, ['fish', 'crocodile']);
+  assert.equal(picks(), before + 1, 'the model picks only the place (the fake also offers a dog: not added)');
+  // Its request says how to make it with two hands, which a one-hand shape's could not.
+  const ask = story.beats.find((b: { type: string; shape?: string }) => b.type === 'request' && b.shape === 'crocodile');
+  assert.match(ask.text, /two flat hands/);
+  // Swan, deer and snail too; the chooser's random picks stay the five easy shapes.
+  for (const [wish, shapes] of [['a swan and a deer by the sea', ['swan', 'deer']], ['a sleepy snail and a bunny', ['snail', 'rabbit']]] as const) {
+    const r = await as().post('/api/dream', { wish });
+    const body = await r.json();
+    assert.equal(r.status, 200, `${wish}: ${JSON.stringify(body)}`);
+    assert.deepEqual(shapesOf(body).shapes, shapes, wish);
+  }
+});
+
 test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {
   const before = picks();
   const story = await (await as().post('/api/dream', { wish: 'Can you make a story about being brave' })).json();

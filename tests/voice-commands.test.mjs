@@ -56,8 +56,8 @@ test('dreaming by voice: the place and shapes named, in the order said', () => {
   assert.deepEqual(parseCommand('Dream about a fish who is shy'), { kind: 'dream', theme: '', shapes: ['fish'], wish: 'dream about a fish who is shy' });
   assert.deepEqual(parseCommand('dream a new story'), { kind: 'dream', theme: '', shapes: [] });
   assert.deepEqual(parseCommand("let's dream in the forest"), { kind: 'dream', theme: 'forest', shapes: [] });
-  // Only shapes a dreamed story can ask for; at most three.
-  assert.deepEqual(parseCommand('dream with a swan, a fish, a bird, a dog and a rabbit').shapes, ['fish', 'bird', 'dog']);
+  // Any shape a dreamed story can tell (the swan too, since Nov 15); at most three.
+  assert.deepEqual(parseCommand('dream with a swan, a fish, a bird, a dog and a rabbit').shapes, ['swan', 'fish', 'bird']);
   // A story line that says "dream" is not a command.
   assert.notEqual(parseCommand('The fish drifts off to dream')?.kind, 'dream');
   assert.equal(parseCommand('Close your eyes and dream of the sea'), null);
@@ -82,4 +82,7 @@ test('a story asked for in plain words: the place and shapes read from it, and t
 test('readWish: places and shapes in any wording, plurals too, in the order said', () => {
   assert.deepEqual(readWish('A story in the woods with bunnies, birds and a puppy'), { theme: 'forest', shapes: ['rabbit', 'bird', 'dog'] });
   assert.deepEqual(readWish('something calm'), { theme: '', shapes: [] });
+  // Any creature a story can tell, not only the chooser's five (Quest 3, Nov 15: the crocodile was dropped).
+  assert.deepEqual(readWish('a story with a fish and a crocodile'), { theme: '', shapes: ['fish', 'crocodile'] });
+  assert.deepEqual(readWish('swans and a deer and a snail'), { theme: '', shapes: ['swan', 'deer', 'snail'] });
 });

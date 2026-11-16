@@ -134,7 +134,7 @@ export function wishPhrases(): string[] {
   return ['story', 'bedtime story', ...Object.values(DREAM_THEMES).flat(), ...['rabbit', 'bunny', 'fish', 'dog', 'puppy', 'bird', 'cup']];
 }
 /** Shapes a dreamed story can ask for (server/dream.ts DREAM_SHAPES). */
-const DREAM_SHAPE_IDS = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup']);
+const DREAM_SHAPE_IDS = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail']);
 /** Words in a "dream ..." command that add no idea of their own. */
 const FILLER = new Set('mo lets let s us can you please dream a an the about with and in at on of by story new one some little'.split(' '));
 /** A dream request may be a longer sentence: "dream a story about the river with a fish and a bird". */

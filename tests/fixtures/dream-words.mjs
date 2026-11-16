@@ -6,6 +6,10 @@ const ASK = {
   dog: 'Make a dog with your hand, its ear up, and say a soft woof.',
   bird: 'Make a bird with two hands side by side, and spread your wings.',
   cup: 'Cup your hands together softly, to hold the little light.',
+  swan: 'Make a swan: a flat hand, bent down at the wrist, like a long neck.',
+  crocodile: 'Make a crocodile: two flat hands, one on top of the other, like a long mouth.',
+  deer: 'Make a deer with two hands: wrists together, fingers up and spread, like antlers.',
+  snail: 'Make a snail: a fist for the shell, and two fingers poking forward for its eyes.',
 };
 
 /** The words for these shapes; `broken` leaves the shape's name out of every request (which must be refused). */

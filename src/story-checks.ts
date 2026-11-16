@@ -19,6 +19,8 @@ const MO_HE = /\bMo\b[^.!?]*\b(he|his|him|himself)\b/i;
 const NEVER_POSE = /\bcross(ed|ing)? (your |the |their )?(wrists|hands|arms|fingers)\b/i;
 const TWO_HAND_POSE = /\b(both hands|two hands|side by side|thumbs? (hooked|linked|together)|hook(ed)? (your )?thumbs|link(ed)? (your )?thumbs)\b/i;
 const CUPPED_POSE = /\bcupp?(ed)?\b/i;
+/** Shapes made with two hands (shape-match.ts pairs). */
+const TWO_HAND_SHAPES: ReadonlySet<string> = new Set(['bird', 'cup', 'crocodile', 'deer']);
 
 /** Problems with a line (empty when it is fine). `shape` is the shape the line is about, if any. */
 export function contentProblems(line: string, shape?: string): string[] {
@@ -26,7 +28,7 @@ export function contentProblems(line: string, shape?: string): string[] {
   if (BRANDS.test(line)) problems.push('brand or character');
   if (MO_HE.test(line)) problems.push('Mo is "she"');
   if (NEVER_POSE.test(line)) problems.push('crossed hands');
-  if (shape && shape !== 'bird' && shape !== 'cup' && TWO_HAND_POSE.test(line)) problems.push(`two-hand pose for a ${shape}`);
+  if (shape && !TWO_HAND_SHAPES.has(shape) && TWO_HAND_POSE.test(line)) problems.push(`two-hand pose for a ${shape}`);
   if (shape && shape !== 'cup' && CUPPED_POSE.test(line)) problems.push(`cupped hands for a ${shape}`);
   return problems;
 }
