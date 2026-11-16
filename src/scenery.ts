@@ -9,6 +9,7 @@ import {
   ShapeGeometry,
   Vector3,
 } from '@iwsdk/core';
+import { buildFinaleLights, FinaleLights } from './finale-lights.js';
 import { buildDinoValley, buildMoonRoad, buildSea, buildStarPort, buildStorm, FollowerSet, ScenerySet } from './scenery-sets.js';
 import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
@@ -110,6 +111,8 @@ interface SceneryRuntime {
   stormLevel: number;
   sea: ScenerySet;
   seaLevel: number;
+  /** The light come home at the finale (finale-lights.ts). */
+  lights: FinaleLights;
   /** Sets with a character that follows Mo (the moon road's buggy, the little dinosaur, Pip's spaceship). */
   followers: { set: string; scene: FollowerSet; level: number }[];
 }
@@ -137,6 +140,7 @@ export class ScenerySystem extends createSystem({
         rt.moonMaterial.dispose();
         rt.storm.dispose();
         rt.sea.dispose();
+        rt.lights.dispose();
         rt.followers.forEach((f) => f.scene.dispose());
         this.runtimes.delete(entity);
       }),
@@ -200,15 +204,16 @@ export class ScenerySystem extends createSystem({
       { set: ScenerySets.DinoValley as string, scene: buildDinoValley(material), level: 0 },
       { set: ScenerySets.StarPort as string, scene: buildStarPort(material), level: 0 },
     ];
+    const lights = buildFinaleLights();
     const root = new Group();
     root.name = 'scenery';
-    root.add(field, river, forest, storm.group, sea.group, ...followers.map((f) => f.scene.group));
+    root.add(field, river, forest, storm.group, sea.group, ...followers.map((f) => f.scene.group), lights.group);
     entity.object3D.add(root);
     const rt = {
       root, field, clumps, material, level: 0,
       river, waves, moon, moonMaterial, riverLevel: 0,
       forest, forestLevel: 0, geometries,
-      storm, stormLevel: 0, sea, seaLevel: 0, followers,
+      storm, stormLevel: 0, sea, seaLevel: 0, followers, lights,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -244,8 +249,11 @@ export class ScenerySystem extends createSystem({
       rt.forest.visible = rt.forestLevel > 0.001;
       rt.storm.group.visible = rt.stormLevel > 0.001;
       rt.sea.group.visible = rt.seaLevel > 0.001;
+      const finale = this.queries.stages.entities.values().next().value?.getValue(Stage, 'finale') ?? 0;
+      rt.lights.update(this.time, delta, set ?? ScenerySets.None, finale);
+      rt.lights.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
       rt.root.visible =
-        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible || followerVisible;
+        rt.field.visible || rt.river.visible || rt.forest.visible || rt.storm.group.visible || rt.sea.group.visible || followerVisible || rt.lights.group.visible;
       rt.moonMaterial.opacity = 0.5 * rt.riverLevel;
 
       const n = stageRuntime.normal;
@@ -265,7 +273,6 @@ export class ScenerySystem extends createSystem({
       rt.waves[1].position.x = -(((this.time * 0.02) % 0.22) - 0.11);
       // Keep the moon round despite the stage's non-uniform scale.
       rt.moon.scale.set(1, stageRuntime.width / stageRuntime.height, 1);
-      const finale = this.queries.stages.entities.values().next().value?.getValue(Stage, 'finale') ?? 0;
       rt.storm.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
       rt.sea.group.scale.set(stageRuntime.width, stageRuntime.height, 1);
       if (rt.storm.group.visible) rt.storm.update(this.time, rt.stormLevel, finale);
