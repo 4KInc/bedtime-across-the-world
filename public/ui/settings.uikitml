@@ -113,6 +113,12 @@
     font-size: 2;
   }
 
+  .play {
+    flex-grow: 0;
+    width: 7;
+    height: 6;
+  }
+
   .story-name {
     flex-grow: 1;
     flex-direction: column;
@@ -179,6 +185,17 @@
     </button>
     <button id="duet-button" class="family">
       <span id="duet-label" class="toggle-text">Take turns: Off</span>
+    </button>
+  </div>
+  <div class="row">
+    <button id="rec-prev" class="option arrow">&lt;</button>
+    <div class="story-name">
+      <span id="rec-title" class="story-title">Your recordings</span>
+      <span id="rec-info" class="story-blurb">They stay on this headset until you send one.</span>
+    </div>
+    <button id="rec-next" class="option arrow">&gt;</button>
+    <button id="rec-play" class="family play">
+      <span id="rec-play-label" class="toggle-text">Play</span>
     </button>
   </div>
   <div id="family-status" class="family-status">Record a bedtime story, or go live with your family.</div>

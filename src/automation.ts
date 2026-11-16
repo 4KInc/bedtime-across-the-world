@@ -30,6 +30,7 @@ import { keepsakeRuntime } from './keepsakes.js';
 import { wallWindowRuntime } from './wall-window.js';
 import { lanternRuntime } from './lanterns.js';
 import { shelfRuntime } from './shelf.js';
+import { recordingRuntime, recordingsRuntime } from './performance/recorder.js';
 import { childDrawingRuntime } from './child-drawing.js';
 import { giftsRuntime } from './gifts-received.js';
 import { lampBehindRuntime } from './lamp-behind.js';
@@ -267,6 +268,7 @@ export class AutomationSystem extends createSystem({
           lamp: { ...lampBehindRuntime, bulb: stageRuntime.bulb.toArray().map((n) => Math.round(n * 1000) / 1000) },
           gifts: { mo: giftsRuntime.mo, moFrom: giftsRuntime.moFrom, drawingFrom: giftsRuntime.drawingFrom, loaded: giftsRuntime.loaded, drawn: { ...childDrawingRuntime } },
           lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, gap: lanternRuntime.gap, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
+          recordings: { ...recordingsRuntime, made: { ...recordingRuntime } },
           shelf: { on: shelfRuntime.on, centre: shelfRuntime.centre.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },

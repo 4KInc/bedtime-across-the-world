@@ -22,6 +22,7 @@ import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
 import { pairRuntime } from '../shape-match.js';
 import { audioState, soundLock, soundRuntime } from '../sfx.js';
+import { recordingRuntime } from '../performance/recorder.js';
 
 /** Snapshot to the server every SNAPSHOT_MS; events within EVENT_FLUSH_MS. */
 const SNAPSHOT_MS = 5000;
@@ -85,7 +86,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0 };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, rec: '' };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -223,6 +224,22 @@ export class DiagSystem extends createSystem({
     if (coachRuntime.tips !== this.last.tips) {
       this.last.tips = coachRuntime.tips;
       this.event({ e: 'coach', facts: coachRuntime.facts.slice(0, 2), source: coachRuntime.source, ms: coachRuntime.ms });
+    }
+    // Recording a story for the family: started, saved (how long, which story, with a voice or not), sent, or failed.
+    // Never its title, a name or the family code.
+    const r = recordingRuntime;
+    const recKey = `${r.started}|${r.saved}|${r.saveFailed}|${r.sent}|${r.sendFailed}`;
+    if (recKey !== this.last.rec) {
+      const was = this.last.rec.split('|').map(Number);
+      this.last.rec = recKey;
+      const what = r.started > (was[0] || 0) ? 'start' : r.saved > (was[1] || 0) ? 'saved' : r.saveFailed > (was[2] || 0) ? 'save-failed' : r.sent > (was[3] || 0) ? 'sent' : 'send-failed';
+      if (was.length === 5 || r.started) {
+        this.event({
+          e: 'rec', what, started: r.started, saved: r.saved, sent: r.sent, failed: r.saveFailed + r.sendFailed,
+          ...(what === 'saved' ? { seconds: r.seconds, frames: r.frames, events: r.events, voice: r.voice, script: r.script } : {}),
+          ...(what.endsWith('failed') ? { message: r.error } : {}),
+        });
+      }
     }
     // Sound effects: whether Web Audio runs (narration plays without it), and how many creature voices played.
     const audio = audioState();
