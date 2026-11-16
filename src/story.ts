@@ -824,9 +824,14 @@ function setIfChanged(story: Entity, field: 'status' | 'caption', value: string)
 }
 
 /** An open hand held in the lamp light (to continue to the next chapter). */
+/**
+ * "Raise an open hand into the light to go on": an uncurled hand in the light,
+ * fingers together or spread (handOpened). A palm raised toward the wall is
+ * usually flat with the fingers together, read as a fish, and was not counted
+ * (Quest 3, Nov 16: go-on steps waited 8 to 21 s for a spread-finger pose).
+ */
 function openInLight(stage: Entity, side: 'left' | 'right'): boolean {
-  const shape = stage.getValue(ShapeRecognizer, side === 'left' ? 'leftShape' : 'rightShape');
-  return shape === ShapeIds.Open && Boolean(stage.getValue(ShapeRecognizer, side === 'left' ? 'leftInLight' : 'rightInLight'));
+  return Boolean(stage.getValue(ShapeRecognizer, side === 'left' ? 'leftInLight' : 'rightInLight')) && handOpened(stage, side);
 }
 
 /** Hands opened (one open hand, or both as the open-winged pair). */
