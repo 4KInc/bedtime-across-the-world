@@ -64,6 +64,8 @@ export const stageRuntime = {
    * planes instead of the headset's detected planes.
    */
   testPlanes: null as RoomPlane[] | null,
+  /** Each vertical plane at the last wall search, and whether it could hold the stage or why not ("wall 1.9m 12d ok"; diagnostics). */
+  wallWhy: [] as string[],
   /** Automation only: behave as a browser without WebXR anchors. */
   testNoAnchors: false,
 };
