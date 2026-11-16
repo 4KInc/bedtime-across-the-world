@@ -32,6 +32,8 @@ import { pwaRuntime } from './pwa.js';
 import { keepsakeRuntime } from './keepsakes.js';
 import { wallWindowRuntime } from './wall-window.js';
 import { lanternRuntime } from './lanterns.js';
+import { shelfRuntime } from './shelf.js';
+import { recordingRuntime, recordingsRuntime } from './performance/recorder.js';
 import { childDrawingRuntime } from './child-drawing.js';
 import { giftsRuntime } from './gifts-received.js';
 import { lampBehindRuntime } from './lamp-behind.js';
@@ -176,6 +178,23 @@ export class AutomationSystem extends createSystem({
         const r = (v: number) => Math.round(v * 1000) / 1000;
         return { w: r(size.x), h: r(size.y), d: r(size.z), scale: [r(scale.x), r(scale.y), r(scale.z)], parent: o.parent?.name ?? '' };
       },
+      /** A named object's box on the page (CSS px: left, top, right, bottom) as the camera sees it, or null (browser layout tests). */
+      onScreen: (name: string) => {
+        const o = this.world.scene.getObjectByName(name);
+        if (!o) return null;
+        o.updateWorldMatrix(true, true);
+        const box = new Box3().setFromObject(o);
+        const cam = this.world.camera;
+        const rect = this.world.renderer.domElement.getBoundingClientRect();
+        let [l, t, r, b] = [Infinity, Infinity, -Infinity, -Infinity];
+        for (let i = 0; i < 8; i++) {
+          const p = new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(cam);
+          const x = rect.left + ((p.x + 1) / 2) * rect.width;
+          const y = rect.top + ((1 - p.y) / 2) * rect.height;
+          [l, t, r, b] = [Math.min(l, x), Math.min(t, y), Math.max(r, x), Math.max(b, y)];
+        }
+        return [l, t, r, b].map(Math.round);
+      },
       /** A named mesh's colour (hex) and opacity, or null (creature colour tests). */
       colourOf: (name: string) => {
         const o = this.world.scene.getObjectByName(name) as (import('@iwsdk/core').Mesh & { material: import('@iwsdk/core').MeshBasicMaterial }) | undefined;
@@ -269,6 +288,8 @@ export class AutomationSystem extends createSystem({
           lamp: { ...lampBehindRuntime, bulb: stageRuntime.bulb.toArray().map((n) => Math.round(n * 1000) / 1000) },
           gifts: { mo: giftsRuntime.mo, moFrom: giftsRuntime.moFrom, drawingFrom: giftsRuntime.drawingFrom, loaded: giftsRuntime.loaded, drawn: { ...childDrawingRuntime } },
           lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, gap: lanternRuntime.gap, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
+          recordings: { ...recordingsRuntime, made: { ...recordingRuntime } },
+          shelf: { on: shelfRuntime.on, centre: shelfRuntime.centre.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
           dream: { ...dreamRuntime },

@@ -17,6 +17,7 @@ import { buildMoth, MothRig } from './silhouettes.js';
 import { Moth, MothModes, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { accessRuntime, handRuntime, stageRuntime } from './stage-runtime.js';
 import { moPalette } from './gifts-received.js';
+import { SHELF, shelfRuntime, shelfSpot } from './shelf.js';
 
 const INDEX_TIP = 9;
 /** Mo in the room: about a real moth's size (wingspan, metres). */
@@ -29,6 +30,8 @@ const PERCH = 3.5;
 const SLEEP = 6;
 /** Just above the fingertip. */
 const ABOVE = 0.022;
+/** On the family viewer's shelf: seen from further away than a fingertip. */
+const SHELF_SCALE = 2;
 
 type Phase = 'idle' | 'out' | 'perch' | 'back' | 'sleep';
 
@@ -56,7 +59,9 @@ function glowTexture(): CanvasTexture {
  * fingertip and perches there (following your finger) for a few seconds, which
  * counts toward following you, then flies back onto the wall. At the end of a
  * story she comes to your fingertip again and falls asleep there. In the
- * headset only, and only with a hand in view; otherwise she stays on the wall.
+ * headset only with a hand in view; otherwise she stays on the wall. On the
+ * family viewer (phone, tablet) she comes down to the shelf under the stage at
+ * the end instead, and sleeps there until another story begins.
  */
 export class MoVisitSystem extends createSystem({
   moths: { required: [Moth] },
@@ -77,6 +82,7 @@ export class MoVisitSystem extends createSystem({
     blendDstAlpha: OneFactor,
   });
   private rig!: MothRig;
+  private glow!: Mesh;
   private entity: Entity | undefined;
   private phase: Phase = 'idle';
   private t = 0;
@@ -96,6 +102,7 @@ export class MoVisitSystem extends createSystem({
     this.rig.root.scale.setScalar(SIZE);
     const glow = new Mesh(new PlaneGeometry(SIZE * 3, SIZE * 3), this.glowMat);
     glow.name = 'mo-visit-glow';
+    this.glow = glow;
     glow.position.z = -0.002;
     this.group.add(glow, this.rig.root);
     this.group.name = 'mo-visit';
@@ -115,6 +122,8 @@ export class MoVisitSystem extends createSystem({
     const moth = this.queries.moths.entities.values().next().value as Entity | undefined;
     const story = this.queries.stories.entities.values().next().value as Entity | undefined;
     const inXR = this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
+    // The family viewer has no fingertip to visit: at the end she comes down to the shelf instead (shelf.ts).
+    const onShelf = !inXR && shelfRuntime.on;
     const mode = moth?.getValue(Moth, 'mode') ?? '';
     const status = story?.getValue(StoryState, 'status') ?? '';
 
@@ -122,6 +131,10 @@ export class MoVisitSystem extends createSystem({
     if (mode !== MothModes.Following) this.visitedThisFollow = false;
     const atEnd = stageRuntime.atEnd || status === StoryStatuses.Ended;
     if (!atEnd) this.sleptThisEnd = false;
+    if (this.phase === 'idle' && onShelf && atEnd && !this.sleptThisEnd) {
+      this.sleptThisEnd = true;
+      this.start(true, true);
+    }
     if (this.phase === 'idle' && inXR && stageRuntime.ready && this.handInView()) {
       if (mode === MothModes.Following && !this.visitedThisFollow) {
         this.visitedThisFollow = true;
@@ -131,13 +144,14 @@ export class MoVisitSystem extends createSystem({
         this.start(true);
       }
     }
-    if (this.phase === 'idle' || !inXR) {
+    if (this.phase === 'idle' || !(this.onShelf ? onShelf : inXR)) {
       if (this.phase !== 'idle') this.finish();
       return;
     }
 
     const hand = handRuntime[this.side];
-    if (hand.tracked) this.tipOf(this.tip);
+    if (this.onShelf) shelfSpot(SHELF.mo, this.tip);
+    else if (hand.tracked) this.tipOf(this.tip);
     this.t += delta;
     let opacity = 1;
     let flapRate = 14;
@@ -167,7 +181,9 @@ export class MoVisitSystem extends createSystem({
         this.group.position.lerp(this.a.copy(this.tip).addScaledVector(stageRuntime.up, ABOVE), Math.min(1, delta * 12));
         flapRate = 0.6;
         opacity = Math.max(0, 1 - Math.max(0, this.t - (SLEEP - 1.5)) / 1.5);
-        if (this.t >= SLEEP || !hand.tracked) return this.finish();
+        // On the shelf she sleeps on until another story begins.
+        if (this.onShelf) opacity = 1;
+        if (this.onShelf ? !atEnd : this.t >= SLEEP || !hand.tracked) return this.finish();
         break;
       }
     }
@@ -176,7 +192,7 @@ export class MoVisitSystem extends createSystem({
     const fold = this.phase === 'sleep' ? 0.3 : 0.35 + 0.65 * Math.abs(Math.cos(this.flap));
     this.rig.wingRight.scale.x = fold;
     this.rig.wingLeft.scale.x = -fold;
-    this.player.head.getWorldPosition(this.head);
+    this.head.copy(stageRuntime.eye);
     this.group.lookAt(this.head);
     this.fill.opacity = opacity;
     // In the child's colours when they sent some (the glow texture is white; the colour tints it).
@@ -204,10 +220,16 @@ export class MoVisitSystem extends createSystem({
     return out.set(j[INDEX_TIP * 3], j[INDEX_TIP * 3 + 1], j[INDEX_TIP * 3 + 2]);
   }
 
-  private start(sleeping: boolean): void {
+  private onShelf = false;
+
+  private start(sleeping: boolean, onShelf = false): void {
     this.sleeping = sleeping;
+    this.onShelf = onShelf;
+    this.group.scale.setScalar(onShelf ? SHELF_SCALE : 1);
+    this.glow.scale.setScalar(onShelf ? SHELF.glow * 0.6 : 1);
     this.from.copy(stageRuntime.moWall);
-    this.tipOf(this.tip);
+    if (onShelf) shelfSpot(SHELF.mo, this.tip);
+    else this.tipOf(this.tip);
     this.group.position.copy(this.from);
     this.group.visible = true;
     stageRuntime.moAway = true;

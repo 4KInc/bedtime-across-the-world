@@ -378,10 +378,10 @@ export const PerformanceRecorder = createComponent('PerformanceRecorder', {
   /** Record the performer's voice (asks for the microphone). */
   withVoice: { type: Types.Boolean, default: true },
   status: { type: Types.String, default: '' },
-  /** Id of the last saved recording. */
+  /** Id of the recording Send sends: the last one saved, or the one picked in the Journal's recordings row. */
   lastId: { type: Types.String, default: '' },
   seconds: { type: Types.Float32, default: 0 },
-  /** Set to send the last recording to the family; the server returns a family code. */
+  /** Set to send the chosen recording (lastId) to the family; the server returns a family code. */
   shareRequested: { type: Types.Boolean, default: false },
   shareCode: { type: Types.String, default: '' },
   shareLink: { type: Types.String, default: '' },
