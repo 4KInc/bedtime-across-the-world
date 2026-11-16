@@ -22,6 +22,7 @@ import { soundLock } from './sfx.js';
 import { accessRuntime, handRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
 import { DropoutWatch } from './tracking-watch.js';
 import { viewerMode } from './viewer-mode.js';
+import { addWorldPuppet } from './world-puppets.js';
 
 const CHAPTER_SECONDS = 3.2;
 const LAMP_SECONDS = 1.8;
@@ -477,7 +478,7 @@ export class StorySystem extends createSystem({
   }
 
   private showOutline(shape: string, u = 0, v = 0): void {
-    const p = this.puppetFor(shape);
+    const p = this.puppetFor(shape) ?? addWorldPuppet(this.world, shape);
     if (!p) return;
     p.setValue(ShadowPuppet, 'outlineU', u);
     p.setValue(ShadowPuppet, 'outlineV', v);
@@ -813,6 +814,11 @@ export class StorySystem extends createSystem({
     return undefined;
   }
 
+  /**
+   * A world creature's puppet (world-creatures.ts), made the first time a story
+   * asks for it: the scene holds only the first creatures', so a headset that
+   * never meets a rocket never builds one.
+   */
   private puppetFor(shape: string): Entity | undefined {
     for (const p of this.queries.puppets.entities) {
       if (p.getValue(ShadowPuppet, 'shape') === shape) return p;

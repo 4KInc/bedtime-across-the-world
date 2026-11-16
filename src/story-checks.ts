@@ -20,7 +20,7 @@ const NEVER_POSE = /\bcross(ed|ing)? (your |the |their )?(wrists|hands|arms|fing
 const TWO_HAND_POSE = /\b(both hands|two hands|side by side|thumbs? (hooked|linked|together)|hook(ed)? (your )?thumbs|link(ed)? (your )?thumbs)\b/i;
 const CUPPED_POSE = /\bcupp?(ed)?\b/i;
 /** Shapes made with two hands (shape-match.ts pairs). */
-const TWO_HAND_SHAPES: ReadonlySet<string> = new Set(['bird', 'cup', 'crocodile', 'deer']);
+const TWO_HAND_SHAPES: ReadonlySet<string> = new Set(['bird', 'cup', 'crocodile', 'deer', 'trex', 'pterodactyl']);
 
 /** Problems with a line (empty when it is fine). `shape` is the shape the line is about, if any. */
 export function contentProblems(line: string, shape?: string): string[] {

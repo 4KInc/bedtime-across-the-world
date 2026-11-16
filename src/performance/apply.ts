@@ -1,4 +1,4 @@
-import { Entity, Vector3 } from '@iwsdk/core';
+import { Entity, Vector3, World } from '@iwsdk/core';
 import {
   HiddenProp,
   Moth,
@@ -9,6 +9,7 @@ import {
   Stage,
   StageActor,
 } from '../shadowplay-components.js';
+import { addWorldPuppet } from '../world-puppets.js';
 import { PerformanceEvent, pointFromStage } from './format.js';
 
 /** The entities an applier writes to (a system's query results). */
@@ -21,13 +22,16 @@ export interface ApplyTargets {
   actors: Iterable<Entity>;
   stages: Iterable<Entity>;
   props: Iterable<Entity>;
+  /** Where a world creature's puppet is made when one wakes that this stage has not made yet. */
+  world?: World;
 }
 
 const lampPos = new Vector3();
 
 /** Build targets from a system's queries (the Sets stay live as entities change). */
-export function applyTargets(q: { [K in keyof ApplyTargets]: { entities: Iterable<Entity> } }): ApplyTargets {
+export function applyTargets(q: { [K in Exclude<keyof ApplyTargets, 'world'>]: { entities: Iterable<Entity> } }, world?: World): ApplyTargets {
   return {
+    world,
     get recognizers() { return q.recognizers.entities; },
     get puppets() { return q.puppets.entities; },
     get lamps() { return q.lamps.entities; },
@@ -122,7 +126,7 @@ function puppetFor(t: ApplyTargets, shape: string): Entity | undefined {
   for (const p of t.puppets) {
     if (p.getValue(ShadowPuppet, 'shape') === shape) return p;
   }
-  return undefined;
+  return t.world ? addWorldPuppet(t.world, shape) : undefined;
 }
 
 function first<T>(set: Iterable<T>): T | undefined {

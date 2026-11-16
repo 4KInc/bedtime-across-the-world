@@ -1,0 +1,251 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Shy Little Shark",
+  "beats": [
+    {
+      "id": "shark-title",
+      "type": "chapter",
+      "chapter": "The Shy Little Shark",
+      "text": "The Shy Little Shark"
+    },
+    {
+      "id": "shark-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "shark-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying out over the sea, where the lighthouse stands."
+    },
+    {
+      "id": "shark-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "shark-scenery",
+      "type": "scenery",
+      "set": "sea"
+    },
+    {
+      "id": "shark-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "shark-intro1",
+      "type": "narrate",
+      "text": "Splash... splash. Look, a little fin, poking up out of the water."
+    },
+    {
+      "id": "shark-intro2",
+      "type": "narrate",
+      "text": "It is a shark. A small, shy shark. The lighthouse is dark tonight, so it cannot find its way home."
+    },
+    {
+      "id": "shark-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's help the shark find its home, by the lighthouse."
+    },
+    {
+      "id": "shark-want-shark",
+      "type": "request",
+      "shape": "shark",
+      "text": "Make a shark: a flat hand, fingers together, pointing up like a fin."
+    },
+    {
+      "id": "shark-shark-yes",
+      "type": "narrate",
+      "text": "A shark! A kind one, with a big smile. Climb on, Mo."
+    },
+    {
+      "id": "shark-shark-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "shark-shark-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Swish, swish, through the dark water."
+    },
+    {
+      "id": "shark-shark-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "shark-shark-bows",
+      "type": "release",
+      "text": "The shark smiles its big smile, and swims down for a rest."
+    },
+    {
+      "id": "shark-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "shark-octopus-before",
+      "type": "narrate",
+      "text": "Down below, something is waving lots of wiggly arms."
+    },
+    {
+      "id": "shark-want-octopus",
+      "type": "request",
+      "shape": "octopus",
+      "text": "Make an octopus: let your hand hang down, fingers spread, and wiggle them like arms."
+    },
+    {
+      "id": "shark-octopus-yes",
+      "type": "narrate",
+      "text": "An octopus! Eight arms for eight big hugs. Hold on, Mo."
+    },
+    {
+      "id": "shark-octopus-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "shark-octopus-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Wiggle, wiggle, across the sea."
+    },
+    {
+      "id": "shark-octopus-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "shark-octopus-bows",
+      "type": "release",
+      "text": "The octopus tucks its arms around itself, cosy and warm."
+    },
+    {
+      "id": "shark-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "shark-whale-before",
+      "type": "narrate",
+      "text": "The lighthouse is still far away. Who is big enough to carry everyone?"
+    },
+    {
+      "id": "shark-want-whale",
+      "type": "request",
+      "shape": "whale",
+      "text": "Make a whale: a fist for its big round body, and your thumb up for its spout."
+    },
+    {
+      "id": "shark-whale-yes",
+      "type": "narrate",
+      "text": "A whale! Whoosh, goes its spout. Climb aboard, Mo."
+    },
+    {
+      "id": "shark-whale-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "shark-whale-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Big and slow, the whale carries Mo toward the lighthouse.",
+      "minV": 0.12
+    },
+    {
+      "id": "shark-whale-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "shark-whale-bows",
+      "type": "release",
+      "text": "The whale sings a deep, happy song, and dives below the waves."
+    },
+    {
+      "id": "shark-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "shark-dark",
+      "type": "narrate",
+      "text": "Here is the lighthouse. But its lamp is dark, and the sea is very black."
+    },
+    {
+      "id": "shark-gift",
+      "type": "narrate",
+      "text": "Look! A little glowing star has fallen into a wave, just for us."
+    },
+    {
+      "id": "shark-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and scoop it up."
+    },
+    {
+      "id": "shark-caught",
+      "type": "narrate",
+      "text": "You have it. It glows like a tiny moon."
+    },
+    {
+      "id": "shark-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and send it up to the lighthouse lamp."
+    },
+    {
+      "id": "shark-free",
+      "type": "release",
+      "text": "The lighthouse wakes, and its warm light sweeps across the sea."
+    },
+    {
+      "id": "shark-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "shark-home",
+      "type": "narrate",
+      "text": "Now the little shark can see its home. It swims there, safe, and closes its eyes."
+    },
+    {
+      "id": "shark-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "shark-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "shark-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little shark. Goodnight, lighthouse. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "shark-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "shark-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

@@ -17,6 +17,18 @@ export const CREATURE_COLOURS: Readonly<Record<string, number>> = {
   deer: 0xb85f2a, // russet
   crocodile: 0x2f9a55, // green
   open: 0xf08c2e, // amber (Free Stage)
+  // World creatures (world-creatures.ts).
+  rocket: 0xe2483b, // rocket red
+  alien: 0x7ccf3a, // lime
+  asteroid: 0x8a7a6b, // stone
+  shark: 0x5b7f9e, // slate blue
+  octopus: 0xc2408f, // magenta
+  whale: 0x3557c4, // deep blue
+  car: 0xe0a21b, // yellow
+  plane: 0x2fa6c9, // cyan
+  digger: 0xe5832a, // orange
+  trex: 0x4f9a3a, // forest green
+  pterodactyl: 0x9a5fc4, // purple
 };
 
 /** A creature's colour, or 0 when it has none (it stays a shadow). */

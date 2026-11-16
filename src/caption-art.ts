@@ -2,6 +2,8 @@
  * Canvas drawing for stage captions and the 'show me' ghost hand. Kept free of
  * ECS so the art can be tweaked in isolation.
  */
+import { poseOf } from './world-creatures.js';
+
 export const CAPTION_W = 1024;
 export const CAPTION_H = 192;
 
@@ -115,6 +117,9 @@ function flatHand(g: CanvasRenderingContext2D, ox: number, oy: number, thumbUp: 
 export function drawHandHint(g: CanvasRenderingContext2D, shape: string): void {
   g.clearRect(0, 0, HINT_SIZE, HINT_SIZE);
   ghostStyle(g);
+  // A world creature that borrows a pose shows that pose (a T. rex the crocodile's jaws).
+  shape = poseOf(shape);
+  if (drawWorldHint(g, shape)) return;
   if (shape === 'fish') {
     flatHand(g, 150, 220, false);
     hintLabel(g, 'flat, thumb tucked');
@@ -211,6 +216,71 @@ export function drawHandHint(g: CanvasRenderingContext2D, shape: string): void {
     return;
   }
   drawRabbitHand(g);
+}
+
+/** A fist from the front, knuckles along its top, on its wrist. */
+function fistHand(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  capsule(g, x + w / 2, y + h + 70, x + w / 2, y + h - 20, 46); // wrist
+  g.beginPath();
+  g.roundRect(x, y, w, h, 64);
+  g.fill();
+  g.stroke();
+}
+
+/** The world creatures' own poses (world-creatures.ts); false for any other shape. */
+function drawWorldHint(g: CanvasRenderingContext2D, shape: string): boolean {
+  switch (shape) {
+    case 'fist':
+      fistHand(g, 160, 200, 192, 180);
+      hintLabel(g, 'a fist');
+      return true;
+    case 'rocket':
+      capsule(g, 222, 280, 214, 80, 24); // index, straight up
+      fistHand(g, 172, 250, 172, 160);
+      hintLabel(g, 'one finger up');
+      return true;
+    case 'alien':
+      capsule(g, 206, 280, 186, 96, 22); // index
+      capsule(g, 322, 290, 350, 124, 19); // little finger
+      fistHand(g, 172, 250, 172, 160);
+      hintLabel(g, 'two fingers up, at the sides');
+      return true;
+    case 'shark':
+      // A flat hand standing up, fingers together like a fin.
+      capsule(g, 256, 470, 256, 420, 44); // wrist
+      g.beginPath();
+      g.roundRect(196, 270, 120, 170, 42); // palm
+      g.fill();
+      g.stroke();
+      capsule(g, 262, 300, 262, 80, 38); // fingers together
+      capsule(g, 210, 410, 214, 300, 20); // thumb tucked
+      hintLabel(g, 'flat, fingers up');
+      return true;
+    case 'octopus':
+      // The hand hanging down from the wrist, fingers spread like arms.
+      capsule(g, 256, 60, 256, 130, 44); // wrist
+      for (let f = 0; f < 4; f++) capsule(g, 212 + f * 30, 230, 150 + f * 72, 460 - Math.abs(f - 1.5) * 20, 16);
+      capsule(g, 196, 170, 112, 262, 18); // thumb
+      g.beginPath();
+      g.roundRect(186, 110, 142, 140, 44); // palm
+      g.fill();
+      g.stroke();
+      hintLabel(g, 'fingers down, spread');
+      return true;
+    case 'whale':
+      capsule(g, 192, 280, 186, 110, 25); // thumb, straight up
+      fistHand(g, 162, 250, 192, 160);
+      hintLabel(g, 'a fist, thumb up');
+      return true;
+    case 'plane':
+      capsule(g, 196, 300, 78, 244, 23); // thumb out
+      capsule(g, 326, 320, 448, 262, 19); // little finger out
+      fistHand(g, 172, 230, 172, 160);
+      hintLabel(g, 'thumb and little finger out');
+      return true;
+    default:
+      return false;
+  }
 }
 
 /**

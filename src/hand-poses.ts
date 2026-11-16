@@ -77,6 +77,13 @@ export const FIXTURES: readonly PoseFixture[] = [
     rightAt: [0, 0.035],
     leftAt: [0, -0.035],
   },
+  // World poses (world-creatures.ts).
+  { label: 'rocket', right: { fingers: [f(0), f(1), f(1), f(1)], spread: 0, thumb: 'across' }, left: null },
+  { label: 'alien', right: { fingers: [f(0), f(1), f(1), f(0)], spread: 4, thumb: 'across' }, left: null },
+  { label: 'shark', right: flat('tucked'), left: null },
+  { label: 'octopus', right: { fingers: [f(0), f(0), f(0), f(0)], spread: 14, thumb: 'out', roll: 180 }, left: null },
+  { label: 'whale', right: { fingers: [f(1), f(1), f(1), f(1)], spread: 0, thumb: 'out' }, left: null },
+  { label: 'plane', right: { fingers: [f(1), f(1), f(1), f(0)], spread: 0, thumb: 'out', roll: -90 }, left: null },
   { label: 'negative', right: { fingers: [f(0.3), f(0.25), f(0.3), f(0.35)], spread: 5, thumb: 'half' }, left: null },
   { label: 'negative', right: { fingers: [f(0), f(1), f(1), f(1)], spread: 0, thumb: 'across' }, left: null },
   { label: 'negative', right: { fingers: [f(0.6), f(0.6), f(0.6), f(0.6)], spread: 15, thumb: 'out' }, left: null },

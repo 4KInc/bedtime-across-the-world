@@ -58,7 +58,7 @@ export class PerformancePlayerSystem extends createSystem({
   private rejoinAt = -1;
 
   init(): void {
-    this.targets = applyTargets(this.queries);
+    this.targets = applyTargets(this.queries, this.world);
     this.cleanupFuncs.push(() => this.teardown());
   }
 

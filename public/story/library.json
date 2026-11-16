@@ -70,6 +70,24 @@
       "world": "ocean"
     },
     {
+      "id": "gentle-shark",
+      "title": "The Shy Little Shark",
+      "script": "story/gentle-shark.story.json",
+      "minutes": 5,
+      "blurb": "A shy shark has lost its way in the dark sea. An octopus and a whale help it home.",
+      "world": "ocean",
+      "narrator": "bm_george"
+    },
+    {
+      "id": "whale-song",
+      "title": "The Little Whale's Song",
+      "script": "story/whale-song.story.json",
+      "minutes": 5,
+      "blurb": "Follow a little whale's song across the sea, back to its family.",
+      "world": "ocean",
+      "narrator": "af_heart"
+    },
+    {
       "id": "the-slow-letter",
       "title": "The Letter That Took the Slow Way",
       "script": "story/the-slow-letter.story.json",
@@ -154,6 +172,24 @@
       "narrator": "am_michael"
     },
     {
+      "id": "bumpy-road",
+      "title": "The Buggy's Bumpy Road",
+      "script": "story/bumpy-road.story.json",
+      "minutes": 5,
+      "blurb": "A car, a digger and an aeroplane help the moon buggy home.",
+      "world": "adventure",
+      "narrator": "am_michael"
+    },
+    {
+      "id": "long-way-home",
+      "title": "The Little Car's Long Way Home",
+      "script": "story/long-way-home.story.json",
+      "minutes": 5,
+      "blurb": "Over the river and through the mud: help a little car home to bed.",
+      "world": "adventure",
+      "narrator": "bm_george"
+    },
+    {
       "id": "sleepy-dinosaur",
       "title": "Mo and the Sleepy Little Dinosaur",
       "script": "story/sleepy-dinosaur.story.json",
@@ -163,6 +199,24 @@
       "narrator": "bf_emma"
     },
     {
+      "id": "gentle-trex",
+      "title": "The Sleepy T. rex",
+      "script": "story/gentle-trex.story.json",
+      "minutes": 5,
+      "blurb": "Who is roaring in the valley? A pterodactyl flies Mo to find out.",
+      "world": "dinosaurs",
+      "narrator": "bf_emma"
+    },
+    {
+      "id": "sky-ride",
+      "title": "The Pterodactyl's Sky Ride",
+      "script": "story/sky-ride.story.json",
+      "minutes": 5,
+      "blurb": "A gentle T. rex, a fish and a pterodactyl help the little dinosaur find its cave.",
+      "world": "dinosaurs",
+      "narrator": "am_michael"
+    },
+    {
       "id": "lost-spaceship",
       "title": "Mo and the Little Lost Spaceship",
       "script": "story/lost-spaceship.story.json",
@@ -170,6 +224,24 @@
       "blurb": "Pip the friendly visitor cannot find the way home. Fly with Mo through the stars.",
       "world": "space",
       "narrator": "af_bella"
+    },
+    {
+      "id": "moon-rocks",
+      "title": "Mo and the Sleepy Space Rocks",
+      "script": "story/moon-rocks.story.json",
+      "minutes": 5,
+      "blurb": "A cloud of space rocks is in Pip's way. A rocket and an alien help Mo through.",
+      "world": "space",
+      "narrator": "af_bella"
+    },
+    {
+      "id": "alien-lullaby",
+      "title": "The Aliens' Lullaby",
+      "script": "story/alien-lullaby.story.json",
+      "minutes": 5,
+      "blurb": "A little choir of aliens sings a lullaby on the moon. Fly there by rocket.",
+      "world": "space",
+      "narrator": "bf_emma"
     }
   ]
 }

@@ -1,0 +1,251 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Buggy's Bumpy Road",
+  "beats": [
+    {
+      "id": "bump-title",
+      "type": "chapter",
+      "chapter": "The Buggy's Bumpy Road",
+      "text": "The Buggy's Bumpy Road"
+    },
+    {
+      "id": "bump-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "bump-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying back to the moon, to see her friend, the little moon buggy."
+    },
+    {
+      "id": "bump-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "bump-scenery",
+      "type": "scenery",
+      "set": "moon-road"
+    },
+    {
+      "id": "bump-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "bump-intro1",
+      "type": "narrate",
+      "text": "Brum... brum... putt. There it is, on the long moon road."
+    },
+    {
+      "id": "bump-intro2",
+      "type": "narrate",
+      "text": "But the road is very bumpy tonight, and the buggy is too tired to drive home by itself."
+    },
+    {
+      "id": "bump-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's find some friends to help."
+    },
+    {
+      "id": "bump-want-car",
+      "type": "request",
+      "shape": "car",
+      "text": "Make a car: a fist, with two fingers pointing forward like its headlights."
+    },
+    {
+      "id": "bump-car-yes",
+      "type": "narrate",
+      "text": "A little car! Beep, beep. Its headlights shine on the road. Hop in, Mo."
+    },
+    {
+      "id": "bump-car-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "bump-car-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Brum, brum, along the road. The little buggy follows behind."
+    },
+    {
+      "id": "bump-car-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "bump-car-bows",
+      "type": "release",
+      "text": "The car parks at the side of the road, and turns off its lights."
+    },
+    {
+      "id": "bump-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "bump-digger-before",
+      "type": "narrate",
+      "text": "Oh no. A pile of moon rocks, right across the road."
+    },
+    {
+      "id": "bump-want-digger",
+      "type": "request",
+      "shape": "digger",
+      "text": "Make a digger: a flat hand, bent down at the wrist, like a big scoop."
+    },
+    {
+      "id": "bump-digger-yes",
+      "type": "narrate",
+      "text": "A digger! Scoop, lift, and drop. Climb in, Mo."
+    },
+    {
+      "id": "bump-digger-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "bump-digger-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Scoop, scoop, the digger clears the rocks away."
+    },
+    {
+      "id": "bump-digger-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "bump-digger-bows",
+      "type": "release",
+      "text": "The road is clear. The digger lowers its scoop, and rests."
+    },
+    {
+      "id": "bump-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "bump-plane-before",
+      "type": "narrate",
+      "text": "Now, which way is the garage? Someone needs to look from up high."
+    },
+    {
+      "id": "bump-want-plane",
+      "type": "request",
+      "shape": "plane",
+      "text": "Make an aeroplane: your thumb and your little finger out, like wings."
+    },
+    {
+      "id": "bump-plane-yes",
+      "type": "narrate",
+      "text": "An aeroplane! Its propeller spins round and round. Climb aboard, Mo."
+    },
+    {
+      "id": "bump-plane-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "bump-plane-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Fly up high, over the moon road. Look, there is the garage!",
+      "minV": 0.12
+    },
+    {
+      "id": "bump-plane-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "bump-plane-bows",
+      "type": "release",
+      "text": "The aeroplane circles once, and lands softly on the moon."
+    },
+    {
+      "id": "bump-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "bump-dark",
+      "type": "narrate",
+      "text": "The garage is just ahead. But its light is off, and it is very dark."
+    },
+    {
+      "id": "bump-gift",
+      "type": "narrate",
+      "text": "Look! A small star is falling, just for us."
+    },
+    {
+      "id": "bump-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch it."
+    },
+    {
+      "id": "bump-caught",
+      "type": "narrate",
+      "text": "You caught it. Shine it on the road."
+    },
+    {
+      "id": "bump-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let it light the way home."
+    },
+    {
+      "id": "bump-free",
+      "type": "release",
+      "text": "There is the garage, with its door wide open."
+    },
+    {
+      "id": "bump-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "bump-home",
+      "type": "narrate",
+      "text": "The little buggy rolls inside. Its headlights blink once, twice, and go softly out."
+    },
+    {
+      "id": "bump-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "bump-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "bump-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little buggy. Goodnight, car, digger and aeroplane. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "bump-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "bump-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}
