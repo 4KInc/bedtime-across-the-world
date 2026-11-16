@@ -36,6 +36,8 @@ import {
 import { shadowMapSize } from './quality-levels.js';
 import { StageAnchor } from './stage-anchor.js';
 import { LampRig } from './lamp-behind.js';
+import { shelfBottom } from './shelf.js';
+import { viewerMode } from './viewer-mode.js';
 
 /** Behind the stage in a browser (no passthrough): a deep night blue. */
 const BROWSER_BACKGROUND = new Color(0x0d0a14);
@@ -443,8 +445,14 @@ export class StageSetupSystem extends createSystem({
     if (!this.inXR) {
       // Browser (desktop link, phone or tablet viewer): centre the screen in the
       // actual view, pitch included, and back off until it fits the viewport.
+      // The family viewer fits its shelf under the caption too (shelf.ts), so
+      // there the stage sits a little above the middle.
+      const w = SCREEN_DISTANCE * WIDTH_PER_METER;
+      const above = viewerMode.on ? w * 0.62 * 0.5 * 1.35 * 1.12 : w * 0.62 * 0.5 * 1.35 * 1.35;
+      const below = viewerMode.on ? shelfBottom(w) + 0.1 : above; // the shelf comes toward the camera, so it reaches lower
       this.world.camera.getWorldDirection(this.tmpA);
-      this.tmpB.copy(this.head).addScaledVector(this.tmpA, this.fitDistance(SCREEN_DISTANCE * WIDTH_PER_METER));
+      this.tmpB.copy(this.head).addScaledVector(this.tmpA, this.fitDistance(w, above + below));
+      this.tmpB.y += (below - above) / 2;
     }
     const width = dist * (this.inXR ? stageWidthPerMeter(this.measureFov()) : WIDTH_PER_METER);
     this.applyStage(stage, lamp, this.tmpB, this.normal, width, dist, StageModes.Screen, false);
@@ -561,13 +569,12 @@ export class StageSetupSystem extends createSystem({
     this.rig.update(lampObj, this.head, this.toStage, stageRuntime.up, this.sideways, stageRuntime.poolCenter, delta, this.inXR);
   }
 
-  /** Distance at which a paper screen of this stage width (plus caption) fits the view. */
-  private fitDistance(width: number): number {
+  /** Distance at which a paper screen of this stage width fits the view, with `paperH` metres of height (caption, shelf). */
+  private fitDistance(width: number, paperH: number): number {
     const cam = this.world.camera;
     const vHalf = ((cam.fov ?? 50) * Math.PI) / 360;
     const hHalf = Math.atan(Math.tan(vHalf) * (cam.aspect || 1));
     const paperW = width * 1.25 * 1.1;
-    const paperH = width * 0.62 * 1.35 * 1.35; // room for the caption under the stage
     return Math.max(1.4, paperW / 2 / Math.tan(hHalf), paperH / 2 / Math.tan(vHalf));
   }
 

@@ -21,7 +21,7 @@ const CSS = `
 .sp-viewer [hidden] { display: none !important; }
 /* While a story plays: a compact pill in the corner, so the stage captions stay visible. */
 .sp-viewer.playing .sp-panel { width: max-content; margin: 0 0 0 auto; padding: 8px; }
-.sp-viewer.playing .sp-title, .sp-viewer.playing .sp-status { display: none; }
+.sp-viewer.playing .sp-title, .sp-viewer.playing .sp-status, .sp-viewer.playing .sp-grownups, .sp-viewer.playing .sp-credits-btn { display: none; }
 .sp-panel { pointer-events: auto; max-width: 760px; margin: 0 auto; background: rgba(18, 13, 26, 0.88);
   border: 1px solid #6b4f2a; border-radius: 18px; padding: 14px; backdrop-filter: blur(6px); }
 .sp-title { font-style: italic; color: #f2c47a; font-size: 18px; margin: 0 0 10px; }
