@@ -32,6 +32,8 @@ const LAMP_SECONDS = 1.8;
  */
 const FIRST_HINT_SECONDS = 2;
 const GROW_HOLD_SECONDS = 0.6;
+/** The most a grow step asks for, as a share of the stage width. */
+const GROW_NEED_MAX = 0.7;
 const CONTINUE_HOLD_SECONDS = 1.0;
 const REVEAL_HOLD_SECONDS = 0.8;
 const LETGO_HOLD_SECONDS = 0.5;
@@ -661,7 +663,8 @@ export class StorySystem extends createSystem({
         const alive = this.alivePuppet();
         const size = alive?.getValue(ShadowPuppet, 'size') ?? 0;
         if (this.growFrom <= 0) this.growFrom = size;
-        const need = Math.max(beat.minSize ?? 0, this.growFrom * beat.factor);
+        // Never more than GROW_NEED_MAX of the stage: a creature already big must not need a hand at the eyes.
+        const need = Math.min(GROW_NEED_MAX, Math.max(beat.minSize ?? 0, this.growFrom * beat.factor));
         const big = alive !== undefined && size >= need;
         this.holdTime = big ? this.holdTime + delta : 0;
         if (this.assistLevel >= 2 && alive) return done;

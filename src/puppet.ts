@@ -25,7 +25,9 @@ const CHARACTER_SCALE = 1.15;
  * lamp behind them) makes its creature bigger, a little more than a real shadow
  * would, so the story's "grow" asks are playable (about 1.8x at 20 cm from the eyes).
  */
-const GROW_GAIN = 3.5;
+// About 12 cm of pull from the natural place grows a creature 1.6x (it needed nearly 25 cm,
+// a hand at the chin: Quest 3, Nov 16, both of The Moth's grow steps waited for the 30 s help).
+const GROW_GAIN = 5;
 const GROW_MAX = 2.2;
 /** Largest character, as a fraction of stage width. */
 const MAX_SIZE = 0.95;
