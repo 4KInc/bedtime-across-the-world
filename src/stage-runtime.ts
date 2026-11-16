@@ -117,6 +117,8 @@ export interface HandSample {
   radii: Float32Array;
   /** Set by the puppet system while a character replaces this hand's shadow. */
   hideCasters: boolean;
+  /** Lowered below the performance zone: casts no shadow (hand-caster.ts). */
+  resting?: boolean;
   /** Joint-angle features for this frame (written by the shape matcher). */
   features: Float32Array;
   /** Best silhouette template match at or above threshold ('' if none). */
