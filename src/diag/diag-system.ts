@@ -13,8 +13,9 @@ import {
   XRPlane,
 } from '@iwsdk/core';
 import { ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js';
-import { handRuntime, stageRuntime } from '../stage-runtime.js';
+import { accessRuntime, handRuntime, stageRuntime } from '../stage-runtime.js';
 import { coachRuntime } from '../mo-coach.js';
+import { voiceRuntime } from '../voice-control.js';
 import { dreamRuntime } from '../settings.js';
 import { FrameStats, TransitionGate } from './frame-stats.js';
 import { shadowMapSize } from '../quality-levels.js';
@@ -87,7 +88,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0 };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '' };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -228,6 +229,14 @@ export class DiagSystem extends createSystem({
     if (dreamRuntime.ok + dreamRuntime.failed !== this.last.dreams) {
       this.last.dreams = dreamRuntime.ok + dreamRuntime.failed;
       this.event({ e: 'dream', ok: dreamRuntime.ok, failed: dreamRuntime.failed, ms: dreamRuntime.ms, shapes: dreamRuntime.asked?.shapes ?? [] });
+    }
+    // Voice commands: on or off and how (browser or server), the microphone's audio, and what became of
+    // each piece of speech (counts only: never the words or the audio).
+    const v = voiceRuntime;
+    const voice = `${accessRuntime.voiceState}|${v.audio}|${v.clips}|${v.understood}|${v.empty}|${v.failed}|${v.acted}|${v.refused}|${v.ignored}|${v.notCommands}`;
+    if (voice !== this.last.voice) {
+      this.last.voice = voice;
+      this.event({ e: 'voice', state: accessRuntime.voiceState, audio: v.audio, resumes: v.resumes, short: v.short, clips: v.clips, understood: v.understood, empty: v.empty, failed: v.failed, acted: v.acted, refused: v.refused, notCommands: v.notCommands, ignored: v.ignored });
     }
     // Mo the coach gave a tip: which facts, AI or fixed words, how long it took.
     if (coachRuntime.tips !== this.last.tips) {

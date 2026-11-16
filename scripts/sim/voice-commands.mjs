@@ -170,6 +170,9 @@ const browser = await chromium.launch({
     first: posts[0],
     opened,
   });
+  // What became of the speech, as the headset's diagnostics log it (counts only).
+  const counts = await page.evaluate(() => __sp.view().voiceCommands);
+  check('diagnostics count the speech: sent, understood, acted on; the microphone audio running', counts.audio === 'running' && counts.clips === posts.length && counts.understood >= 1 && counts.acted >= 1 && counts.failed === 0, counts);
   await page.evaluate(() => __sp.set('Settings', 'voiceCommands', false));
   await sleep(500);
   check('turned off: microphone released', (await page.evaluate(() => __sp.view().voice.state)) === 'off', {});

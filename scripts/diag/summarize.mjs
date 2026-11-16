@@ -65,6 +65,15 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   }
   const tips = ev('coach');
   if (tips.length) console.log(`Mo's tips: ${tips.length} (${tips.filter((t) => t.source === 'ai').length} by AI), median ${pct(tips.map((t) => t.ms), 0.5)} ms; facts: ${count(tips.flatMap((t) => t.facts ?? []))}`);
+  const voices = ev('voice');
+  if (voices.length) {
+    // Voice commands: how they ran, and what became of each piece of speech (counts only).
+    const v = voices.at(-1);
+    const states = voices.map((e) => e.state).filter((x, i, all) => x !== all[i - 1]).join(' > ');
+    const audio = voices.map((e) => e.audio || '-').filter((x, i, all) => x !== all[i - 1]).join(' > ');
+    console.log(`voice commands: ${states}   microphone audio: ${audio}${v.resumes ? ` (woken ${v.resumes}x)` : ''}`);
+    console.log(`   speech sent ${v.clips} (too short ${v.short}): understood ${v.understood}, nothing ${v.empty}, failed ${v.failed}; acted on ${v.acted}, not now ${v.refused}, not a command ${v.notCommands}, ignored ${v.ignored}`);
+  }
   const anchors = ev('anchor');
   if (anchors.length) {
     const a = anchors.at(-1);

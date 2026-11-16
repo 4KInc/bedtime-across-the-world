@@ -1,4 +1,5 @@
 import { createSystem, Entity, VisibilityState } from '@iwsdk/core';
+import { away } from './away.js';
 import { playClick } from './sfx.js';
 import {
   Hands,
@@ -56,6 +57,27 @@ function recognitionClass(): RecognitionClass | undefined {
  * commands is on, and commands are ignored while a story is being recorded
  * with voice or a live Talk is on (that speech is for the family).
  */
+/**
+ * For diagnostics (diag-system.ts) and tests: how voice commands are going. Counts
+ * only, never the words or the audio. Clips are pieces of speech sent to the
+ * server (`short` ones were too short to send); each comes back understood
+ * (words), empty (nothing understood) or failed. Words heard are acted on,
+ * refused (not now), not a command, or ignored (speech for the family, or a story idea).
+ */
+export const voiceRuntime = {
+  audio: '' as string,
+  resumes: 0,
+  short: 0,
+  clips: 0,
+  understood: 0,
+  empty: 0,
+  failed: 0,
+  acted: 0,
+  refused: 0,
+  notCommands: 0,
+  ignored: 0,
+};
+
 export class VoiceControlSystem extends createSystem({
   settings: { required: [Settings] },
   stories: { required: [StoryState] },
@@ -84,7 +106,20 @@ export class VoiceControlSystem extends createSystem({
     this.cleanupFuncs.push(() => this.stopListening());
   }
 
+  /** A resume of the microphone's audio is under way. */
+  private resuming = false;
+
   update(delta: number): void {
+    // The headset can suspend the microphone's audio (Quest menu, headset off); it then hears only silence. Wake it.
+    if (this.audio?.state === 'suspended' && !away.now && !this.resuming) {
+      this.resuming = true;
+      voiceRuntime.resumes++;
+      void this.audio
+        .resume()
+        .catch(() => undefined)
+        .finally(() => (this.resuming = false));
+    }
+    voiceRuntime.audio = this.audio?.state ?? '';
     const settings = this.queries.settings.entities.values().next().value as Entity | undefined;
     const on = Boolean(settings?.getValue(Settings, 'voiceCommands')) && this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
     if (on !== this.wanted) {
@@ -246,23 +281,44 @@ export class VoiceControlSystem extends createSystem({
     const parts = this.clipParts;
     const seconds = this.clipTime;
     this.clipParts = null;
-    if (!parts || !this.audio || seconds < MIN_CLIP_SECONDS) return;
+    if (!parts || !this.audio) return;
+    if (seconds < MIN_CLIP_SECONDS) {
+      voiceRuntime.short++;
+      return;
+    }
     const generation = this.generation;
     const wav = encodeWav(downsample(joinParts(parts), this.audio.sampleRate));
+    voiceRuntime.clips++;
     fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: new Blob([wav as BlobPart], { type: 'audio/wav' }) })
-      .then((r) => (r.ok ? (r.json() as Promise<{ text?: string }>) : { text: '' }))
-      .then((r) => generation === this.generation && this.heard(r.text ?? ''))
-      .catch(() => undefined);
+      .then((r) => {
+        if (!r.ok) voiceRuntime.failed++;
+        return r.ok ? (r.json() as Promise<{ text?: string }>) : null;
+      })
+      .then((r) => {
+        if (!r) return;
+        if (r.text) voiceRuntime.understood++;
+        else voiceRuntime.empty++;
+        if (generation === this.generation) this.heard(r.text ?? '');
+      })
+      .catch(() => voiceRuntime.failed++);
   }
 
   // ------------------------------------------------------------ understanding and acting
 
   /** Something was said (a final transcript): act on it if it is a command. */
   heard(text: string): void {
-    if (this.suspended()) return;
+    if (this.suspended()) {
+      voiceRuntime.ignored++;
+      return;
+    }
     const command = parseCommand(text);
-    if (!command) return;
+    if (!command) {
+      voiceRuntime.notCommands++;
+      return;
+    }
     const done = this.run(command);
+    if (done) voiceRuntime.acted++;
+    else voiceRuntime.refused++;
     this.show(done ? `Heard: ${describe(command)}` : done === false ? `Heard "${describe(command)}" - not now` : '');
   }
 
