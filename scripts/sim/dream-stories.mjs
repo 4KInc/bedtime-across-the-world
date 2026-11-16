@@ -34,6 +34,8 @@ async function session(available) {
     const body = checkDream(JSON.parse(req.postData() ?? '{}'));
     asked.push(body);
     if (!body) return route.fulfill({ status: 400, json: { error: 'bad' } });
+    // As long as a real model takes, so the waiting can be seen.
+    await new Promise((r) => setTimeout(r, 3000));
     return route.fulfill({ json: assembleStory(body, cannedWords(body.shapes)) });
   });
   await context.route('**/api/coach', (route) => route.fulfill({ json: { available: false } }));
@@ -81,8 +83,12 @@ async function pinch(page, id) {
   await pinch(page, 'story-dream');
   // It opens the chooser (a place and two shapes already picked): Dream it.
   await pinch(page, 'dream-go');
+  // While the story is dreamed up, the wall says so (Quest 3S, Nov 16: 3-5 quiet seconds after an idea).
+  const waiting = await page.evaluate(() => ({ dreaming: __sp.view().dreaming, underStage: __sp.view().underStage }));
   await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 15000 });
   const d = await page.evaluate(() => ({ script: __sp.get('StoryState', 'script'), dream: __sp.view().dream, open: __sp.get('ShadowJournal', 'open') }));
+  const after = await page.evaluate(() => ({ dreaming: __sp.view().dreaming, underStage: __sp.view().underStage }));
+  check('while Mo dreams: "Mo is dreaming up your story..." under the stage; gone once the story starts', waiting.dreaming === true && waiting.underStage === 'Mo is dreaming up your story...' && after.dreaming === false && after.underStage !== waiting.underStage, { waiting, after });
   check('pinching "Dream a new one": a new story, told at once', asked.length === 1 && asked[0].shapes.length >= 2 && d.script === 'dreamed:1' && d.dream.title === 'The Lantern Tide' && d.open === false, { asked: asked[0], ...d });
 
   // Played by the demo player; reload after the first creature: the next launch carries on in it.

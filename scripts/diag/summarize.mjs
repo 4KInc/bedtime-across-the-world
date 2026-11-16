@@ -124,6 +124,19 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   if (held) console.log(`   narrator held for a pinch at ${held.t} s; ${audio.some((a) => a.waived) ? 'no pinch: went on with captions' : 'pinched'}`);
   const glances = ev('lampglance');
   if (glances.length) console.log(`lamp glances (lit lamp near the middle of the view): ${glances.length}, nearest ${Math.min(...glances.map((g) => g.cm))} cm, during a creature flare ${glances.filter((g) => g.flare > 0.1).length}`);
+  // Recordings for the family: each start, save (length, story, voice) and send, in order.
+  const recs = ev('rec');
+  if (recs.length) {
+    const line = (r) => {
+      const at = `${Math.round(r.t)}s`;
+      if (r.what === 'saved') return `${at} saved ${Math.floor(r.seconds / 60)}:${String(r.seconds % 60).padStart(2, '0')} of ${r.script || 'no story'}${r.voice ? ', with voice' : ', no voice'}`;
+      if (r.what.endsWith('failed')) return `${at} ${r.what}: ${r.message ?? ''}`;
+      return `${at} ${r.what}`;
+    };
+    const last = recs[recs.length - 1];
+    console.log(`recordings: ${last.saved} saved, ${last.sent} sent, ${last.failed} failed`);
+    for (const r of recs) console.log(`   ${line(r)}`);
+  }
   console.log(`visibility: ${ev('vis').map((v) => v.state).join(' > ') || '-'}   page: ${ev('page').map((v) => v.state).join(' > ') || '-'}`);
   const errors = ev('error');
   console.log(`errors: ${errors.length}`);

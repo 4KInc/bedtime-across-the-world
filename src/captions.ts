@@ -9,8 +9,9 @@ import {
   Vector3,
 } from '@iwsdk/core';
 import { CAPTION_H, CAPTION_W, drawCaption, drawHandHint, HINT_SIZE } from './caption-art.js';
-import { ShapeRecognizer, StoryState } from './shadowplay-components.js';
+import { PerformancePlayer, ShapeRecognizer, StoryState } from './shadowplay-components.js';
 import { accessRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
+import { viewerMode } from './viewer-mode.js';
 
 const FADE_PER_SECOND = 4;
 /** How long a voice command's "Heard: ..." line stays up. */
@@ -19,6 +20,11 @@ const NUDGE_W = 1024;
 const NUDGE_H = 120;
 /** Hands keep dropping out of tracking during a shape request (usually too little light). */
 const LIGHT_HINT = 'Hands lost — try turning a light on';
+/** For tests: the line under the stage now (a nudge, "Heard: ...", or that Mo is dreaming). */
+export const captionRuntime = { nudge: '' };
+
+/** While a new story is being dreamed up (settings.ts dream). */
+const DREAMING = 'Mo is dreaming up your story...';
 
 const NUDGE_TEXT: Record<string, string> = {
   almost: 'Almost! Hold it still...',
@@ -67,6 +73,7 @@ function canvasQuad(width: number, height: number, name: string) {
 export class CaptionSystem extends createSystem({
   stories: { required: [StoryState] },
   recognizers: { required: [ShapeRecognizer] },
+  players: { required: [PerformancePlayer] },
 }) {
   private caption = canvasQuad(CAPTION_W, CAPTION_H, 'story-caption');
   private hint = canvasQuad(HINT_SIZE, HINT_SIZE, 'show-me-hint');
@@ -131,7 +138,12 @@ export class CaptionSystem extends createSystem({
     const rec = this.queries.recognizers.entities.values().next().value;
     // Voice commands: what was understood, for a moment.
     const heard = accessRuntime.voiceHeard && performance.now() - accessRuntime.voiceHeardAt < HEARD_MS ? accessRuntime.voiceHeard : '';
-    const nudge = trackingRuntime.lightHint ? LIGHT_HINT : heard || (NUDGE_TEXT[rec?.getValue(ShapeRecognizer, 'nudge') ?? 'none'] ?? '');
+    // On the family viewer the hands on the stage are the storyteller's, except in the child's own Join in turn.
+    const player = this.queries.players.entities.values().next().value;
+    const ownHands = !viewerMode.on || Boolean(player?.getValue(PerformancePlayer, 'inJoinIn'));
+    const recognised = ownHands ? (NUDGE_TEXT[rec?.getValue(ShapeRecognizer, 'nudge') ?? 'none'] ?? '') : '';
+    const nudge = trackingRuntime.lightHint ? LIGHT_HINT : accessRuntime.dreaming ? DREAMING : heard || recognised;
+    captionRuntime.nudge = nudge;
     this.updateNudge(nudge, delta);
   }
 

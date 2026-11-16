@@ -56,8 +56,10 @@ test('dreaming by voice: the place and shapes named, in the order said', () => {
   assert.deepEqual(parseCommand('Dream about a fish who is shy'), { kind: 'dream', theme: '', shapes: ['fish'], wish: 'dream about a fish who is shy' });
   assert.deepEqual(parseCommand('dream a new story'), { kind: 'dream', theme: '', shapes: [] });
   assert.deepEqual(parseCommand("let's dream in the forest"), { kind: 'dream', theme: 'forest', shapes: [] });
-  // Any shape a dreamed story can tell (the swan too, since Nov 15); at most three.
-  assert.deepEqual(parseCommand('dream with a swan, a fish, a bird, a dog and a rabbit').shapes, ['swan', 'fish', 'bird']);
+  // Any shape a dreamed story can tell (the swan too, since Nov 15); at most four (Quest 3S, Nov 16: the fourth was dropped).
+  assert.deepEqual(parseCommand('dream with a swan, a fish, a bird, a dog and a rabbit').shapes, ['swan', 'fish', 'bird', 'dog']);
+  assert.deepEqual(readWish('a story with a rabbit, a dog, a bird and a cup').shapes, ['rabbit', 'dog', 'bird', 'cup']);
+  assert.deepEqual(readWish('a rabbit, a dog, a bird and cups of light').shapes, ['rabbit', 'dog', 'bird', 'cup']);
   // A story line that says "dream" is not a command.
   assert.notEqual(parseCommand('The fish drifts off to dream')?.kind, 'dream');
   assert.equal(parseCommand('Close your eyes and dream of the sea'), null);

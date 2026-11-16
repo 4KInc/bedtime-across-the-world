@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cleanLine } from '../server/coach.ts';
-import { contentProblems } from '../src/story-checks.ts';
+import { checkSharedStory, contentProblems } from '../src/story-checks.ts';
 import { assembleStory } from '../server/dream.ts';
 import { cannedWords } from './fixtures/dream-words.mjs';
 
@@ -77,4 +77,15 @@ test('a shared story is refused when anything is off', async () => {
     assert.equal(checkSharedStory(s), null, name);
   }
   assert.equal(checkSharedStory({ ...good(), beats: new Array(81).fill({ id: 'a', type: 'end', text: 'x' }) }), null, 'too many beats');
+});
+
+test('a dreamed rabbit, dog and fish accept the library\'s easier poses, and a shared copy keeps them', () => {
+  // Quest 3S, Nov 16: a dreamed rabbit took 25 s (The Moth's, which also takes two fingers up, 2.4 s).
+  const story = assembleStory({ theme: 'meadow', shapes: ['rabbit', 'dog', 'fish'] }, cannedWords(['rabbit', 'dog', 'fish']))!;
+  const asks = story.beats as { type: string; shape?: string; alt?: string }[];
+  const alts = Object.fromEntries(asks.filter((b) => b.type === 'request').map((b) => [b.shape, b.alt]));
+  assert.deepEqual(alts, { rabbit: 'ears', dog: 'rabbit', fish: 'dog' });
+  const shared = checkSharedStory(story) as { beats: { type: string; alt?: string }[] } | null;
+  assert.ok(shared, 'the shared copy passes');
+  assert.deepEqual(shared!.beats.filter((b) => b.type === 'request').map((b) => b.alt), ['ears', 'rabbit', 'dog']);
 });

@@ -18,6 +18,28 @@ import { storyTap } from './story-tap.js';
 
 /** Longest performance (seconds): a bedtime story, not a film. */
 const MAX_SECONDS = 15 * 60;
+
+/**
+ * For diagnostics and tests: recordings started, saved and sent this session,
+ * with the last one's length, its story, whether it has a voice, and the last
+ * failure. Never a title, a name or a family code.
+ */
+export const recordingRuntime = {
+  started: 0,
+  saved: 0,
+  saveFailed: 0,
+  sent: 0,
+  sendFailed: 0,
+  seconds: 0,
+  frames: 0,
+  events: 0,
+  voice: false,
+  script: '',
+  error: '',
+};
+
+/** For tests: the Journal's recordings row (family-controls.ts): how many, which is chosen, and what it shows. */
+export const recordingsRuntime = { count: 0, index: -1, chosen: '', title: '', info: '', playing: '' };
 /**
  * Records a performance on this stage: both hands at 30 Hz in stage-relative
  * coordinates, the story tap's events (beats, creatures waking and
@@ -82,6 +104,7 @@ export class PerformanceRecorderSystem extends createSystem({
     // The stage as it is now (a recording may start mid-story), then the beat in progress.
     for (const e of storyTap.current()) this.events.push({ t: 0, ...e });
     rec.setValue(PerformanceRecorder, 'status', 'Recording...');
+    recordingRuntime.started++;
     if (rec.getValue(PerformanceRecorder, 'withVoice')) void this.startMic(rec);
   }
 
@@ -144,7 +167,22 @@ export class PerformanceRecorderSystem extends createSystem({
       audio,
       audioType: audio?.type,
     };
-    await saveRecording(performance);
+    Object.assign(recordingRuntime, {
+      seconds: Math.round(this.elapsed),
+      frames: this.frameCount,
+      events: this.events.length,
+      voice: Boolean(audio),
+      script: dreamed ? 'dreamed' : script.replace(/^story\//, ''),
+    });
+    try {
+      await saveRecording(performance);
+    } catch (error) {
+      recordingRuntime.saveFailed++;
+      recordingRuntime.error = (error as Error).message;
+      rec.setValue(PerformanceRecorder, 'status', `Could not save the recording: ${(error as Error).message}`);
+      return;
+    }
+    recordingRuntime.saved++;
     rec.setValue(PerformanceRecorder, 'lastId', performance.id);
     rec.setValue(
       PerformanceRecorder,
@@ -153,7 +191,7 @@ export class PerformanceRecorderSystem extends createSystem({
     );
   }
 
-  /** Send the last recording to the family: upload it and show the family code. */
+  /** Send the chosen recording (the last one made, or one picked in the Journal) to the family: upload it and show the family code. */
   private async share(rec: Entity): Promise<void> {
     this.sharing = true;
     rec.setValue(PerformanceRecorder, 'shareRequested', false);
@@ -167,7 +205,10 @@ export class PerformanceRecorderSystem extends createSystem({
       rec.setValue(PerformanceRecorder, 'shareCode', code);
       rec.setValue(PerformanceRecorder, 'shareLink', watchLink(code));
       rec.setValue(PerformanceRecorder, 'status', `Sent! Family code: ${code}`);
+      recordingRuntime.sent++;
     } catch (error) {
+      recordingRuntime.sendFailed++;
+      recordingRuntime.error = (error as Error).message;
       rec.setValue(PerformanceRecorder, 'status', `Could not send: ${(error as Error).message}`);
     } finally {
       this.sharing = false;

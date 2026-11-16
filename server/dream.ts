@@ -11,7 +11,7 @@
  * On when the server has a model key (main.ts; DREAM_MODEL picks the model).
  */
 import { contentProblems } from '../src/story-checks.ts';
-import { MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
+import { MAX_DREAM_SHAPES, MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
 import type { Llm } from './llm.ts';
 
 /** Every shape a dreamed story can tell: the five the chooser offers, and the ones an idea can name ("a fish and a crocodile"). */
@@ -26,6 +26,13 @@ export const THEMES: Readonly<Record<string, { words: string; scenery: string }>
   rain: { words: 'on a night of soft, passing rain', scenery: 'storm' },
   sky: { words: 'high in the night sky among the clouds', scenery: 'none' },
 };
+
+/**
+ * The easier pose each shape also accepts, as in the library stories: two
+ * fingers up for the rabbit, a rabbit for the dog, a dog for the fish. Dreamed
+ * rabbits had none (Quest 3S, Nov 16: 25 s, against 2.4 s for The Moth's rabbit).
+ */
+const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog' };
 
 const LINE = /^[A-Za-z0-9 ,.!?'’;:-]{2,160}$/;
 const MAX_LINE_WORDS = 24;
@@ -85,19 +92,19 @@ export function checkDream(body: unknown): DreamRequest | null {
     const read = readWish(wish);
     const theme = typeof b.theme === 'string' && Object.hasOwn(THEMES, b.theme) ? b.theme : read.theme;
     const given = Array.isArray(b.shapes) ? b.shapes.filter(isShape) : [];
-    const shapes = [...new Set([...given, ...read.shapes])].slice(0, 3);
+    const shapes = [...new Set([...given, ...read.shapes])].slice(0, MAX_DREAM_SHAPES);
     return { theme, shapes, ...(wish ? { wish } : {}) };
   }
   if (typeof b.theme !== 'string' || !Object.hasOwn(THEMES, b.theme)) return null;
-  if (!Array.isArray(b.shapes) || b.shapes.length < 2 || b.shapes.length > 3) return null;
+  if (!Array.isArray(b.shapes) || b.shapes.length < 2 || b.shapes.length > MAX_DREAM_SHAPES) return null;
   if (new Set(b.shapes).size !== b.shapes.length) return null;
   if (!b.shapes.every(isShape)) return null;
   return { theme: b.theme, shapes: b.shapes as string[] };
 }
 
-/** True when the request names a place and two or three shapes (ready to write). */
+/** True when the request names a place and two to four shapes (ready to write). */
 export function complete(req: DreamRequest): boolean {
-  return Object.hasOwn(THEMES, req.theme) && req.shapes.length >= 2 && req.shapes.length <= 3;
+  return Object.hasOwn(THEMES, req.theme) && req.shapes.length >= 2 && req.shapes.length <= MAX_DREAM_SHAPES;
 }
 
 /** The rest of a request picked at random: a place if none, shapes up to two (or as many as there are). */
@@ -275,7 +282,7 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
       beats.push({ id: `dream-${n}-place`, type: 'scenery', set: here });
     }
     beats.push({ id: `dream-${n}-setup`, type: 'narrate', text: setup });
-    beats.push({ id: `dream-${n}-want`, type: 'request', shape, ...(shape === 'fish' ? { alt: 'dog' } : {}), text: ask });
+    beats.push({ id: `dream-${n}-want`, type: 'request', shape, ...(ALTS[shape] ? { alt: ALTS[shape] } : {}), text: ask });
     if (shape === 'cup') {
       // Cupped hands hold something; they open to let it go (as in Counting Stars).
       // The let-go beat waits for open hands, so its caption must say so; the bow follows.
@@ -337,7 +344,8 @@ export class Dreamer {
   async dream(asked: DreamRequest): Promise<Record<string, unknown> | null> {
     const req = await this.resolve(asked);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const text = await this.llm.text({ model: this.model, system: SYSTEM, user: prompt(req), maxTokens: 1500, effort: 'medium', timeoutMs: 50000 });
+      // Room for every scene's lines (a fourth scene needs more than the 1500 three were given).
+      const text = await this.llm.text({ model: this.model, system: SYSTEM, user: prompt(req), maxTokens: 900 + 300 * req.shapes.length, effort: 'medium', timeoutMs: 50000 });
       const story = assembleStory(req, text);
       if (story) return story;
     }

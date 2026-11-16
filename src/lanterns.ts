@@ -17,6 +17,7 @@ import {
   ZeroFactor,
 } from '@iwsdk/core';
 import { buildPuppetRig, PuppetRig } from './puppet-rigs.js';
+import { SHELF, shelfRuntime, shelfSpot } from './shelf.js';
 import { DeskLamp, ShadowJournal } from './shadowplay-components.js';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 import { storyRuntime } from './story-script.js';
@@ -85,7 +86,9 @@ function glowTexture(): CanvasTexture {
  * like a lantern in its colour, hops off the wall in an arc and lands on the
  * real desk between the Shadow Journal and the lamp, where it stays, breathing
  * softly and turned toward you, for the rest of the story. Up to three at once
- * (the oldest makes room); they leave when another story starts. Headset only.
+ * (the oldest makes room); they leave when another story starts. On the family
+ * viewer (phone, tablet, computer) they land on the shelf under the stage
+ * instead (shelf.ts), so the child sees them step out too.
  */
 export class LanternSystem extends createSystem({
   lamps: { required: [DeskLamp] },
@@ -122,7 +125,8 @@ export class LanternSystem extends createSystem({
     this.switchObj ??= this.world.scene.getObjectByName('desk-switch');
     const lampObj = this.switchObj ?? (this.queries.lamps.entities.values().next().value as Entity | undefined)?.object3D;
     const bookObj = (this.queries.journals.entities.values().next().value as Entity | undefined)?.object3D;
-    const ready = inXR && stageRuntime.ready && !!lampObj && !!bookObj;
+    const onShelf = !inXR && shelfRuntime.on;
+    const ready = stageRuntime.ready && (onShelf || (inXR && !!lampObj && !!bookObj));
     if (storyRuntime.script !== this.script) {
       this.script = storyRuntime.script;
       for (const l of [...this.lanterns]) this.remove(l);
@@ -134,19 +138,27 @@ export class LanternSystem extends createSystem({
     for (const l of this.lanterns) l.group.visible = ready;
     if (!ready) return;
 
-    lampObj.getWorldPosition(this.lamp);
-    bookObj.getWorldPosition(this.book);
-    const deskY = this.lamp.y;
-    this.toWall.copy(stageRuntime.normal).setY(0).normalize().negate();
-    this.player.head.getWorldPosition(this.head);
+    const size = onShelf ? SHELF.size : SIZE;
+    const glow = onShelf ? SHELF.glow : 1;
+    let deskY = shelfRuntime.centre.y;
+    if (!onShelf) {
+      lampObj!.getWorldPosition(this.lamp);
+      bookObj!.getWorldPosition(this.book);
+      deskY = this.lamp.y;
+      this.toWall.copy(stageRuntime.normal).setY(0).normalize().negate();
+    }
+    this.head.copy(stageRuntime.eye);
     let hopping = 0;
     for (const l of this.lanterns) {
-      const slot = SLOTS[l.slot];
-      this.target
-        .lerpVectors(this.book, this.lamp, 0.5)
-        .addScaledVector(this.along.subVectors(this.lamp, this.book).setY(0).normalize(), slot.along)
-        .addScaledVector(this.toWall, slot.toWall);
-      this.target.y = deskY + SIZE * 0.5;
+      if (onShelf) shelfSpot(SHELF.lanterns[l.slot], this.target);
+      else {
+        const slot = SLOTS[l.slot];
+        this.target
+          .lerpVectors(this.book, this.lamp, 0.5)
+          .addScaledVector(this.along.subVectors(this.lamp, this.book).setY(0).normalize(), slot.along)
+          .addScaledVector(this.toWall, slot.toWall);
+      }
+      this.target.y = deskY + size * 0.5;
       const g = l.group;
       if (l.t < HOP) {
         hopping++;
@@ -155,18 +167,19 @@ export class LanternSystem extends createSystem({
         const e = k * k * (3 - 2 * k);
         g.position.lerpVectors(l.from, this.target, e);
         g.position.y += Math.sin(Math.PI * e) * ARC;
-        g.scale.setScalar(l.fromScale + (SIZE - l.fromScale) * e);
+        g.scale.setScalar(l.fromScale + (size - l.fromScale) * e);
       } else {
         // On the desk: a soft breath and a little sway.
         g.position.copy(this.target);
         g.position.y += Math.sin(this.time * 2 + l.phase) * 0.003;
-        g.scale.setScalar(SIZE * (1 + 0.02 * Math.sin(this.time * 2 + l.phase)));
+        g.scale.setScalar(size * (1 + 0.02 * Math.sin(this.time * 2 + l.phase)));
       }
       g.rotation.set(0, Math.atan2(this.head.x - g.position.x, this.head.z - g.position.z), Math.sin(this.time * 1.3 + l.phase) * 0.04);
       l.rig.animate(this.time, delta, null);
       // Lit from inside: the paper in its colour, a glow around it (plain warm in high contrast).
       const contrast = accessRuntime.highContrast;
       l.paper.color.copy(contrast ? PAPER : l.colour).lerp(PAPER, contrast ? 0 : 0.3);
+      l.glow.scale.setScalar(2.4 * glow);
       l.glow.material.color.copy(contrast ? WARM : l.colour).lerp(WARM, 0.4).multiplyScalar(0.55 + 0.15 * Math.sin(this.time * 2.6 + l.phase));
     }
     // (Rebuilt only when one lands or leaves: nothing allocated per frame.)
