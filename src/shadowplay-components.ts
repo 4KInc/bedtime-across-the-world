@@ -30,6 +30,29 @@ export const ShapeIds = {
   Deer: 'deer',
   /** Hidden two-hand: two flat hands stacked as snapping jaws. */
   Crocodile: 'crocodile',
+  // World creatures (world-creatures.ts): asked for by the stories of their world.
+  /** Space: one finger pointing up. */
+  Rocket: 'rocket',
+  /** Space: index and little finger up as antennae. */
+  Alien: 'alien',
+  /** Space: a fist (the fist's own pose). */
+  Asteroid: 'asteroid',
+  /** Ocean: a flat hand, fingers together pointing up, as a fin. */
+  Shark: 'shark',
+  /** Ocean: fingers spread, pointing down, as wavy arms. */
+  Octopus: 'octopus',
+  /** Ocean: a fist with the thumb up as the spout. */
+  Whale: 'whale',
+  /** Cars & Adventure: two fingers forward as headlights (the snail's pose). */
+  Car: 'car',
+  /** Cars & Adventure: thumb and little finger out as wings. */
+  Plane: 'plane',
+  /** Cars & Adventure: a flat hand bent down at the wrist as the bucket (the swan's pose). */
+  Digger: 'digger',
+  /** Dinosaurs: two hands stacked as big jaws (the crocodile's pose). */
+  Trex: 'trex',
+  /** Dinosaurs: two hands side by side as wings (the bird's pose). */
+  Pterodactyl: 'pterodactyl',
 } as const;
 
 export const Hands = { None: 'none', Left: 'left', Right: 'right' } as const;

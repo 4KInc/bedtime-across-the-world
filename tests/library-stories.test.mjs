@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { contentProblems } from '../src/story-checks.ts';
+import { WORLD_CREATURES } from '../src/world-creatures.ts';
 
 const read = (p) => JSON.parse(readFileSync(new URL(`../public/${p}`, import.meta.url), 'utf8'));
 const { stories: library, worlds } = read('story/library.json');
 const narration = read('narration/manifest.json');
-const SHAPES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
+const SHAPES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile', ...Object.values(WORLD_CREATURES).flat()]);
+/** The world stories (Nov 16): two more in each world but Wonder and Nature. */
+const WORLD_STORIES = ['moon-rocks', 'alien-lullaby', 'gentle-shark', 'whale-song', 'bumpy-road', 'long-way-home', 'gentle-trex', 'sky-ride'];
 
 test('every library story: its file, unique beat ids across the library, and an end', () => {
   const ids = new Set();
@@ -23,7 +26,7 @@ test('every library story: its file, unique beat ids across the library, and an 
 });
 
 test('the newer stories pass the content checks (no brands, Mo is "she", the right hand poses)', () => {
-  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy', 'sleepy-dinosaur', 'lost-spaceship']) {
+  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy', 'sleepy-dinosaur', 'lost-spaceship', ...WORLD_STORIES]) {
     const story = read(library.find((s) => s.id === id).script);
     for (const b of story.beats) {
       if (b.type === 'request') assert.ok(SHAPES.has(b.shape) && (!b.alt || SHAPES.has(b.alt)), `${b.id} shape`);
@@ -34,7 +37,7 @@ test('the newer stories pass the content checks (no brands, Mo is "she", the rig
 });
 
 test('every spoken line of the newer stories has its narration, read by the story\'s narrator', () => {
-  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy', 'sleepy-dinosaur', 'lost-spaceship']) {
+  for (const id of ['the-night-garden', 'the-kind-crocodile', 'the-little-rainstorm', 'moon-buggy', 'sleepy-dinosaur', 'lost-spaceship', ...WORLD_STORIES]) {
     const entry = library.find((s) => s.id === id);
     assert.equal(narration.narrators[id], entry.narrator, `${id} narrator`);
     for (const b of read(entry.script).beats) {
@@ -55,6 +58,13 @@ test('story worlds: every story is in a known world, none is labelled for boys o
   assert.ok(library.some((s) => s.world === 'adventure'), 'Cars and Adventure has a story');
   // Every world has at least one story, so every world shows in the picker.
   for (const w of worlds) assert.ok(library.some((s) => s.world === w.id), `${w.id} has a story`);
+  // Every world but Wonder and Nature has three, and its own creatures (world-creatures.ts) appear in them.
+  for (const [world, creatures] of Object.entries(WORLD_CREATURES)) {
+    const stories = library.filter((s) => s.world === world);
+    assert.ok(stories.length >= 3, `${world} has three stories`);
+    const asked = new Set(stories.flatMap((s) => read(s.script).beats.filter((b) => b.type === 'request').map((b) => b.shape)));
+    for (const c of creatures) assert.ok(asked.has(c), `${world}: a story asks for the ${c}`);
+  }
 });
 
 test('every world and story colour is a "#rrggbb" colour, and no two worlds share a picker colour', () => {

@@ -217,6 +217,8 @@ let duckUntil = 0;
 const CREATURE_FILES: Readonly<Record<string, string>> = {
   rabbit: 'rabbit', ears: 'rabbit', fish: 'fish', dog: 'dog', bird: 'bird', cup: 'cup',
   snail: 'snail', swan: 'swan', deer: 'deer', crocodile: 'crocodile',
+  rocket: 'rocket', alien: 'alien', asteroid: 'asteroid', shark: 'shark', octopus: 'octopus', whale: 'whale',
+  car: 'car', plane: 'plane', digger: 'digger', trex: 'trex', pterodactyl: 'pterodactyl',
 };
 const creatureAudio = new Map<string, HTMLAudioElement>();
 

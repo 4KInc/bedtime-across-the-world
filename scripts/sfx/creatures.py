@@ -78,6 +78,18 @@ VOICES = {
     'swan': lambda: place([(0, sweep(340, 300, 0.24, 'saw', vibrato=0.03)), (0.32, sweep(360, 310, 0.22, 'saw', vibrato=0.03))], 0.62),
     'deer': lambda: place([(i * 0.15, mix(0.7 * noise(0.04, 4), sweep(240, 180, 0.06))) for i in range(3)] + [(0.5, 0.5 * sweep(700, 900, 0.18, vibrato=0.02))], 0.75),
     'crocodile': lambda: place([(0, mix(noise(0.05, 3), sweep(110, 70, 0.12, 'tri'))), (0.22, mix(noise(0.05, 3), sweep(105, 65, 0.14, 'tri')))], 0.5),
+    # World creatures (src/world-creatures.ts).
+    'rocket': lambda: place([(0, mix(0.6 * noise(0.7, 24), 0.5 * sweep(180, 700, 0.7, curve=0.6)))], 0.8),
+    'alien': lambda: place([(i * 0.14, sweep(900 + 300 * i, 1400 + 300 * i, 0.12, vibrato=0.08)) for i in range(3)], 0.6),
+    'asteroid': lambda: place([(0, mix(noise(0.3, 40), 0.6 * sweep(90, 60, 0.3, 'tri'))), (0.18, 0.5 * noise(0.15, 30))], 0.5),
+    'shark': lambda: place([(0, mix(sweep(260, 200, 0.35, 'tri', vibrato=0.02), 0.2 * noise(0.2, 20)))], 0.45),
+    'octopus': lambda: place([(i * 0.11, sweep(500 - 40 * i, 650 - 40 * i, 0.09, curve=0.5)) for i in range(4)], 0.6),
+    'whale': lambda: place([(0, sweep(160, 320, 0.6, vibrato=0.03, curve=0.6)), (0.5, 0.7 * sweep(300, 180, 0.5, vibrato=0.03))], 1.05),
+    'car': lambda: place([(0, sweep(420, 420, 0.14, 'saw')), (0.2, sweep(420, 420, 0.14, 'saw'))], 0.45),
+    'plane': lambda: place([(0, mix(0.5 * noise(0.8, 10), 0.4 * sweep(140, 160, 0.8, 'saw', vibrato=0.06)))], 0.85),
+    'digger': lambda: place([(i * 0.12, mix(sweep(110, 100, 0.09, 'saw'), 0.2 * noise(0.05, 6))) for i in range(4)], 0.6),
+    'trex': lambda: place([(0, mix(sweep(140, 70, 0.5, 'saw', vibrato=0.04), 0.3 * noise(0.4, 12)))], 0.6),
+    'pterodactyl': lambda: place([(0, sweep(1600, 1100, 0.16, 'tri', vibrato=0.03)), (0.24, sweep(1500, 1000, 0.14, 'tri', vibrato=0.03))], 0.5),
 }
 
 

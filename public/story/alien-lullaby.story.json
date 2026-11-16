@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Aliens' Lullaby",
+  "beats": [
+    {
+      "id": "lull-title",
+      "type": "chapter",
+      "chapter": "The Aliens' Lullaby",
+      "text": "The Aliens' Lullaby"
+    },
+    {
+      "id": "lull-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "lull-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Pip has invited Mo to a concert. A lullaby concert, in space!"
+    },
+    {
+      "id": "lull-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "lull-scenery",
+      "type": "scenery",
+      "set": "star-port"
+    },
+    {
+      "id": "lull-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "lull-intro1",
+      "type": "narrate",
+      "text": "Whirr... beep. Here comes Pip's spaceship, to show the way."
+    },
+    {
+      "id": "lull-intro2",
+      "type": "narrate",
+      "text": "But the singers are far away, on the other side of the moon."
+    },
+    {
+      "id": "lull-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. We can find the singers together."
+    },
+    {
+      "id": "lull-want-rocket",
+      "type": "request",
+      "shape": "rocket",
+      "text": "Make a rocket: point one finger straight up, and curl the others in."
+    },
+    {
+      "id": "lull-rocket-yes",
+      "type": "narrate",
+      "text": "A rocket, ready to fly. Climb aboard, Mo."
+    },
+    {
+      "id": "lull-rocket-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lull-rocket-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Whoosh, around the side of the moon."
+    },
+    {
+      "id": "lull-rocket-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "lull-rocket-bows",
+      "type": "release",
+      "text": "The rocket parks by a crater, and its engine hums, then stops."
+    },
+    {
+      "id": "lull-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "lull-rabbit-before",
+      "type": "narrate",
+      "text": "Listen. Can you hear something? La la, la la. Someone is singing, far away."
+    },
+    {
+      "id": "lull-want-rabbit",
+      "type": "request",
+      "shape": "rabbit",
+      "text": "Make a rabbit with your hand. Moon rabbits have the best ears for listening.",
+      "alt": "ears"
+    },
+    {
+      "id": "lull-rabbit-yes",
+      "type": "narrate",
+      "text": "A moon rabbit! Its long ears turn this way, and that way. Hop on, Mo."
+    },
+    {
+      "id": "lull-rabbit-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lull-rabbit-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Hop, hop, toward the singing."
+    },
+    {
+      "id": "lull-rabbit-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "lull-rabbit-bows",
+      "type": "release",
+      "text": "The moon rabbit sits very still, to listen."
+    },
+    {
+      "id": "lull-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "lull-alien-before",
+      "type": "narrate",
+      "text": "There they are! A little choir of aliens, singing on a moon rock."
+    },
+    {
+      "id": "lull-want-alien",
+      "type": "request",
+      "shape": "alien",
+      "text": "Make an alien: your pointer finger and your little finger up, like antennae."
+    },
+    {
+      "id": "lull-alien-yes",
+      "type": "narrate",
+      "text": "You are an alien too! Come and sing along. Hop on, Mo."
+    },
+    {
+      "id": "lull-alien-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lull-alien-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "La la la, up toward the singers.",
+      "minV": 0.12
+    },
+    {
+      "id": "lull-alien-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "lull-alien-bows",
+      "type": "release",
+      "text": "The aliens bow, and their antennae glow, one by one."
+    },
+    {
+      "id": "lull-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "lull-dark",
+      "type": "narrate",
+      "text": "The song is nearly over, and the stars are getting sleepy. The last note needs a little light."
+    },
+    {
+      "id": "lull-gift",
+      "type": "narrate",
+      "text": "Look! A tiny star is floating down, just for us."
+    },
+    {
+      "id": "lull-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch it."
+    },
+    {
+      "id": "lull-caught",
+      "type": "narrate",
+      "text": "You caught it. It sings, very softly, in your hands."
+    },
+    {
+      "id": "lull-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let it sing the last note."
+    },
+    {
+      "id": "lull-free",
+      "type": "release",
+      "text": "Ooo... the last note floats up, all the way to Pip's planet."
+    },
+    {
+      "id": "lull-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "lull-home",
+      "type": "narrate",
+      "text": "Pip's spaceship flies home, singing the lullaby. Beep... la la... beep."
+    },
+    {
+      "id": "lull-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "lull-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "lull-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, Pip. Goodnight, little aliens. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "lull-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "lull-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

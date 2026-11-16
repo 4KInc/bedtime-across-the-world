@@ -1,6 +1,7 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
 import { HandCasterSystem } from './hand-caster.js';
 import { FIXTURES, HandPose, localJoints, PoseFixture, toWorld } from './hand-poses.js';
+import { poseOf } from './world-creatures.js';
 import {
   DemoDirector,
   DeskLamp,
@@ -157,7 +158,7 @@ export class DemoDirectorSystem extends createSystem({
   }
 
   private fixture(label: string): PoseFixture | null {
-    return FIXTURES.find((f) => f.label === label) ?? null;
+    return FIXTURES.find((f) => f.label === poseOf(label)) ?? null;
   }
 
 

@@ -1,17 +1,8 @@
-import {
-  AddEquation,
-  CustomBlending,
-  Group,
-  Material,
-  Mesh,
-  MeshBasicMaterial,
-  OneFactor,
-  Shape,
-  ShapeGeometry,
-  ZeroFactor,
-} from '@iwsdk/core';
+import { Group, Material, Mesh, MeshBasicMaterial, Shape, ShapeGeometry } from '@iwsdk/core';
+import { circle, eyeAt, glowMaterial, mesh, pivot, twig } from './rig-parts.js';
 import { ShapeIds } from './shadowplay-components.js';
 import { buildRabbit } from './silhouettes.js';
+import { buildWorldRig } from './world-rigs.js';
 
 /**
  * Puppet silhouettes share one contract: ~1 unit long, facing +X, centred on
@@ -25,37 +16,6 @@ export interface PuppetRig {
   seat: { x: number; y: number };
   /** Per-frame animation; features are the matched hand's (may be null). */
   animate(time: number, delta: number, features: Float32Array | null): void;
-}
-
-function mesh(geometry: ShapeGeometry, material: Material, name: string, order: number, z = 0): Mesh {
-  const m = new Mesh(geometry, material);
-  m.name = name;
-  m.renderOrder = order;
-  m.position.z = z;
-  return m;
-}
-
-function pivot(name: string, x: number, y: number, z: number, child: Mesh): Group {
-  const g = new Group();
-  g.name = name;
-  g.position.set(x, y, z);
-  g.add(child);
-  return g;
-}
-
-function circle(r: number): Shape {
-  const s = new Shape();
-  s.absarc(0, 0, r, 0, Math.PI * 2, false);
-  return s;
-}
-
-const eyeGeo = new ShapeGeometry(circle(0.026), 16);
-
-function eyeAt(material: Material, x: number, y: number): Mesh {
-  const e = mesh(eyeGeo, material, 'eye', 12, 0.001);
-  e.position.x = x;
-  e.position.y = y;
-  return e;
 }
 
 // ---------------------------------------------------------------- fish
@@ -330,21 +290,6 @@ function buildSwan(fill: Material, eyeMat: Material): PuppetRig {
 
 // ---------------------------------------------------------------- held light (cup)
 
-/** Add light to colour without touching alpha, so it glows over passthrough. */
-function glowMaterial(color: number): MeshBasicMaterial {
-  return new MeshBasicMaterial({
-    color,
-    transparent: true,
-    depthWrite: false,
-    blending: CustomBlending,
-    blendEquation: AddEquation,
-    blendSrc: OneFactor,
-    blendDst: OneFactor,
-    blendSrcAlpha: ZeroFactor,
-    blendDstAlpha: OneFactor,
-  });
-}
-
 const glowGeo = new ShapeGeometry(circle(1), 40);
 
 const LIGHT_LAYERS: readonly { r: number; color: number }[] = [
@@ -389,20 +334,6 @@ function buildLight(fill: MeshBasicMaterial, eyeMat: Material): PuppetRig {
 }
 
 // ---------------------------------------------------------------- deer (hidden, two hands)
-
-/** Thin quad from (x1, y1) to (x2, y2): antler beams and tines. */
-function twig(x1: number, y1: number, x2: number, y2: number, w: number): Shape {
-  const a = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
-  const nx = Math.cos(a) * w;
-  const ny = Math.sin(a) * w;
-  const s = new Shape();
-  s.moveTo(x1 + nx, y1 + ny);
-  s.lineTo(x2 + nx * 0.5, y2 + ny * 0.5);
-  s.lineTo(x2 - nx * 0.5, y2 - ny * 0.5);
-  s.lineTo(x1 - nx, y1 - ny);
-  s.closePath();
-  return s;
-}
 
 function deerBody(): Shape {
   const s = new Shape();
@@ -531,7 +462,7 @@ export function buildPuppetRig(shape: string, fill: Material, eyeMat: Material):
     case ShapeIds.Bird:
       return buildBird(fill, eyeMat);
     default:
-      return rabbitRig(fill, eyeMat);
+      return buildWorldRig(shape, fill, eyeMat) ?? rabbitRig(fill, eyeMat);
   }
 }
 

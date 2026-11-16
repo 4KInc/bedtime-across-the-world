@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Sleepy T. rex",
+  "beats": [
+    {
+      "id": "rex-title",
+      "type": "chapter",
+      "chapter": "The Sleepy T. rex",
+      "text": "The Sleepy T. rex"
+    },
+    {
+      "id": "rex-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "rex-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying back to the land of giant ferns, to see the little dinosaur."
+    },
+    {
+      "id": "rex-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "rex-scenery",
+      "type": "scenery",
+      "set": "dino-valley"
+    },
+    {
+      "id": "rex-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "rex-intro1",
+      "type": "narrate",
+      "text": "Stomp... stomp. There is the little long-neck dinosaur, waving its tail hello."
+    },
+    {
+      "id": "rex-intro2",
+      "type": "narrate",
+      "text": "But tonight there is a loud noise in the valley. Roar! The little dinosaur is too scared to walk home."
+    },
+    {
+      "id": "rex-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's find out who is making that noise."
+    },
+    {
+      "id": "rex-want-pterodactyl",
+      "type": "request",
+      "shape": "pterodactyl",
+      "text": "Make a pterodactyl: two hands, side by side, like big wide wings."
+    },
+    {
+      "id": "rex-pterodactyl-yes",
+      "type": "narrate",
+      "text": "A pterodactyl! A flying dinosaur, with wings as wide as a tent. Climb on, Mo."
+    },
+    {
+      "id": "rex-pterodactyl-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rex-pterodactyl-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Glide, glide, over the valley, to look.",
+      "minV": 0.12
+    },
+    {
+      "id": "rex-pterodactyl-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.16
+    },
+    {
+      "id": "rex-pterodactyl-bows",
+      "type": "release",
+      "text": "The pterodactyl lands on a rock, and folds its wings."
+    },
+    {
+      "id": "rex-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "rex-trex-before",
+      "type": "narrate",
+      "text": "Look, down there. Who is that, with the big head and the tiny arms?"
+    },
+    {
+      "id": "rex-want-trex",
+      "type": "request",
+      "shape": "trex",
+      "text": "Make a T. rex: two flat hands, one on top of the other, like a big, big mouth."
+    },
+    {
+      "id": "rex-trex-yes",
+      "type": "narrate",
+      "text": "A T. rex! But listen. Roar... it is only a yawn. This T. rex is very, very sleepy. Climb on, Mo."
+    },
+    {
+      "id": "rex-trex-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rex-trex-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Stomp, stomp, the T. rex walks the little dinosaur along the path."
+    },
+    {
+      "id": "rex-trex-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "rex-trex-bows",
+      "type": "release",
+      "text": "The T. rex gives one more big yawn, and lies down for the night."
+    },
+    {
+      "id": "rex-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "rex-snail-before",
+      "type": "narrate",
+      "text": "Now the path goes past the bubbling mud. Slowly, slowly."
+    },
+    {
+      "id": "rex-want-snail",
+      "type": "request",
+      "shape": "snail",
+      "text": "Make a snail: a fist for the shell, and two fingers poking forward for its eyes."
+    },
+    {
+      "id": "rex-snail-yes",
+      "type": "narrate",
+      "text": "A snail! It knows the safe way around the mud. Climb on, Mo."
+    },
+    {
+      "id": "rex-snail-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rex-snail-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Slowly, slowly, around the bubbling mud.",
+      "minV": 0.12
+    },
+    {
+      "id": "rex-snail-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "rex-snail-bows",
+      "type": "release",
+      "text": "The snail tucks itself into its shell, for a little sleep."
+    },
+    {
+      "id": "rex-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "rex-dark",
+      "type": "narrate",
+      "text": "Here is the cave. But it is very dark inside."
+    },
+    {
+      "id": "rex-gift",
+      "type": "narrate",
+      "text": "Look! A little firefly, glowing softly. It wants to help too."
+    },
+    {
+      "id": "rex-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and carry the firefly to the cave."
+    },
+    {
+      "id": "rex-caught",
+      "type": "narrate",
+      "text": "You have it. Hold it close, so its light is warm and gentle."
+    },
+    {
+      "id": "rex-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let the firefly light up the cave."
+    },
+    {
+      "id": "rex-free",
+      "type": "release",
+      "text": "The cave glows, warm and golden."
+    },
+    {
+      "id": "rex-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "rex-home",
+      "type": "narrate",
+      "text": "The little dinosaur stomps inside, curls its long tail round, and closes its eyes."
+    },
+    {
+      "id": "rex-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "rex-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "rex-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little dinosaur. Goodnight, sleepy T. rex. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "rex-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "rex-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

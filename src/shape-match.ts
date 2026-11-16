@@ -1,8 +1,9 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore } from './hand-features.js';
+import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore, worldPoses } from './hand-features.js';
 import { Hands, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, palmUp, requested, stepHold } from './recognition-rules.js';
 import { handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
+import { poseOf, WORLD_POSES } from './world-creatures.js';
 
 /** For device diagnostics: the two-hand measurements (wrist gap and height difference m, finger curl, thumb bend, spread, fingers up, in the light). */
 export const pairRuntime = { gap: 0, dy: 0, lCurl: 0, rCurl: 0, lThumb: 0, rThumb: 0, lSpread: 0, rSpread: 0, lUp: 0, rUp: 0, lPalm: 0, rPalm: 0, lLight: false, rLight: false };
@@ -14,6 +15,8 @@ const NUDGE_MARGIN = 0.12;
 /** ...for this long (s) before the nudge shows; it lingers this long after. */
 const NUDGE_AFTER = 1.2;
 const NUDGE_LINGER = 1.5;
+/** The recognizer's requested shapes. */
+const TARGET_FIELDS = ['target', 'altTarget', 'target2', 'altTarget2'] as const;
 /** A silhouette match older than this no longer counts. */
 const SILHOUETTE_FRESH_MS = 600;
 
@@ -60,6 +63,8 @@ export class ShapeMatchSystem extends createSystem({
         MAX_TOLERANCE,
         (entity.getValue(ShapeRecognizer, 'tolerance') ?? 0.3) + (entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0),
       );
+      // World poses (a rocket, a whale...) are only read while a story asks for one.
+      this.askWorldPoses(entity);
       this.evaluate(handRuntime.left, tolerance, this.left);
       this.evaluate(handRuntime.right, tolerance, this.right);
       // Hidden two-hand creatures (deer, crocodile) exist in Free Stage, or when a
@@ -69,22 +74,11 @@ export class ShapeMatchSystem extends createSystem({
         isHiddenPair(entity.getValue(ShapeRecognizer, 'altTarget')) ||
         isHiddenPair(entity.getValue(ShapeRecognizer, 'target2')) ||
         isHiddenPair(entity.getValue(ShapeRecognizer, 'altTarget2'));
-      const birdWanted =
-        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Bird ||
-        entity.getValue(ShapeRecognizer, 'altTarget') === ShapeIds.Bird ||
-        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Bird ||
-        entity.getValue(ShapeRecognizer, 'altTarget2') === ShapeIds.Bird;
-      const deerWanted =
-        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Deer ||
-        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Deer;
-      const crocWanted =
-        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Crocodile ||
-        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Crocodile;
-      const cupWanted =
-        entity.getValue(ShapeRecognizer, 'target') === ShapeIds.Cup ||
-        entity.getValue(ShapeRecognizer, 'altTarget') === ShapeIds.Cup ||
-        entity.getValue(ShapeRecognizer, 'target2') === ShapeIds.Cup ||
-        entity.getValue(ShapeRecognizer, 'altTarget2') === ShapeIds.Cup;
+      // By pose: a pterodactyl is asked for as a bird, a T. rex as a crocodile (world-creatures.ts).
+      const birdWanted = this.wants(entity, ShapeIds.Bird, true);
+      const deerWanted = this.wants(entity, ShapeIds.Deer, false);
+      const crocWanted = this.wants(entity, ShapeIds.Crocodile, false);
+      const cupWanted = this.wants(entity, ShapeIds.Cup, true);
       const assist = entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0;
       const pair = this.detectPair(Boolean(entity.getValue(ShapeRecognizer, 'freeMode')) || wantsHidden, birdWanted, assist, deerWanted, crocWanted, cupWanted);
       const twoHanded = pair !== null;
@@ -101,7 +95,7 @@ export class ShapeMatchSystem extends createSystem({
       }
       if (entity.getValue(ShapeRecognizer, 'matchedHand') !== Hands.None) {
         // A live bird or cup upgrades to two hands when the second hand joins (and back).
-        const live = entity.getValue(ShapeRecognizer, 'matchedShape');
+        const live = poseOf(entity.getValue(ShapeRecognizer, 'matchedShape') ?? '');
         if (live === ShapeIds.Bird || live === ShapeIds.Cup) {
           entity.setValue(ShapeRecognizer, 'twoHanded', twoHanded);
         }
@@ -126,8 +120,28 @@ export class ShapeMatchSystem extends createSystem({
       if (held >= (entity.getValue(ShapeRecognizer, 'holdSeconds') ?? 0.5)) {
         entity.setValue(ShapeRecognizer, 'matchedHand', rightTarget !== ShapeIds.None ? Hands.Right : Hands.Left);
         entity.setValue(ShapeRecognizer, 'matchedShape', this.hold.candidate as never);
-        entity.setValue(ShapeRecognizer, 'twoHanded', twoHanded && this.hold.candidate === pair);
+        entity.setValue(ShapeRecognizer, 'twoHanded', twoHanded && poseOf(this.hold.candidate) === pair);
       }
+    }
+  }
+
+  /** A requested shape (or, with `alts`, its alternative) is made with this pose. */
+  private wants(entity: Entity, pose: string, alts: boolean): boolean {
+    return (
+      poseOf(entity.getValue(ShapeRecognizer, 'target') ?? '') === pose ||
+      poseOf(entity.getValue(ShapeRecognizer, 'target2') ?? '') === pose ||
+      (alts && poseOf(entity.getValue(ShapeRecognizer, 'altTarget') ?? '') === pose) ||
+      (alts && poseOf(entity.getValue(ShapeRecognizer, 'altTarget2') ?? '') === pose)
+    );
+  }
+
+  /** The world poses the story asks for now, for classify (hand-features.ts); nothing allocated. */
+  private askWorldPoses(entity: Entity): void {
+    const asked = worldPoses.asked;
+    asked.clear();
+    for (const field of TARGET_FIELDS) {
+      const pose = poseOf(entity.getValue(ShapeRecognizer, field) ?? '');
+      if (WORLD_POSES.has(pose)) asked.add(pose);
     }
   }
 

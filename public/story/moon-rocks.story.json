@@ -1,0 +1,251 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "Mo and the Sleepy Space Rocks",
+  "beats": [
+    {
+      "id": "rocks-title",
+      "type": "chapter",
+      "chapter": "Mo and the Sleepy Space Rocks",
+      "text": "Mo and the Sleepy Space Rocks"
+    },
+    {
+      "id": "rocks-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "rocks-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying back up to the stars, to visit her friend Pip."
+    },
+    {
+      "id": "rocks-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "rocks-scenery",
+      "type": "scenery",
+      "set": "star-port"
+    },
+    {
+      "id": "rocks-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "rocks-intro1",
+      "type": "narrate",
+      "text": "Whirr... beep. There is Pip's little round spaceship, blinking hello."
+    },
+    {
+      "id": "rocks-intro2",
+      "type": "narrate",
+      "text": "But oh dear. A cloud of sleepy space rocks is drifting across the way home."
+    },
+    {
+      "id": "rocks-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. We can help Pip get past them."
+    },
+    {
+      "id": "rocks-want-asteroid",
+      "type": "request",
+      "shape": "asteroid",
+      "text": "Make an asteroid: curl your hand into a fist, round and lumpy like a space rock."
+    },
+    {
+      "id": "rocks-asteroid-yes",
+      "type": "narrate",
+      "text": "An asteroid! A friendly one, tumbling slowly. Hop on, Mo."
+    },
+    {
+      "id": "rocks-asteroid-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rocks-asteroid-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Tumble, tumble, gently through the rocks. Pip's spaceship follows behind."
+    },
+    {
+      "id": "rocks-asteroid-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "rocks-asteroid-bows",
+      "type": "release",
+      "text": "The asteroid rolls to a stop, and settles down for a nap."
+    },
+    {
+      "id": "rocks-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "rocks-rocket-before",
+      "type": "narrate",
+      "text": "Now the way goes up, up, very high. Too high for a rock."
+    },
+    {
+      "id": "rocks-want-rocket",
+      "type": "request",
+      "shape": "rocket",
+      "text": "Make a rocket: one finger pointing straight up, the others curled in."
+    },
+    {
+      "id": "rocks-rocket-yes",
+      "type": "narrate",
+      "text": "A rocket! Five, four, three, two, one... whoosh! Climb aboard, Mo."
+    },
+    {
+      "id": "rocks-rocket-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rocks-rocket-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Zoom, up past the twinkling stars."
+    },
+    {
+      "id": "rocks-rocket-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "rocks-rocket-bows",
+      "type": "release",
+      "text": "The rocket lands softly on a moon rock, and its engine goes quiet."
+    },
+    {
+      "id": "rocks-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "rocks-alien-before",
+      "type": "narrate",
+      "text": "Look! Someone is waving from a little flying saucer."
+    },
+    {
+      "id": "rocks-want-alien",
+      "type": "request",
+      "shape": "alien",
+      "text": "Make an alien: your pointer finger and your little finger up, like two wiggly antennae."
+    },
+    {
+      "id": "rocks-alien-yes",
+      "type": "narrate",
+      "text": "A friendly alien! It knows a short cut home. Hop in, Mo."
+    },
+    {
+      "id": "rocks-alien-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "rocks-alien-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Whizz, whizz, along the short cut, toward the planet with the ring.",
+      "minV": 0.12
+    },
+    {
+      "id": "rocks-alien-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "rocks-alien-bows",
+      "type": "release",
+      "text": "The alien waves its antennae goodbye. Beep, beep."
+    },
+    {
+      "id": "rocks-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "rocks-dark",
+      "type": "narrate",
+      "text": "There is Pip's planet. But the little home light is off, and it is very dark."
+    },
+    {
+      "id": "rocks-gift",
+      "type": "narrate",
+      "text": "Look! A tiny star is twinkling, just for us."
+    },
+    {
+      "id": "rocks-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch the little star."
+    },
+    {
+      "id": "rocks-caught",
+      "type": "narrate",
+      "text": "You caught it. It is warm and bright."
+    },
+    {
+      "id": "rocks-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and send it up to light Pip's home."
+    },
+    {
+      "id": "rocks-free",
+      "type": "release",
+      "text": "The window on the planet glows. Pip can see the way now."
+    },
+    {
+      "id": "rocks-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "rocks-home",
+      "type": "narrate",
+      "text": "Pip's spaceship flies up, and lands softly by the window. Beep... beep... sleep."
+    },
+    {
+      "id": "rocks-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "rocks-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "rocks-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, Pip. Goodnight, sleepy space rocks. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "rocks-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "rocks-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

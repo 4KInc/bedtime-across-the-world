@@ -21,9 +21,10 @@ import { SHELF, shelfRuntime, shelfSpot } from './shelf.js';
 import { DeskLamp, ShadowJournal } from './shadowplay-components.js';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 import { storyRuntime } from './story-script.js';
+import { WORLD_CREATURES } from './world-creatures.js';
 
 /** Creatures that step into the room (the cup is a light, the open hand is not a creature). */
-const CREATURES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'swan', 'deer', 'crocodile']);
+const CREATURES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'swan', 'deer', 'crocodile', ...Object.values(WORLD_CREATURES).flat()]);
 /**
  * Places on the desk: a gentle arc in front of the Shadow Journal and the lamp's
  * switch, side by side (m from their midpoint, along the desk) and toward the

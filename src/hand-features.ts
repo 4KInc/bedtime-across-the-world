@@ -1,4 +1,5 @@
 import { ShapeIds } from './shadowplay-components.js';
+import { poseOf, WORLD_POSES } from './world-creatures.js';
 
 /**
  * Joint-angle hand-shape features (recognition method 1 in the brief).
@@ -78,10 +79,51 @@ export const TEMPLATES: readonly ShapeTemplate[] = [
     value: [0.38, 0.48, 0.46, 0.46, 0.5, 0.48, 0.39, 1, 0.7],
     weight: [1.2, 1.6, 1.6, 1.6, 1.4, 0.1, 0.7, 0.2, 0],
   },
+  // World poses (world-creatures.ts): considered only while a story asks for one.
   {
+    // Rocket: one finger pointing straight up, the others folded, thumb across them. The folded
+    // thumb weighs most: with the middle finger hidden (tracking guesses it half open), it is
+    // what tells a rocket from two fingers up.
+    id: ShapeIds.Rocket,
+    value: [0.97, 0.1, 0.99, 0.99, 0.99, 1, 0.19, 0.82, 1],
+    weight: [2.5, 2, 0.8, 1, 1, 0, 0.4, 0.6, 1],
+  },
+  {
+    // Alien: index and little finger up as antennae, the middle two folded. The little finger
+    // weighs most: a pointing hand whose little finger tracking cannot see is not an alien.
+    id: ShapeIds.Alien,
+    value: [0.97, 0.08, 0.99, 0.99, 0.12, 1, 0.19, 0.82, 1],
+    weight: [1.6, 1.6, 1.4, 1.4, 2.6, 0, 0.4, 0.6, 0.3],
+  },
+  {
+    // Shark: the fish's flat hand turned up, fingers together pointing up, as a fin.
+    id: ShapeIds.Shark,
+    value: [0.21, 0.14, 0.1, 0.13, 0.21, 0.45, 0, 0.29, 1],
+    weight: [0, 1, 1, 1, 0.8, 0.5, 0.4, 1.4, 1.4],
+  },
+  {
+    // Octopus: an open hand hanging down, fingers spread as its arms.
+    id: ShapeIds.Octopus,
+    value: [0.16, 0.1, 0.1, 0.1, 0.17, 0.84, 0, 1, 0.02],
+    weight: [0.4, 1, 1, 1, 1, 0.8, 0.6, 1, 1.4],
+  },
+  {
+    // Whale: a fist for its round body, the thumb straight up as its spout.
+    id: ShapeIds.Whale,
+    value: [0.12, 0.99, 0.99, 0.99, 0.99, 0.5, 0, 1, 0.5],
+    weight: [1.4, 1, 1, 1, 1.4, 0, 0.6, 1.4, 0],
+  },
+  {
+    // Aeroplane: thumb and little finger out as its wings, the middle three folded.
+    id: ShapeIds.Plane,
+    value: [0.12, 0.99, 0.99, 0.99, 0.14, 1, 0, 1, 0.5],
+    weight: [1, 1.2, 1.2, 1, 1.6, 0, 0.6, 1.2, 0],
+  },
+  {
+    // The thumb folded across too (a little weight), so a thumb held up is the whale's, not a fist.
     id: ShapeIds.Fist,
     value: [0.96, 0.98, 0.98, 0.99, 0.99, 0.5, 0.2, 0.8, 0.5],
-    weight: [0, 1, 1, 1, 1, 0, 0, 0, 0],
+    weight: [0.6, 1, 1, 1, 1, 0, 0, 0, 0],
   },
   {
     // Not a shape: a resting hand (fingers loosely bent, thumb apart). When it
@@ -165,6 +207,7 @@ export interface MatchResult {
 
 /** Score (0..1) of the features against one shape's template (0 if it has none). */
 export function templateScore(features: Float32Array, id: string): number {
+  id = poseOf(id);
   for (const t of TEMPLATES) {
     if (t.id !== id) continue;
     let err = 0;
@@ -178,11 +221,15 @@ export function templateScore(features: Float32Array, id: string): number {
   return 0;
 }
 
-/** Best-scoring template (score in 0..1). */
+/** The world poses a story asks for now (ShapeMatchSystem keeps it): only these are considered by classify. */
+export const worldPoses = { asked: new Set<string>() };
+
+/** Best-scoring template (score in 0..1); world poses only while asked for. */
 export function classify(features: Float32Array, out: MatchResult): MatchResult {
   out.id = ShapeIds.None;
   out.score = 0;
   for (const t of TEMPLATES) {
+    if (WORLD_POSES.has(t.id) && !worldPoses.asked.has(t.id)) continue;
     let err = 0;
     let wsum = 0;
     for (let i = 0; i < FEATURE_COUNT; i++) {
@@ -203,6 +250,7 @@ export function classify(features: Float32Array, out: MatchResult): MatchResult 
  * (the settings' Strict..Very forgiving, plus the assist ladder).
  */
 export function acceptScore(id: string, tolerance: number): number {
+  id = poseOf(id);
   // Cupped hands sit close to a resting hand, so they need a closer match
   // (0.88 at Normal); the tolerance setting and the assist ladder still loosen it.
   return id === ShapeIds.Cup ? 1 - tolerance * 0.4 : 1 - tolerance;
@@ -232,15 +280,23 @@ const NEIGHBOURS: Readonly<Record<string, readonly string[]>> = {
   [ShapeIds.Snail]: [ShapeIds.Rabbit, ShapeIds.Ears],
   [ShapeIds.Rabbit]: [ShapeIds.Snail, ShapeIds.Ears],
   [ShapeIds.Ears]: [ShapeIds.Rabbit, ShapeIds.Snail],
+  // World poses, from the shapes they sit beside.
+  // (Only one is asked for at a time, so never from each other.)
+  [ShapeIds.Rocket]: [ShapeIds.Rabbit, ShapeIds.Ears, ShapeIds.Snail],
+  [ShapeIds.Alien]: [ShapeIds.Rabbit, ShapeIds.Ears, ShapeIds.Snail],
+  [ShapeIds.Shark]: [ShapeIds.Fish, ShapeIds.Swan, ShapeIds.Dog],
+  [ShapeIds.Octopus]: [ShapeIds.Open, ShapeIds.Swan],
 };
 
 /** Flat-hand shapes: a relaxed one can lose to the resting-hand template, but its fingers are straighter than a resting hand's (~0.3). */
-const FLAT = new Set<string>([ShapeIds.Fish, ShapeIds.Swan, ShapeIds.Dog]);
+const FLAT = new Set<string>([ShapeIds.Fish, ShapeIds.Swan, ShapeIds.Dog, ShapeIds.Shark, ShapeIds.Octopus]);
 const FLATTER_THAN_REST = 0.26;
 /** The story's assist level from which any best match may give way to the requested shape. */
 const LATE_ASSIST = 0.2;
 
 export function rescuesRequested(features: Float32Array, best: MatchResult, target: string, tolerance: number, assist: number): boolean {
+  // A creature that borrows a pose is judged by that pose (world-creatures.ts).
+  target = poseOf(target);
   if (target === ShapeIds.None || target === best.id) return false;
   // The story's assist lets a little more bend through (after 60 s any still hand counts anyway).
   const fromRest = best.id === ShapeIds.None && FLAT.has(target) && (features[1] + features[2] + features[3] + features[4]) / 4 <= FLATTER_THAN_REST + assist * 0.3;

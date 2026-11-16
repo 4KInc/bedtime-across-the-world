@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Pterodactyl's Sky Ride",
+  "beats": [
+    {
+      "id": "sky-title",
+      "type": "chapter",
+      "chapter": "The Pterodactyl's Sky Ride",
+      "text": "The Pterodactyl's Sky Ride"
+    },
+    {
+      "id": "sky-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "sky-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying to the land of the dinosaurs, where the volcano sleeps."
+    },
+    {
+      "id": "sky-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "sky-scenery",
+      "type": "scenery",
+      "set": "dino-valley"
+    },
+    {
+      "id": "sky-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "sky-intro1",
+      "type": "narrate",
+      "text": "Stomp, stomp. The little long-neck dinosaur has climbed up a hill, to look at the stars."
+    },
+    {
+      "id": "sky-intro2",
+      "type": "narrate",
+      "text": "But now it is dark, and the little dinosaur cannot see the way back down to its cave."
+    },
+    {
+      "id": "sky-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's ask some dinosaur friends for help."
+    },
+    {
+      "id": "sky-want-trex",
+      "type": "request",
+      "shape": "trex",
+      "text": "Make a T. rex: two flat hands, one on top of the other, like a big mouth."
+    },
+    {
+      "id": "sky-trex-yes",
+      "type": "narrate",
+      "text": "A T. rex! Big and gentle, with a tiny wave. Climb on, Mo."
+    },
+    {
+      "id": "sky-trex-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "sky-trex-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Stomp, stomp, down the hill."
+    },
+    {
+      "id": "sky-trex-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "sky-trex-bows",
+      "type": "release",
+      "text": "The T. rex sits down by a fern, and yawns a great big yawn."
+    },
+    {
+      "id": "sky-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "sky-fish-before",
+      "type": "narrate",
+      "text": "Now there is a river, with stepping stones. Who can swim across?"
+    },
+    {
+      "id": "sky-want-fish",
+      "type": "request",
+      "shape": "fish",
+      "text": "Make a fish: a flat hand, fingers together, thumb tucked along the side.",
+      "alt": "dog"
+    },
+    {
+      "id": "sky-fish-yes",
+      "type": "narrate",
+      "text": "A fish! Fish swam in these rivers, long, long ago. Hop on, Mo."
+    },
+    {
+      "id": "sky-fish-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "sky-fish-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Swim, swim, across the river."
+    },
+    {
+      "id": "sky-fish-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "sky-fish-bows",
+      "type": "release",
+      "text": "The fish swims off, and blows a sleepy bubble."
+    },
+    {
+      "id": "sky-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "sky-pterodactyl-before",
+      "type": "narrate",
+      "text": "The cave is hidden somewhere among the tall ferns. Who can look from the sky?"
+    },
+    {
+      "id": "sky-want-pterodactyl",
+      "type": "request",
+      "shape": "pterodactyl",
+      "text": "Make a pterodactyl: two hands, side by side, like big wings."
+    },
+    {
+      "id": "sky-pterodactyl-yes",
+      "type": "narrate",
+      "text": "A pterodactyl! Up, up into the night sky. Climb on, Mo."
+    },
+    {
+      "id": "sky-pterodactyl-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "sky-pterodactyl-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Glide over the ferns. Look, there is the cave!",
+      "minV": 0.12
+    },
+    {
+      "id": "sky-pterodactyl-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "sky-pterodactyl-bows",
+      "type": "release",
+      "text": "The pterodactyl lands on the palm tree, and tucks in its wings."
+    },
+    {
+      "id": "sky-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "sky-dark",
+      "type": "narrate",
+      "text": "The cave is just there. But inside, it is very dark."
+    },
+    {
+      "id": "sky-gift",
+      "type": "narrate",
+      "text": "Look! A little firefly, glowing softly, just for us."
+    },
+    {
+      "id": "sky-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and carry it to the cave."
+    },
+    {
+      "id": "sky-caught",
+      "type": "narrate",
+      "text": "You have it. Its light is warm and gentle."
+    },
+    {
+      "id": "sky-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let the firefly light the cave."
+    },
+    {
+      "id": "sky-free",
+      "type": "release",
+      "text": "The cave glows warm, and there is the little dinosaur's cosy nest."
+    },
+    {
+      "id": "sky-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "sky-home",
+      "type": "narrate",
+      "text": "The little dinosaur stomps inside, curls up, and closes its eyes. Safe and snug."
+    },
+    {
+      "id": "sky-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "sky-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "sky-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little dinosaur. Goodnight, pterodactyl, up in the palm tree. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "sky-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "sky-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

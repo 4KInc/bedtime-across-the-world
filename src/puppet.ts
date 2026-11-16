@@ -13,6 +13,7 @@ import {
 } from './shadowplay-components.js';
 import { accessRuntime, handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
 import { NATURAL_HAND } from './lamp-behind.js';
+import { CREATURE_NAMES, poseOf } from './world-creatures.js';
 
 const HAND_LENGTH = 0.18;
 /**
@@ -45,7 +46,7 @@ const RELEASE_DARK_SECONDS = 1.0;
 const SELF_SWING = 0.36;
 const SELF_RATE = 0.4;
 const SELF_SIZE = 0.5;
-const FLIERS: ReadonlySet<string> = new Set([ShapeIds.Bird, ShapeIds.Swan]);
+const FLIERS: ReadonlySet<string> = new Set([ShapeIds.Bird, ShapeIds.Swan, ShapeIds.Rocket, ShapeIds.Alien, ShapeIds.Plane, ShapeIds.Pterodactyl]);
 const FADE_SECONDS = 0.8;
 const INK = 0x0a0810;
 /** How long a woken creature takes to bloom into its colour (seconds). */
@@ -55,7 +56,7 @@ const INK_COLOUR = new Color(INK);
 const LABEL_W = 512;
 const LABEL_H = 128;
 /** What a creature is called on its label. */
-const CREATURE_NAME: Readonly<Record<string, string>> = { ears: 'rabbit', open: 'creature' };
+const CREATURE_NAME: Readonly<Record<string, string>> = { ears: 'rabbit', open: 'creature', ...CREATURE_NAMES };
 
 interface PuppetRuntime {
   rig: PuppetRig;
@@ -284,7 +285,8 @@ export class PuppetSystem extends createSystem({
     this.tint(rt);
 
     const shapeId = entity.getValue(ShadowPuppet, 'shape');
-    if (shapeId === ShapeIds.Bird || shapeId === ShapeIds.Cup) {
+    const pose = poseOf(shapeId ?? '');
+    if (pose === ShapeIds.Bird || pose === ShapeIds.Cup) {
       const two = Boolean(rec?.getValue(ShapeRecognizer, 'twoHanded'));
       if (two !== rt.twoHanded) {
         rt.twoHanded = two;

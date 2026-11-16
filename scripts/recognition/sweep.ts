@@ -18,11 +18,12 @@
  * sessions, the recognition lab) and use this to catch regressions.
  */
 import { Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures, rescuesRequested } from '../../src/hand-features';
+import { acceptScore, classify, computeFeatures, rescuesRequested, worldPoses } from '../../src/hand-features';
 import { FIXTURES, HandPose, localJoints, toWorld } from '../../src/hand-poses';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, requested, stepHold } from '../../src/recognition-rules';
 import { ShapeIds } from '../../src/shadowplay-components';
 import { Landmark, landmarksToJoints } from '../../src/webcam-landmarks';
+import { WORLD_POSES } from '../../src/world-creatures';
 
 const N = 40;
 const TOLERANCE = 0.3;
@@ -31,6 +32,12 @@ const MAX_NEGATIVE_RATE = 0.1;
 const HZ = 72;
 const HOLD = 0.5;
 const TRIGGER_WITHIN = 1.5;
+
+/** As in the app: a world pose (a rocket, a whale...) is read only while a story asks for it. */
+function ask(label: string): void {
+  worldPoses.asked.clear();
+  if (WORLD_POSES.has(label)) worldPoses.asked.add(label);
+}
 
 let failed = false;
 const fail = (msg: string) => {
@@ -168,12 +175,15 @@ const confusions: string[] = [];
 console.log(`1. One-hand accuracy over ${N} synthetic people per shape (tolerance ${TOLERANCE}):`);
 console.log(`   ${'shape'.padEnd(10)}${CONDITIONS.map((c) => c.padStart(20)).join('')}`);
 for (const fx of oneHand) {
+  ask(fx.label);
   const cells = CONDITIONS.map((cond) => {
     let ok = 0;
     const seen: Record<string, number> = {};
     for (let s = 0; s < N; s++) {
       const base = person(fx.right!, 'right', s, FIXTURES.indexOf(fx));
-      const got = settle(base, fx.right!, 'right', cond, s, FIXTURES.indexOf(fx)).shape;
+      const frame = settle(base, fx.right!, 'right', cond, s, FIXTURES.indexOf(fx));
+      // A world pose is read only while a story asks for it, so it is judged as the story does.
+      const got = WORLD_POSES.has(fx.label) && acceptedFor(frame, fx.label) === fx.label ? fx.label : frame.shape;
       if (got === fx.label) ok++;
       else seen[got] = (seen[got] ?? 0) + 1;
     }
@@ -184,6 +194,7 @@ for (const fx of oneHand) {
   console.log(`   ${fx.label.padEnd(10)}${cells.join('')}`);
 }
 for (const c of confusions) console.log(`   ${c}`);
+ask('');
 
 // ---------------------------------------------------------------- 2. negatives
 
@@ -292,7 +303,8 @@ function pairFrames(
 
 console.log(`\n4. Over time (3 s at ${HZ} Hz, jitter + occlusion, 100 ms dropouts, hold ${HOLD} s):`);
 const cond: Condition = 'jitter + occlusion';
-for (const fx of oneHand.filter((f) => STORY_SHAPES.includes(f.label))) {
+for (const fx of oneHand.filter((f) => STORY_SHAPES.includes(f.label) || WORLD_POSES.has(f.label))) {
+  ask(fx.label);
   const salt = FIXTURES.indexOf(fx);
   let ok = 0;
   let total = 0;
@@ -306,6 +318,7 @@ for (const fx of oneHand.filter((f) => STORY_SHAPES.includes(f.label))) {
   const line = `   ${fx.label.padEnd(10)} triggers ${ok}/${N}, mean ${(total / Math.max(1, ok)).toFixed(2)} s`;
   console.log(ok / N < TARGET_ACCURACY ? fail(line) : line);
 }
+ask('');
 for (const fx of pairFixtures) {
   const salt = 50 + pairFixtures.indexOf(fx);
   let ok = 0;
@@ -535,6 +548,13 @@ const gate: [string, boolean][] = [
   ['one-hand mode: an open hand picks the bird in a dog-or-bird choice', requested('open', 'dog', 'none', 'bird', 'none', false, true) === 'bird'],
   ['one-hand mode: an open hand is nothing when the story asks for another shape', requested('open', 'rabbit', 'ears', 'none', 'none', false, true) === 'none'],
   ['without one-hand mode an open hand is not a bird', requested('open', 'bird', 'none', 'none', 'none', false, false) === 'none'],
+  // World creatures that borrow a pose (world-creatures.ts).
+  ['a T. rex is made with the crocodile\'s jaws', requested('crocodile', 'trex', 'none', 'none', 'none', false, false) === 'trex'],
+  ['a car with the snail\'s two fingers, a digger with the swan\'s wrist', requested('snail', 'car', 'none', 'none', 'none', false, false) === 'car' && requested('swan', 'digger', 'none', 'none', 'none', false, false) === 'digger'],
+  ['an asteroid with a fist, a pterodactyl with the bird', requested('fist', 'asteroid', 'none', 'none', 'none', false, false) === 'asteroid' && requested('bird', 'pterodactyl', 'none', 'none', 'none', false, false) === 'pterodactyl'],
+  ['one-hand mode: an open hand is the pterodactyl a story asks for', requested('open', 'pterodactyl', 'none', 'none', 'none', false, true) === 'pterodactyl'],
+  ['a T. rex is a hidden pair (asked for, the crocodile rule reads it)', isHiddenPair('trex')],
+  ['a crocodile is not a T. rex, nor a snail a car, unless asked', requested('crocodile', 'car', 'none', 'none', 'none', false, false) === 'none' && requested('snail', 'none', 'none', 'none', 'none', true, false) === 'snail'],
 ];
 console.log('\n5. Request gate:');
 for (const [name, ok] of gate) console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : ((failed = true), '')}`);
@@ -546,6 +566,7 @@ const WX_FOR_MP = [0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21
 let mapped = 0;
 let mappedOk = 0;
 for (const fx of oneHand) {
+  ask(fx.label);
   const local = localJoints(fx.right!, 1, 37);
   const flat = new Float32Array(75);
   local.forEach((p, i) => flat.set(p, i * 3));
@@ -554,8 +575,45 @@ for (const fx of oneHand) {
   mapped++;
   if (shapeOf(joints).shape === shapeOf(flat).shape) mappedOk++;
 }
+ask('');
 console.log(`\n6. Webcam mapping preserves the classification for ${mappedOk}/${mapped} shapes.`);
 if (mappedOk !== mapped) failed = true;
+
+// ---------------------------------------------------------------- 8. world poses
+
+// A world pose (world-creatures.ts) asked for: resting hands, and every other one-hand shape
+// held for 3 s, must not wake it (at Normal, before the story's assist). Not asked, it is never read.
+console.log(`\n8. World poses asked for: other hands that wake it (3 s, jitter + occlusion, of ${N} people each):`);
+for (const pose of WORLD_POSES) {
+  ask(pose);
+  const steals: string[] = [];
+  let worst = 0;
+  const own = JSON.stringify(FIXTURES.find((f) => f.label === pose)!.right);
+  // Every other shape a child knows, and the resting hands (not the pointing hand when the rocket is the point).
+  // A fist is a rocket when tracking loses its index finger and holds it half open (Quest's guess for a
+  // finger it cannot see): that is a pointing finger, and only ever while a rocket is asked for.
+  const others = [...oneHand.filter((f) => !WORLD_POSES.has(f.label) && !(pose === 'rocket' && f.label === 'fist')), ...negatives.filter((f) => JSON.stringify(f.right) !== own)];
+  for (const fx of others) {
+    const salt = FIXTURES.indexOf(fx);
+    let n = 0;
+    for (let s = 0; s < N; s++) if (triggerTime(oneHandFrames(person(fx.right!, 'right', s, salt), fx.right!, cond, s, salt), pose) !== null) n++;
+    if (n > 0) steals.push(`${fx.label} ${n}`);
+    worst = Math.max(worst, n / N);
+  }
+  const line = `   ${pose.padEnd(10)} ${steals.length ? steals.join(', ') : 'none'}`;
+  console.log(worst > MAX_NEGATIVE_RATE ? fail(line) : line);
+}
+ask('');
+{
+  // Not asked for: no hand is ever read as a world pose.
+  let read = 0;
+  for (const fx of oneHand) {
+    const salt = FIXTURES.indexOf(fx);
+    for (let s = 0; s < 10; s++) if (WORLD_POSES.has(settle(person(fx.right!, 'right', s, salt), fx.right!, 'right', 'clean', s, salt).best)) read++;
+  }
+  const line = `   not asked for, hands read as a world pose: ${read}`;
+  console.log(read > 0 ? fail(line) : line);
+}
 
 console.log(failed ? '\nRECOGNITION TARGETS NOT MET' : '\nAll recognition targets met.');
 process.exit(failed ? 1 : 0);

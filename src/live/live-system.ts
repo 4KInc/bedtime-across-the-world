@@ -123,7 +123,7 @@ export class LiveSystem extends createSystem({
   private sentScript = '';
 
   init(): void {
-    this.targets = applyTargets(this.queries);
+    this.targets = applyTargets(this.queries, this.world);
     new Uint8Array(this.handsPacket)[0] = KIND_HANDS;
     this.cleanupFuncs.push(
       () => this.leave(null, ''),

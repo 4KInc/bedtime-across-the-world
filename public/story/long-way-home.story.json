@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Little Car's Long Way Home",
+  "beats": [
+    {
+      "id": "lane-title",
+      "type": "chapter",
+      "chapter": "The Little Car's Long Way Home",
+      "text": "The Little Car's Long Way Home"
+    },
+    {
+      "id": "lane-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "lane-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying over the fields, where a little road winds through the hills."
+    },
+    {
+      "id": "lane-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "lane-scenery",
+      "type": "scenery",
+      "set": "field"
+    },
+    {
+      "id": "lane-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "lane-intro1",
+      "type": "narrate",
+      "text": "Beep... beep. There is a little car, driving all by itself."
+    },
+    {
+      "id": "lane-intro2",
+      "type": "narrate",
+      "text": "It has been on a long trip. Now it is late, and it has lost the way home."
+    },
+    {
+      "id": "lane-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's help the little car get home to bed."
+    },
+    {
+      "id": "lane-want-car",
+      "type": "request",
+      "shape": "car",
+      "text": "Make a car: a fist, with two fingers pointing forward like headlights."
+    },
+    {
+      "id": "lane-car-yes",
+      "type": "narrate",
+      "text": "There it is! Beep, beep. Hop in, Mo."
+    },
+    {
+      "id": "lane-car-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lane-car-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Brum, brum, along the winding road."
+    },
+    {
+      "id": "lane-car-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "lane-car-bows",
+      "type": "release",
+      "text": "The car stops by the river, to rest its wheels."
+    },
+    {
+      "id": "lane-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "lane-plane-before",
+      "type": "narrate",
+      "text": "Look. The bridge over the river is closed. How can the car get across?"
+    },
+    {
+      "id": "lane-want-plane",
+      "type": "request",
+      "shape": "plane",
+      "text": "Make an aeroplane: your thumb and your little finger out wide, like wings."
+    },
+    {
+      "id": "lane-plane-yes",
+      "type": "narrate",
+      "text": "An aeroplane! It can carry everyone over the river. Climb aboard, Mo."
+    },
+    {
+      "id": "lane-plane-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lane-plane-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Up, over the river, and down on the other side.",
+      "minV": 0.12
+    },
+    {
+      "id": "lane-plane-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.16
+    },
+    {
+      "id": "lane-plane-bows",
+      "type": "release",
+      "text": "The aeroplane lands in the field, and its propeller slows down."
+    },
+    {
+      "id": "lane-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "lane-digger-before",
+      "type": "narrate",
+      "text": "Now a big puddle of mud is in the way. Squelch!"
+    },
+    {
+      "id": "lane-want-digger",
+      "type": "request",
+      "shape": "digger",
+      "text": "Make a digger: a flat hand, bent down at the wrist, like a scoop."
+    },
+    {
+      "id": "lane-digger-yes",
+      "type": "narrate",
+      "text": "A digger! Scoop up the mud. Climb in, Mo."
+    },
+    {
+      "id": "lane-digger-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "lane-digger-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Scoop, scoop, and now the road is nice and dry.",
+      "minV": 0.12
+    },
+    {
+      "id": "lane-digger-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "lane-digger-bows",
+      "type": "release",
+      "text": "The digger yawns, and folds its arm down for the night."
+    },
+    {
+      "id": "lane-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "lane-dark",
+      "type": "narrate",
+      "text": "Now the road goes into the dark woods, and the car's lights are very small."
+    },
+    {
+      "id": "lane-gift",
+      "type": "narrate",
+      "text": "Look! A little star is twinkling, just for us."
+    },
+    {
+      "id": "lane-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and catch the little star."
+    },
+    {
+      "id": "lane-caught",
+      "type": "narrate",
+      "text": "You caught it. Hold it close."
+    },
+    {
+      "id": "lane-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and let it light the road."
+    },
+    {
+      "id": "lane-free",
+      "type": "release",
+      "text": "The road shines, all the way to a little house with a garage."
+    },
+    {
+      "id": "lane-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "lane-home",
+      "type": "narrate",
+      "text": "The little car drives inside, and its engine goes purr... purr... quiet."
+    },
+    {
+      "id": "lane-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "lane-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "lane-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little car. Goodnight, sleepy fields. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "lane-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "lane-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}

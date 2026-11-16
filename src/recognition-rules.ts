@@ -1,4 +1,5 @@
 import { ShapeIds } from './shadowplay-components.js';
+import { poseOf } from './world-creatures.js';
 
 /**
  * Recognition decisions that do not depend on the ECS: which shape a request
@@ -148,7 +149,8 @@ export const FREE_ACCEPT: Readonly<Record<string, string>> = {
 };
 
 export function isHiddenPair(shape: string | null | undefined): boolean {
-  return shape === ShapeIds.Deer || shape === ShapeIds.Crocodile;
+  const pose = poseOf(shape ?? '');
+  return pose === ShapeIds.Deer || pose === ShapeIds.Crocodile;
 }
 
 /**
@@ -159,12 +161,13 @@ export function isHiddenPair(shape: string | null | undefined): boolean {
  */
 export function requested(shape: string, t1: string, a1: string, t2: string, a2: string, free: boolean, oneHand: boolean): string {
   if (shape === ShapeIds.None) return ShapeIds.None;
-  if (shape === t1 || (a1 !== ShapeIds.None && shape === a1)) return t1;
-  if (shape === t2 || (a2 !== ShapeIds.None && shape === a2)) return t2;
-  // One-hand mode: an open hand is the bird wherever a bird is asked for (and in Free Stage).
+  // A world creature is asked for by name and made with its pose (world-creatures.ts).
+  if (shape === poseOf(t1) || (a1 !== ShapeIds.None && shape === poseOf(a1))) return t1;
+  if (shape === poseOf(t2) || (a2 !== ShapeIds.None && shape === poseOf(a2))) return t2;
+  // One-hand mode: an open hand is the bird (or the pterodactyl) wherever one is asked for (and in Free Stage).
   if (oneHand && shape === ShapeIds.Open) {
-    if (t1 === ShapeIds.Bird) return t1;
-    if (t2 === ShapeIds.Bird) return t2;
+    if (poseOf(t1) === ShapeIds.Bird) return t1;
+    if (poseOf(t2) === ShapeIds.Bird) return t2;
     if (free) return ShapeIds.Bird;
   }
   if (!free) return ShapeIds.None;

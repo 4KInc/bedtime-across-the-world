@@ -1,0 +1,252 @@
+{
+  "version": "shadowplay.story.v1",
+  "title": "The Little Whale's Song",
+  "beats": [
+    {
+      "id": "song-title",
+      "type": "chapter",
+      "chapter": "The Little Whale's Song",
+      "text": "The Little Whale's Song"
+    },
+    {
+      "id": "song-lamp",
+      "type": "lamp",
+      "level": 1
+    },
+    {
+      "id": "song-hello",
+      "type": "narrate",
+      "text": "Tonight, {child|little one}, Mo is flying over the sea, to hear the whales sing goodnight."
+    },
+    {
+      "id": "song-mo",
+      "type": "moth",
+      "mode": "arriving"
+    },
+    {
+      "id": "song-scenery",
+      "type": "scenery",
+      "set": "sea"
+    },
+    {
+      "id": "song-mo-rests",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.3,
+      "restV": 0.12
+    },
+    {
+      "id": "song-intro1",
+      "type": "narrate",
+      "text": "Listen. Ooo... ooo... A song is coming from far away, under the waves."
+    },
+    {
+      "id": "song-intro2",
+      "type": "narrate",
+      "text": "But the little whale who sings it is lost in the dark, and cannot find its family."
+    },
+    {
+      "id": "song-intro3",
+      "type": "narrate",
+      "text": "Mo has an idea. Let's help the little whale find its family."
+    },
+    {
+      "id": "song-want-fish",
+      "type": "request",
+      "shape": "fish",
+      "text": "Make a fish: a flat hand, fingers together, thumb tucked along the side.",
+      "alt": "dog"
+    },
+    {
+      "id": "song-fish-yes",
+      "type": "narrate",
+      "text": "A fish! Fish know every wave in the sea. Hop on, Mo."
+    },
+    {
+      "id": "song-fish-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "song-fish-carry",
+      "type": "carry",
+      "toU": 0.04,
+      "text": "Swim, swim, toward the song."
+    },
+    {
+      "id": "song-fish-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": -0.04,
+      "restV": 0.08
+    },
+    {
+      "id": "song-fish-bows",
+      "type": "release",
+      "text": "The fish blows a tiny bubble goodbye."
+    },
+    {
+      "id": "song-dim1",
+      "type": "lamp",
+      "level": 0.85
+    },
+    {
+      "id": "song-octopus-before",
+      "type": "narrate",
+      "text": "Oh! The sea is very wide here. Who can look in lots of places at once?"
+    },
+    {
+      "id": "song-want-octopus",
+      "type": "request",
+      "shape": "octopus",
+      "text": "Make an octopus: your hand hanging down, with your fingers spread out wide."
+    },
+    {
+      "id": "song-octopus-yes",
+      "type": "narrate",
+      "text": "An octopus! It can point eight ways at once. Hold on, Mo."
+    },
+    {
+      "id": "song-octopus-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "song-octopus-carry",
+      "type": "carry",
+      "toU": 0.15,
+      "text": "Wiggle, wiggle, it looks behind every rock."
+    },
+    {
+      "id": "song-octopus-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.12,
+      "restV": 0.08
+    },
+    {
+      "id": "song-octopus-bows",
+      "type": "release",
+      "text": "The octopus points, this way. Then it curls up in its rock, to sleep."
+    },
+    {
+      "id": "song-dim2",
+      "type": "lamp",
+      "level": 0.7
+    },
+    {
+      "id": "song-whale-before",
+      "type": "narrate",
+      "text": "There! A little spout of water, splashing up into the night."
+    },
+    {
+      "id": "song-want-whale",
+      "type": "request",
+      "shape": "whale",
+      "text": "Make a whale: a fist for its body, and your thumb straight up for its spout."
+    },
+    {
+      "id": "song-whale-yes",
+      "type": "narrate",
+      "text": "It is the little whale! Whoosh! Climb aboard, Mo."
+    },
+    {
+      "id": "song-whale-ride",
+      "type": "moth",
+      "mode": "riding"
+    },
+    {
+      "id": "song-whale-carry",
+      "type": "carry",
+      "toU": 0.3,
+      "text": "Together, they swim toward the lighthouse, where the whale family waits.",
+      "minV": 0.12
+    },
+    {
+      "id": "song-whale-land",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.26,
+      "restV": 0.16
+    },
+    {
+      "id": "song-whale-bows",
+      "type": "release",
+      "text": "The little whale finds its mother, and they sing together. Ooo, ooo."
+    },
+    {
+      "id": "song-dim3",
+      "type": "lamp",
+      "level": 0.55
+    },
+    {
+      "id": "song-dark",
+      "type": "narrate",
+      "text": "But it is so dark. The family needs a light to see their little one."
+    },
+    {
+      "id": "song-gift",
+      "type": "narrate",
+      "text": "Look! A tiny star is floating on the water, just for us."
+    },
+    {
+      "id": "song-want-cup",
+      "type": "request",
+      "shape": "cup",
+      "text": "Cup your hands together, softly, and lift it out of the sea."
+    },
+    {
+      "id": "song-caught",
+      "type": "narrate",
+      "text": "You have it. It is cool and sparkly, like a drop of moonlight."
+    },
+    {
+      "id": "song-letgo",
+      "type": "letgo",
+      "text": "Now open your hands, and send it up to the lighthouse."
+    },
+    {
+      "id": "song-free",
+      "type": "release",
+      "text": "The lighthouse shines, and the whole sea glows silver."
+    },
+    {
+      "id": "song-finale",
+      "type": "finale",
+      "seconds": 4
+    },
+    {
+      "id": "song-home",
+      "type": "narrate",
+      "text": "The whale family sings their goodnight song together. Ooo... ooo... ooo."
+    },
+    {
+      "id": "song-dim-last",
+      "type": "lamp",
+      "level": 0.35
+    },
+    {
+      "id": "song-mo-sleep",
+      "type": "moth",
+      "mode": "resting",
+      "restU": 0.1,
+      "restV": 0.15
+    },
+    {
+      "id": "song-goodnight",
+      "type": "narrate",
+      "text": "Goodnight, little whale. Goodnight, sea. And goodnight, {child|little one}. Mo will see you tomorrow."
+    },
+    {
+      "id": "song-the-end",
+      "type": "chapter",
+      "chapter": "The End",
+      "text": "The End"
+    },
+    {
+      "id": "song-end",
+      "type": "end",
+      "text": "The End"
+    }
+  ]
+}
