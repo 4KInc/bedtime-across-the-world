@@ -44,18 +44,18 @@ Run the core checks (A and B) in at least three rooms; the rest once per headset
 | A1 | Cold start: link opened to the lamp glow, and to the stage (seconds; the glow should show at once) | [ ] | |
 | A2 | Enter XR to stage placed (panel: `placed +Xs`) | [ ] | |
 | A3 | Permission prompts: which appeared, all understandable | [ ] | |
-| A4 | Stage on the wall straight ahead (panel: `wall`), or floating screen (`screen`) in R3 | [ ] | |
-| A4b | Write down the plane labels from the summary's `placed:` line (for example `v wall 4, v door frame 1, h table 1`). Walls with an unexpected label still hold the stage (ranked after labelled walls), so note which plane it chose and whether it was the wall you faced | [ ] | labels |
+| A4 | Stage on the wall straight ahead (panel: `wall`), or floating screen (`screen`) in R3 | [x] | wall in cdj3st58rm, 32kbw476u2, xhz96jhkv9, xnhuwf56d6; paper screen in afthmamdpn, m3zdndu6vq (see DEVICE-RESULTS.md) |
+| A4b | Write down the plane labels from the summary's `placed:` line (for example `v wall 4, v door frame 1, h table 1`). Walls with an unexpected label still hold the stage (ranked after labelled walls), so note which plane it chose and whether it was the wall you faced | [x] | cdj3st58rm: v wall 10, v door 2, h shelf 8, h table 2, h couch 1, h floor 1, h ceiling 1. 32kbw476u2: v wall 11, v door 5, h shelf 6, h table 2, h couch 1, h floor 1, h ceiling 1. Which wall was faced: not recorded |
 | A4c | Facing a window or a door: the stage slides beside it (if it is off to one side), or a paper screen stands just in front of it (if it is straight ahead). Never shadows on the glass | [ ] | |
 | A5 | Stage size feels right; not inside furniture | [ ] | |
-| A5c | The summary's `placed:` line shows `view N°` (the headset's field of view across one eye); Quest 3 and 3S should keep the full 33-degree stage | [ ] | degrees |
-| A5d | Stage anchor: the summary's `stage anchor:` line reads `pending > saved` on a wall (or `unsupported`). Take the headset off for a minute and put it back on: the stage is still on the same spot of the wall (corrections, if any, are listed) | [ ] | |
+| A5c | The summary's `placed:` line shows `view N°` (the headset's field of view across one eye); Quest 3 and 3S should keep the full 33-degree stage | [x] | 94° on Quest 3 and 3S (all sessions) |
+| A5d | Stage anchor: the summary's `stage anchor:` line reads `pending > saved` on a wall (or `unsupported`). Take the headset off for a minute and put it back on: the stage is still on the same spot of the wall (corrections, if any, are listed) | [ ] | pending > live > saved on a wall (32kbw476u2, xhz96jhkv9, xnhuwf56d6); the headset-off check not yet done |
 | A5e | Exit and launch again from the same seat: the stage is back on the same spot of the wall within a second, before any scan (`(back on last time's wall)`). Then *Move stage here* to another wall, relaunch: it comes back on the new one | [ ] | |
 | A5b | The lamp and the book stand on your real desk or table, not floating above it or sunk into it (summary: `desk surface` when Room Setup found it, `desk estimate` otherwise) | [ ] | |
-| A6 | Frame rate holds at 72 (panel line 1 stays cream, not red) | [ ] | fps / p95 |
-| A7 | Quality level after 2 minutes (`q0`..`q3`; anything above `q0` means the headset could not hold 72) | [ ] | |
+| A6 | Frame rate holds at 72 (panel line 1 stays cream, not red) | [x] | median 71.5-72 fps, frame p95 14.8-15.5 ms, 0 of 457 windows under 60 fps, 72 Hz granted (all 7 sessions) |
+| A7 | Quality level after 2 minutes (`q0`..`q3`; anything above `q0` means the headset could not hold 72) | [x] | q0 throughout, all 7 sessions |
 | A7b | If the level stepped down: no visible pop or flicker when it changed, and shadows still look whole (edges not clipped) | [ ] | |
-| A9 | First launch only (it opens *Counting Stars*): time from Enter XR to the first creature (the two-hand bird) waking (summary: `first creature: N s`, target under 60 s). The ghost hand appears about 2 s after the bird is asked for | [ ] | seconds (emulator, first launch = Counting Stars: bird asked at 23 s; first creature 23.5 s quick child, 48.5 s slow bot; was 50.7 / 76 s with The Moth) |
+| A9 | First launch only (it opens *Counting Stars*): time from Enter XR to the first creature (the two-hand bird) waking (summary: `first creature: N s`, target under 60 s). The ghost hand appears about 2 s after the bird is asked for | [ ] | seconds (emulator, first launch = Counting Stars: bird asked at 23 s; first creature 23.5 s quick child, 48.5 s slow bot; was 50.7 / 76 s with The Moth). not a first launch since the real-hands fixes; first creature 26-56 s in other sessions (see DEVICE-RESULTS.md) |
 | A10 | The first creature waking is unmistakable: chime, the lamp light swells, the bird flies Mo up ("Fly up, up, up.") | [ ] | |
 | A8 | Controllers in hand: story pauses and asks to put them down; resumes with hands | [ ] | |
 
@@ -67,16 +67,16 @@ and whether anything woke that you did not ask for (panel: `match`).
 | # | Shape | Story moment | Pass | Seconds / false triggers |
 | --- | --- | --- | --- | --- |
 | B1 | Open hand, Mo follows the fingertip | Prologue | [ ] | |
-| B2 | Rabbit (and the easier "ears") | Moth ch. 1, Sea | [ ] | |
-| B3 | Fish, then grow it near the lamp | Moth ch. 2, Sea | [ ] | |
-| B4 | Dog, grow it against the wolf | Moth ch. 3 (dog), Brave Little Dog | [ ] | |
-| B5 | Bird (two hands) | Moth ch. 3 (bird), Sea, Counting Stars | [ ] | |
-| B6 | Cupped hands (two hands), then let go | Moth finale, Sea | [ ] | |
-| B7 | Snail | Slow Letter | [ ] | |
-| B8 | Swan | Slow Letter | [ ] | |
-| B9 | Deer (two hands) | Slow Letter | [ ] | |
-| B10 | Crocodile (two hands) | Brave Little Dog | [ ] | |
-| B11 | Relaxed or half-closed hands never wake anything | anywhere | [ ] | |
+| B2 | Rabbit (and the easier "ears") | Moth ch. 1, Sea | [x] | woke when asked: afthmamdpn, m3zdndu6vq, xhz96jhkv9 |
+| B3 | Fish, then grow it near the lamp | Moth ch. 2, Sea | [ ] | fish woke when asked (afthmamdpn, m3zdndu6vq, xhz96jhkv9); growing not recorded |
+| B4 | Dog, grow it against the wolf | Moth ch. 3 (dog), Brave Little Dog | [ ] | dog woke when asked (afthmamdpn, m3zdndu6vq, xhz96jhkv9); growing not recorded |
+| B5 | Bird (two hands) | Moth ch. 3 (bird), Sea, Counting Stars | [x] | woke when asked: afthmamdpn, m3zdndu6vq |
+| B6 | Cupped hands (two hands), then let go | Moth finale, Sea | [ ] | cup woke when asked (afthmamdpn, m3zdndu6vq); letting go not recorded |
+| B7 | Snail | Slow Letter | [x] | woke when asked: m3zdndu6vq |
+| B8 | Swan | Slow Letter | [x] | woke when asked: m3zdndu6vq |
+| B9 | Deer (two hands) | Slow Letter | [x] | woke when asked: xnhuwf56d6 |
+| B10 | Crocodile (two hands) | Brave Little Dog | [x] | woke when asked: m3zdndu6vq |
+| B11 | Relaxed or half-closed hands never wake anything | anywhere | [ ] | all 25 wakes on the headsets were the shape asked for; relaxed hands not tested on purpose |
 | B12 | Make a shape almost right: "Almost! Hold it still..." appears after about a second | any request | [ ] | |
 | B13 | Make the right shape outside the light: "Bring your hand into the lamplight." | any request | [ ] | |
 | B15 | Dim room (R4): if your hands keep dropping out while a shape is asked for, "Hands lost — try turning a light on" appears with the ghost hand within a few seconds; with the light on it goes away. The summary's `hand-tracking flickers:` line shows how often it happened | [ ] | |
@@ -123,8 +123,8 @@ and whether anything woke that you did not ask for (panel: `match`).
 | E9c | High contrast (Settings, *Easier to use* row, or the first screen): panels turn black and white with yellow for the selected option, captions white on solid black, the hand shadows on the wall solid black. Readable in passthrough, and the shadows still read as hand shadows | [ ] | |
 | E9d | Look to press (first screen or Settings): a small ring follows the centre of the view; resting it on the book opens the journal, on a Settings button presses it once (no repeats), on the lamp switch pauses. With controllers in hand and hands away, tell *Counting Stars* to the end by looking at the ghost hand when a shape is asked for and at the stage otherwise. Note any button that is hard to hold the gaze on | [ ] | |
 | E9e | Voice commands (first screen or Settings): the summary or panel shows how it listens (`browser` = Quest Browser's own recognition, `server` = clips to /api/voice, `unavailable`). Say "open the journal", "forgiving shapes", "close the journal", then the shape when asked ("bird"), "go on" when Mo wants to follow a finger, "pause" and "continue". Note what it mishears, and whether the narration ever triggers a command | [ ] | |
-| E9f | Mo's tips: make the wrong shape on purpose when one is asked for (an open hand for the rabbit). After about 9 s Mo's bubble appears beside her with one tip about what to change; a second at about 21 s; none after the creature wakes. With voice commands, say "help". Summary: `Mo's tips: N (M by AI)`. Note whether the tip was right about your hand | [ ] | |
-| E9g | Dream a new one (journal, Tonight's story): the chooser opens; pick a place and two or three shapes (a fourth is refused), Dream it: Mo is dreaming... then a new story starts within about 10 s, with its own title, two or three shapes and captions. Read every line: gentle, makes sense, asks for the right shape. Then **record it and send it**: open the code on the phone (`?viewer`), and the dreamed story plays there; **go live** with it and the phone tells the same story. Summary: `dream` events | [ ] | seconds |
+| E9f | Mo's tips: make the wrong shape on purpose when one is asked for (an open hand for the rabbit). After about 9 s Mo's bubble appears beside her with one tip about what to change; a second at about 21 s; none after the creature wakes. With voice commands, say "help". Summary: `Mo's tips: N (M by AI)`. Note whether the tip was right about your hand | [ ] | 11 tips in cdj3st58rm, xhz96jhkv9, m3zdndu6vq, 10 by AI, median 0.66-0.84 s; whether each tip was right not recorded |
+| E9g | Dream a new one (journal, Tonight's story): the chooser opens; pick a place and two or three shapes (a fourth is refused), Dream it: Mo is dreaming... then a new story starts within about 10 s, with its own title, two or three shapes and captions. Read every line: gentle, makes sense, asks for the right shape. Then **record it and send it**: open the code on the phone (`?viewer`), and the dreamed story plays there; **go live** with it and the phone tells the same story. Summary: `dream` events | [ ] | seconds. dream ok in 4.5 s (xhz96jhkv9), dreamed stories told to The End at 72 Hz (xhz96jhkv9, m3zdndu6vq); record, send and live not yet done |
 | E9h | Creatures in colour: a shape being formed is a shadow; when it wakes it blooms into its own colour (rabbit violet, fish teal, dog orange, bird sky blue, cup rose) and turns back to shadow as it bows. Readable on your wall in passthrough? Too bright or too dull for bedtime? | [ ] | |
 | E9i | Twilight and fireflies: the lamp's light on your wall is warm in the middle and shades into the scene's colour toward the edges (indigo at night, blue-teal at the sea, green in the forest); when a creature wakes, glowing specks drift off the wall toward you. Both should look like light on the real wall, never like paint over it or dark spots | [ ] | |
 | E9j | Mo comes to you: when the story first asks you to hold up your hand, Mo leaves the wall as a small glowing moth, flies to your index fingertip and sits there for a few seconds (move your finger: she stays on it), then flies back to the wall. At "The End" she comes back to your fingertip and falls asleep. Does she land on the fingertip, not beside it? | [ ] | |
