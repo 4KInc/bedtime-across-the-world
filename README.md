@@ -32,10 +32,11 @@ fixed, and checked again on the headset.
 | Play it with live diagnostics on screen | https://shadowplay-1031148889398.us-central1.run.app/?diag |
 
 **Meets the 60 fps minimum on both headsets.** Every session held the requested
-72 Hz: median 71.3 to 72 fps, frame-time 95th percentile around 15 ms (under
-the 16.7 ms that 60 fps allows). 481 of 482 five-second windows stayed at
-60 fps or above; the one exception (47 fps) was a Quest 3 waking after three
-hours asleep and finding the room again.
+72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.8 to 15.5 ms (under
+the 16.7 ms that 60 fps allows). Not one of 457 five-second windows of the app
+running dropped under 60 fps. The 25 windows while the headset itself slept,
+woke or showed its system menu are counted apart; the lowest of those (47 fps)
+was a Quest 3 waking after three hours asleep and finding the room again.
 
 **The device sessions (the evidence).** Each `?diag` session has an anonymous
 id; its raw data is in [`docs/diag/`](docs/diag) (frame times, hand tracking,
