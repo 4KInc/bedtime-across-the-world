@@ -13,6 +13,7 @@ import {
 import { playClick } from './sfx.js';
 import { palette } from './panel-palette.js';
 import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
+import { MAX_DREAM_SHAPES } from './voice-commands.js';
 import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
 
 const PANEL_NODE = 'settings-panel';
@@ -363,7 +364,7 @@ export class SettingsSystem extends createSystem({
       return;
     }
     const known = theme && (DREAM_THEMES as readonly string[]).includes(theme) ? theme : '';
-    const chosen = [...new Set(shapes.filter((x) => DREAM_ANY_SHAPE.has(x)))].slice(0, 3);
+    const chosen = [...new Set(shapes.filter((x) => DREAM_ANY_SHAPE.has(x)))].slice(0, MAX_DREAM_SHAPES);
     let body: { theme?: string; shapes: string[]; wish?: string };
     if (wish) {
       // The server reads the place and shapes from the idea (its model picks what it leaves out).

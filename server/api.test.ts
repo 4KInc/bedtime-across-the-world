@@ -514,6 +514,15 @@ test('dream from a wish naming a creature the chooser does not offer: a fish and
   }
 });
 
+test('dream from a wish naming four shapes: all four, in the order said (Quest 3S, Nov 16: the cup was dropped)', async () => {
+  const res = await as().post('/api/dream', { wish: 'a meadow story with a rabbit, a dog, a bird and a cup' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(shapesOf(await res.json()).shapes, ['rabbit', 'dog', 'bird', 'cup']);
+  // Five named: the first four.
+  const five = await (await as().post('/api/dream', { wish: 'a meadow story with a rabbit, a dog, a bird, a cup and a snail' })).json();
+  assert.deepEqual(shapesOf(five).shapes, ['rabbit', 'dog', 'bird', 'cup']);
+});
+
 test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {
   const before = picks();
   const story = await (await as().post('/api/dream', { wish: 'Can you make a story about being brave' })).json();

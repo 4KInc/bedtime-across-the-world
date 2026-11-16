@@ -149,7 +149,13 @@ export const MAX_WISH_WORDS = 30;
 const ASKING_FOR_STORY =
   /^(mo )?(i need|i want|i d like|i would like|we want|we need|we d like|can we have|can i have|can you tell|can you make|could you tell|could we have|tell me|tell us|make me|make us|give me|give us|lets have|let s have|let s hear|lets hear|how about|what about)\b.*\bstor(y|ies)\b/;
 
-/** The place and the shapes (dreamable ones, in the order said, at most three) named in some words. */
+/**
+ * Most shapes a dreamed story tells: four, when an idea names them ("a fish, a crocodile, a bird and a cup").
+ * Quest 3S, Nov 16: four were asked for and the fourth was dropped.
+ */
+export const MAX_DREAM_SHAPES = 4;
+
+/** The place and the shapes (dreamable ones, in the order said, at most MAX_DREAM_SHAPES) named in some words. */
 export function readWish(text: string): { theme: string; shapes: string[] } {
   const padded = ` ${normalise(text)} `;
   const theme = Object.entries(DREAM_THEMES).find(([, names]) => names.some((n) => padded.includes(` ${n} `)))?.[0] ?? '';
@@ -161,7 +167,7 @@ export function readWish(text: string): { theme: string; shapes: string[] } {
     const at = Math.min(...forms.map((n) => padded.indexOf(` ${n} `)).filter((i) => i >= 0));
     if (Number.isFinite(at)) found.push([at, shape]);
   }
-  return { theme, shapes: found.sort((a, b) => a[0] - b[0]).map(([, s]) => s).slice(0, 3) };
+  return { theme, shapes: found.sort((a, b) => a[0] - b[0]).map(([, s]) => s).slice(0, MAX_DREAM_SHAPES) };
 }
 
 /** "Dream ...", or a story asked for in plain words, with the place and shapes named in it. */
