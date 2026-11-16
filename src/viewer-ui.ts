@@ -20,7 +20,9 @@ const CSS = `
 .sp-viewer * { box-sizing: border-box; }
 .sp-viewer [hidden] { display: none !important; }
 /* While a story plays: a compact pill in the corner, so the stage captions stay visible. */
-.sp-viewer.playing .sp-panel { width: max-content; margin: 0 0 0 auto; padding: 8px; }
+.sp-viewer.playing .sp-panel { width: max-content; margin: 0 0 0 auto; padding: 8px; transition: opacity 0.6s; }
+/* Playing and left alone: the controls fade away (a tap, a mouse move or a key brings them back). */
+.sp-viewer.playing.idle .sp-panel { opacity: 0; pointer-events: none; }
 .sp-viewer.playing .sp-title, .sp-viewer.playing .sp-status, .sp-viewer.playing .sp-grownups, .sp-viewer.playing .sp-credits-btn { display: none; }
 .sp-panel { pointer-events: auto; max-width: 760px; margin: 0 auto; background: rgba(18, 13, 26, 0.88);
   border: 1px solid #6b4f2a; border-radius: 18px; padding: 14px; backdrop-filter: blur(6px); }
@@ -73,6 +75,8 @@ const CSS = `
  * into the jar then, and the goodnight card covered both at once (Nov 16).
  */
 const ENDING_LINGER_MS = 7000;
+/** While a recording plays, the controls fade after this long untouched (they sometimes covered the caption, Nov 16). */
+const CONTROLS_IDLE_MS = 3000;
 
 /**
  * The family viewer: a phone/tablet page for watching a bedtime story a
@@ -102,6 +106,12 @@ export class ViewerUISystem extends createSystem({
   private talkBtn: HTMLButtonElement | null = null;
   private handsBtn: HTMLButtonElement | null = null;
   private lastLive: boolean | null = null;
+  /** The last tap, mouse move or key (performance.now()), and whether the controls have faded away. */
+  private activeAt = 0;
+  private idle = false;
+  private wake = (): void => {
+    this.activeAt = performance.now();
+  };
   private waitBanner: HTMLDivElement | null = null;
   private ticks = 0;
   private lastLiveStatus = '';
@@ -132,6 +142,7 @@ export class ViewerUISystem extends createSystem({
   }
 
   private teardownUI(): void {
+    for (const type of ['pointerdown', 'pointermove', 'keydown', 'touchstart'] as const) window.removeEventListener(type, this.wake);
     this.setEnterXRHidden(false);
     this.style?.remove();
     this.style = null;
@@ -179,6 +190,8 @@ export class ViewerUISystem extends createSystem({
       </div>`;
     document.body.appendChild(root);
     this.root = root;
+    this.activeAt = performance.now();
+    for (const type of ['pointerdown', 'pointermove', 'keydown', 'touchstart'] as const) window.addEventListener(type, this.wake, { passive: true });
     this.list = root.querySelector('.sp-list');
     this.controls = root.querySelector('.sp-controls');
     this.status = root.querySelector('.sp-status');
@@ -421,6 +434,13 @@ export class ViewerUISystem extends createSystem({
     if (playing && family.current !== family.own) this.playingNames ??= { ...family.current };
     this.updateLive();
     // Touch the DOM only when something changed.
+    // The controls fade while a recording plays untouched, so they never sit over the caption;
+    // they stay while paused and in a live story (Talk), and come back on a tap, a mouse move or a key.
+    const idle = playing && !p.getValue(PerformancePlayer, 'paused') && !this.lastLive && performance.now() - this.activeAt > CONTROLS_IDLE_MS;
+    if (idle !== this.idle) {
+      this.idle = idle;
+      this.root.classList.toggle('idle', idle);
+    }
     const pauseLabel = p.getValue(PerformancePlayer, 'paused') ? 'Play' : 'Pause';
     if (this.pauseBtn && this.pauseBtn.textContent !== pauseLabel) this.pauseBtn.textContent = pauseLabel;
     const joined = Boolean(p.getValue(PerformancePlayer, 'joinIn'));

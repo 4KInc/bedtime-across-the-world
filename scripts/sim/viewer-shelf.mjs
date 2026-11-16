@@ -62,6 +62,20 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   const drawn = [c[0] + cw * 0.08, c[1] + (c[3] - c[1]) * 0.25, c[2] - cw * 0.08, c[3] - (c[3] - c[1]) * 0.1];
   check(`${device}: the viewer's controls never cover the caption`, !overlap(drawn, layout.pill), { caption: drawn.map(Math.round), pill: layout.pill });
 
+  // The controls fade while the recording plays untouched (they sometimes covered the caption, Nov 16),
+  // and come back on a mouse move or a tap.
+  const pill = () => page.evaluate(() => {
+    const el = document.querySelector('.sp-viewer .sp-panel');
+    return { opacity: Number(getComputedStyle(el).opacity), clickable: getComputedStyle(el).pointerEvents !== 'none' };
+  });
+  await sleep(4500);
+  const faded = await pill();
+  await page.mouse.move(200, 200);
+  await page.mouse.move(260, 240);
+  await sleep(900);
+  const back = await pill();
+  check(`${device}: the controls fade while the story plays untouched, and come back on a touch`, faded.opacity < 0.05 && !faded.clickable && back.opacity > 0.95 && back.clickable, { faded, back });
+
   // 3: the first creature let go (the rabbit, about 42 s in) hops onto the shelf.
   const hopped = await page.waitForFunction(() => __sp.view().lanterns.onDesk.length > 0, null, { timeout: 90000, polling: 200 }).then(() => true, () => false);
   await sleep(600);
