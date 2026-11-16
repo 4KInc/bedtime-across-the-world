@@ -2,7 +2,7 @@ import { createSystem, Entity, UIKit, UIKitMLAsset } from '@iwsdk/core';
 import { listRecordings } from '../journal-store.js';
 import type { Performance } from '../performance/format.js';
 import { recordingsRuntime } from '../performance/recorder.js';
-import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder } from '../shadowplay-components.js';
+import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder, ShadowJournal } from '../shadowplay-components.js';
 import { playClick } from '../sfx.js';
 import { palette } from '../panel-palette.js';
 import { accessRuntime, gazeTargets, uiPresses } from '../stage-runtime.js';
@@ -38,6 +38,7 @@ export class FamilyControlsSystem extends createSystem({
   sessions: { required: [LiveSession] },
   inboxes: { required: [FamilyInbox] },
   players: { required: [PerformancePlayer] },
+  journals: { required: [ShadowJournal] },
 }) {
   private controls = new Map<string, Control>();
   private status: UIKit.Text | undefined;
@@ -121,6 +122,8 @@ export class FamilyControlsSystem extends createSystem({
       player.setValue(PerformancePlayer, 'joinIn', false);
       player.setValue(PerformancePlayer, 'paused', false);
       player.setValue(PerformancePlayer, 'playing', true);
+      // It plays on the wall: the Journal steps aside (open it again to stop).
+      for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
     }
     this.shown = '';
   }

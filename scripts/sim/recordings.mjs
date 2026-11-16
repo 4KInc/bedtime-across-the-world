@@ -117,10 +117,12 @@ try {
   check('pinching > picks the older recording, and Send will send it', older.index === 1 && /^2 of 2: Counting Stars/.test(older.title) && chosen === older.chosen && chosen !== two.chosen, older);
   await pinch(page, 'rec-play');
   const played = await page.waitForFunction((id) => __sp.get('PerformancePlayer', 'playing') && __sp.get('PerformancePlayer', 'recordingId') === id, chosen, { timeout: 8000 }).then(() => true, () => false);
+  // It plays on the wall, so the Journal steps aside (its pages covered the playback, Nov 16).
+  const journalClosed = (await page.evaluate(() => __sp.get('ShadowJournal', 'open'))) === false;
   const playingRow = await row(page);
   await pinch(page, 'rec-play');
   const stopped = await page.waitForFunction(() => !__sp.get('PerformancePlayer', 'playing'), null, { timeout: 5000 }).then(() => true, () => false);
-  check('Play replays the chosen recording on the wall; pinching again stops it', played && playingRow.playing === chosen && stopped, { played, playing: playingRow.playing, stopped });
+  check('Play replays the chosen recording on the wall, the Journal steps aside; pinching again stops it', played && journalClosed && playingRow.playing === chosen && stopped, { played, journalClosed, playing: playingRow.playing, stopped });
   await pinch(page, 'send-button');
   await page.waitForFunction(() => /^Sent!|^Could not/.test(__sp.get('PerformanceRecorder', 'status') ?? ''), null, { timeout: 20000 }).catch(() => undefined);
   const status = await page.evaluate(() => __sp.get('PerformanceRecorder', 'status'));

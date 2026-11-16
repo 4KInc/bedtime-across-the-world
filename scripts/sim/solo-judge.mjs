@@ -39,11 +39,15 @@ try {
   await hs.waitForFunction(() => window.__sp.view().ready && window.__sp.get('DemoDirector', 'status') !== undefined, null, { timeout: 30000 });
   await hs.waitForFunction(() => __sp.get('FamilyInbox', 'unwatched') > 0, null, { timeout: 30000 }).catch(() => undefined);
   const waiting = await hs.evaluate(() => __sp.get('FamilyInbox', 'unwatched'));
+  // Played from the Journal, as people do: it steps aside so the goodnight is not behind its pages (Nov 16).
+  await hs.evaluate(() => __sp.set('ShadowJournal', 'open', true));
+  await sleep(800);
   await hs.evaluate(() => __sp.set('FamilyInbox', 'playRequested', true));
   const played = await hs.waitForFunction(() => __sp.get('PerformancePlayer', 'playing'), null, { timeout: 15000 }).then(() => true, () => false);
+  const journalOpen = await hs.evaluate(() => __sp.get('ShadowJournal', 'open'));
   const id = await hs.evaluate(() => __sp.get('PerformancePlayer', 'recordingId'));
   await hs.waitForFunction(() => !__sp.get('PerformancePlayer', 'playing'), null, { timeout: 40000 }).catch(() => undefined);
-  check("headset: Mia's goodnight is waiting and plays on the wall", waiting > 0 && played && /mia/.test(id), { waiting, played, id });
+  check("headset: Mia's goodnight is waiting and plays on the wall, the Journal stepping aside", waiting > 0 && played && journalOpen === false && /mia/.test(id), { waiting, played, journalOpen, id });
 
   await hs.evaluate(() => {
     __sp.set('PerformanceRecorder', 'withVoice', false);
