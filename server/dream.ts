@@ -27,6 +27,13 @@ export const THEMES: Readonly<Record<string, { words: string; scenery: string }>
   sky: { words: 'high in the night sky among the clouds', scenery: 'none' },
 };
 
+/**
+ * The easier pose each shape also accepts, as in the library stories: two
+ * fingers up for the rabbit, a rabbit for the dog, a dog for the fish. Dreamed
+ * rabbits had none (Quest 3S, Nov 16: 25 s, against 2.4 s for The Moth's rabbit).
+ */
+const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog' };
+
 const LINE = /^[A-Za-z0-9 ,.!?'’;:-]{2,160}$/;
 const MAX_LINE_WORDS = 24;
 const NEVER = /\b(kill|killed|die|dies|dead|death|blood|hate|stupid|dumb|ugly|monster|gun|knife|scream|screams|nightmare|lost forever|http|www)\b/i;
@@ -275,7 +282,7 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
       beats.push({ id: `dream-${n}-place`, type: 'scenery', set: here });
     }
     beats.push({ id: `dream-${n}-setup`, type: 'narrate', text: setup });
-    beats.push({ id: `dream-${n}-want`, type: 'request', shape, ...(shape === 'fish' ? { alt: 'dog' } : {}), text: ask });
+    beats.push({ id: `dream-${n}-want`, type: 'request', shape, ...(ALTS[shape] ? { alt: ALTS[shape] } : {}), text: ask });
     if (shape === 'cup') {
       // Cupped hands hold something; they open to let it go (as in Counting Stars).
       // The let-go beat waits for open hands, so its caption must say so; the bow follows.
