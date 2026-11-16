@@ -161,8 +161,12 @@ export class DemoDirectorSystem extends createSystem({
   }
 
 
+  /** A grow step: the comfortable hands pull back toward the chest. */
+  private pulling = false;
+
   /** Decide what the hands should do for this beat. */
   private direct(beat: StoryBeat | undefined, director: Entity): void {
+    this.pulling = false;
     const t = this.target;
     const w = stageRuntime.width;
     const h = stageRuntime.height;
@@ -204,6 +208,7 @@ export class DemoDirectorSystem extends createSystem({
         return;
       }
       case 'grow':
+        this.pulling = true;
         t.fixture = this.held;
         t.reach = reachAt(this.held?.label === 'dog' ? GROW_AHEAD.dog : GROW_AHEAD.fish);
         t.u = 0;
@@ -324,9 +329,10 @@ export class DemoDirectorSystem extends createSystem({
     if (this.persona === 'comfortable') {
       // Where people hold their hands: about 38 cm in front of the eyes, a little low,
       // not on the line from the lamp's bulb to the stage (the lamp is at about this depth).
+      // To grow a creature, about 12 cm back toward the chest.
       this.base
         .copy(stageRuntime.eye)
-        .addScaledVector(stageRuntime.normal, -0.38)
+        .addScaledVector(stageRuntime.normal, this.pulling ? -0.26 : -0.38)
         .addScaledVector(stageRuntime.up, -0.12 + this.v + swayV)
         .addScaledVector(stageRuntime.right, this.u + swayU);
     } else {
