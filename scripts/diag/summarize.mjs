@@ -67,6 +67,17 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   }
   const tips = ev('coach');
   if (tips.length) console.log(`Mo's tips: ${tips.length} (${tips.filter((t) => t.source === 'ai').length} by AI), median ${pct(tips.map((t) => t.ms), 0.5)} ms; facts: ${count(tips.flatMap((t) => t.facts ?? []))}`);
+  // Settings at the start and each change (accessibility and comfort), and why the story paused.
+  const sets = ev('settings');
+  if (sets.length) {
+    const fmt = (e) => `tolerance ${e.tolerance}, hints ${e.hints}${e.oneHand ? ', one hand' : ''}${e.highContrast ? ', high contrast' : ''}${e.lookToPress ? ', look to press' : ''}${e.voiceCommands ? ', voice commands' : ''}${e.music ? '' : ', no music'}`;
+    console.log(`settings: ${fmt(sets[0])}${sets.length > 1 ? `  then ${sets.slice(1).map((e) => `[${e.t}s] ${fmt(e)}`).join('  ')}` : ''}`);
+  }
+  const pauses = ev('pause').filter((e) => e.why !== 'playing');
+  if (pauses.length) {
+    const resumed = ev('pause').filter((e) => e.why === 'playing').length;
+    console.log(`pauses: ${pauses.length} (${count(pauses.map((e) => e.why))}), story went on after ${resumed}`);
+  }
   const voices = ev('voice');
   if (voices.length) {
     // Voice commands: how they ran, and what became of each piece of speech (counts only).

@@ -12,7 +12,8 @@ import {
   XRMesh,
   XRPlane,
 } from '@iwsdk/core';
-import { ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js';
+import { Settings, ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js';
+import { pauseRuntime } from '../story.js';
 import { accessRuntime, handRuntime, stageRuntime } from '../stage-runtime.js';
 import { coachRuntime } from '../mo-coach.js';
 import { voiceRuntime } from '../voice-control.js';
@@ -70,6 +71,7 @@ export class DiagSystem extends createSystem({
   stages: { required: [Stage] },
   stories: { required: [StoryState] },
   recognizers: { required: [ShapeRecognizer] },
+  settings: { required: [Settings] },
   planes: { required: [XRPlane] },
   meshes: { required: [XRMesh] },
 }) {
@@ -88,7 +90,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '' };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '' };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -237,6 +239,29 @@ export class DiagSystem extends createSystem({
     if (voice !== this.last.voice) {
       this.last.voice = voice;
       this.event({ e: 'voice', state: accessRuntime.voiceState, audio: v.audio, resumes: v.resumes, short: v.short, clips: v.clips, understood: v.understood, empty: v.empty, failed: v.failed, acted: v.acted, refused: v.refused, notCommands: v.notCommands, ignored: v.ignored });
+    }
+    // The player's settings (accessibility and comfort), at the start and whenever one changes.
+    const set = this.queries.settings.entities.values().next().value;
+    if (set) {
+      const s = {
+        tolerance: String(set.getValue(Settings, 'tolerance') ?? ''),
+        hints: String(set.getValue(Settings, 'hints') ?? ''),
+        oneHand: Boolean(set.getValue(Settings, 'oneHand')),
+        highContrast: Boolean(set.getValue(Settings, 'highContrast')),
+        lookToPress: Boolean(set.getValue(Settings, 'gazeDwell')),
+        voiceCommands: Boolean(set.getValue(Settings, 'voiceCommands')),
+        music: Boolean(set.getValue(Settings, 'music')),
+      };
+      const key = Object.values(s).join('|');
+      if (key !== this.last.settings) {
+        this.last.settings = key;
+        this.event({ e: 'settings', ...s });
+      }
+    }
+    // The story paused or went on, and why (the lamp switch, the Quest menu, the journal, no hands, no sound yet).
+    if (pauseRuntime.why !== this.last.pause) {
+      this.event({ e: 'pause', why: pauseRuntime.why || 'playing', was: this.last.pause || 'playing', beat: story?.getValue(StoryState, 'beatId') ?? '' });
+      this.last.pause = pauseRuntime.why;
     }
     // Mo the coach gave a tip: which facts, AI or fixed words, how long it took.
     if (coachRuntime.tips !== this.last.tips) {
