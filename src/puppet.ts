@@ -293,8 +293,17 @@ export class PuppetSystem extends createSystem({
     let onStage = false;
     let released = false;
     let features: Float32Array | null = null;
-    // A hand in the light takes over a creature that was performing by itself.
-    if (rt.selfDriven && hand?.tracked && reachStage(this.palmOf(hand, this.palm), this.hit, 0.3) > 0) rt.selfDriven = false;
+    // A creature performing by itself is taken over only by a hand making its shape in the light. Any hand
+    // within reach took it over, then let it go when lowered, before it had carried Mo (Quest 3S, Nov 16).
+    if (rt.selfDriven) {
+      const taker = this.handMaking(shapeId, rec);
+      if (taker) {
+        rt.selfDriven = false;
+        entity.setValue(ShadowPuppet, 'hand', taker);
+        handRuntime[taker].hideCasters = true;
+        return null;
+      }
+    }
     if (rt.selfDriven) {
       this.performAlone(entity, rt, delta);
       this.blink(rt, delta);
@@ -337,6 +346,14 @@ export class PuppetSystem extends createSystem({
       rt.fade = 1;
     }
     return features;
+  }
+
+  /** The hand recognised making this shape in the light (two-hand shapes count on either hand), or null. */
+  private handMaking(shape: string | null | undefined, rec: Entity | undefined): 'left' | 'right' | null {
+    if (!rec || !shape) return null;
+    if (rec.getValue(ShapeRecognizer, 'rightShape') === shape && rec.getValue(ShapeRecognizer, 'rightInLight')) return 'right';
+    if (rec.getValue(ShapeRecognizer, 'leftShape') === shape && rec.getValue(ShapeRecognizer, 'leftInLight')) return 'left';
+    return null;
   }
 
   /** A creature with no hand to follow: across the wall and back, hopping (or flying higher), at its own size. */
