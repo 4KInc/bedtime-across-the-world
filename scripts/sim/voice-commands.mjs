@@ -97,6 +97,15 @@ const browser = await chromium.launch({
   await page.waitForFunction(() => __sp.get('StoryState', 'voiceDone'), null, { timeout: 30000 });
   v = await say('rabbit');
   const stillAsking = (await get('StoryState', 'beatId')) === 'stars-want-bird';
+  // A hand held up in the light, relaxed (not the bird): it must not take the spoken bird over (Quest 3S, Nov 16:
+  // a raised hand took it, and lowering it let the bird go to the desk before it had carried Mo).
+  await page.evaluate(() => IWER_DEVICE.remote.dispatch('set_input_mode', { mode: 'hand' }));
+  await sleep(800);
+  const { head, center } = await page.evaluate(() => ({ head: __sp.view().head, center: __sp.view().center }));
+  const handAt = [0, 1, 2].map((k) => head[k] + (center[k] - head[k]) * (0.4 / Math.hypot(center[0] - head[0], center[1] - head[1], center[2] - head[2])));
+  await page.evaluate((p) => IWER_DEVICE.remote.dispatch('set_transform', { device: 'hand-right', position: { x: p[0], y: p[1] - 0.05, z: p[2] } }), handAt);
+  await sleep(800);
+  const raised = await page.evaluate(() => ({ tracked: __sp.hands().right, lit: __sp.get('ShapeRecognizer', 'rightInLight'), shape: __sp.get('ShapeRecognizer', 'rightShape') }));
   await say('the bird please', 1200);
   const after = await get('StoryState', 'beatId');
   check('a shape not asked for is refused; the asked one wakes the creature', stillAsking && /not now/.test(v.heard) && after !== 'stars-want-bird', { refused: v.heard, after });
@@ -109,7 +118,9 @@ const browser = await chromium.launch({
   const awake = path.filter((p) => p?.state === 'alive');
   const us = awake.map((p) => p.u);
   const carried = (await page.evaluate(() => __sp.beats())).some((x) => x.id === 'stars-bird-carry') && (await get('StoryState', 'beatId')) !== 'stars-bird-carry';
-  check('the spoken bird performs on the wall by itself, and carries Mo', awake.length >= 6 && Math.max(...us) - Math.min(...us) > 0.1 && carried, { carried, path: path.map((p) => p && `${p.state} ${p.u},${p.v}`) });
+  check('the spoken bird performs on the wall by itself, and carries Mo, with a relaxed hand held up in the light', raised.tracked && raised.lit && raised.shape !== 'bird' && awake.length >= 6 && Math.max(...us) - Math.min(...us) > 0.1 && carried, { raised, carried, path: path.map((p) => p && `${p.state} ${p.u},${p.v}`) });
+  await page.evaluate(() => IWER_DEVICE.remote.dispatch('set_input_mode', { mode: 'controller' }));
+  await sleep(500);
 
   await say('pause');
   const paused = await get('StoryState', 'status');
