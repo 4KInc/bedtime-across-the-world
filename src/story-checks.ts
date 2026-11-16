@@ -40,6 +40,8 @@ const PLAIN = /^[A-Za-z0-9 ,.!?'’;:-]{1,200}$/;
 const BEAT_ID = /^[a-z0-9-]{1,40}$/;
 /** ...and it can only be made of what Mo's dreams are made of (server/dream.ts). */
 const SHAPES = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
+/** Easier poses a request may also accept (its alt), besides the shapes: two fingers up for the rabbit, an open hand for the bird. */
+const EASIER = new Set(['ears', 'open']);
 const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);
 const MOTH = new Set(['hidden', 'arriving', 'hovering', 'following', 'riding', 'resting']);
 const MAX_BEATS = 80;
@@ -99,7 +101,7 @@ export function checkSharedStory(input: unknown): { version: 'shadowplay.story.v
         break;
       case 'request':
         if (typeof b.shape !== 'string' || !SHAPES.has(b.shape) || !line(b.text, b.shape)) return null;
-        if (b.alt !== undefined && (typeof b.alt !== 'string' || !SHAPES.has(b.alt))) return null;
+        if (b.alt !== undefined && (typeof b.alt !== 'string' || !(SHAPES.has(b.alt) || EASIER.has(b.alt)))) return null;
         Object.assign(out, { shape: b.shape, text: b.text }, b.alt !== undefined ? { alt: b.alt } : {});
         break;
       case 'carry':
