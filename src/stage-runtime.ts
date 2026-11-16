@@ -92,6 +92,8 @@ export const accessRuntime = {
    * creature performs on the wall by itself (puppet.ts takes and clears it).
    */
   handsFreeWake: false,
+  /** A story is being dreamed up (asked of the server, not back yet): shown on the wall and the panel. */
+  dreaming: false,
   /** Set by a spoken "help": Mo the coach gives a tip now (mo-coach.ts clears it). */
   coachRequested: false,
 };
