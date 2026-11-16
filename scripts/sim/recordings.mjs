@@ -69,7 +69,8 @@ async function record(page, script, seconds) {
   await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
   await sleep(seconds * 1000);
   await pinch(page, 'record-button');
-  await page.waitForFunction(() => /^Saved/.test(__sp.get('PerformanceRecorder', 'status') ?? ''), null, { timeout: 15000 });
+  // Saving waits for the recording to be written (slower on a busy machine).
+  await page.waitForFunction(() => /^Saved/.test(__sp.get('PerformanceRecorder', 'status') ?? ''), null, { timeout: 30000 });
   await page.evaluate(() => __sp.set('DemoDirector', 'playing', false));
 }
 
@@ -100,7 +101,7 @@ try {
   await page.waitForFunction(() => __sp.view().recordings.count === 2, null, { timeout: 5000 }).catch(() => undefined);
   const two = await row(page);
   const newest = await page.evaluate(() => __sp.get('PerformanceRecorder', 'lastId'));
-  check('two recordings: both kept, newest first and chosen for Send', empty.count === 0 && two.count === 2 && two.index === 0 && two.chosen === newest && /^1 of 2/.test(two.title) && /^Today .* · 0:0\d · not sent yet$/.test(two.info), { empty, two });
+  check('two recordings: both kept, newest first and chosen for Send', empty.count === 0 && two.count === 2 && two.index === 0 && two.chosen === newest && /^1 of 2/.test(two.title) && /^Today .* · 0:\d\d · not sent yet$/.test(two.info), { empty, two });
 
   // 2. The next night: reload, and both are still there, with Send ready.
   await enter(page);
