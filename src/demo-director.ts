@@ -224,7 +224,8 @@ export class DemoDirectorSystem extends createSystem({
       case 'continue':
       case 'letgo':
         this.held = beat.type === 'letgo' ? null : this.held;
-        t.fixture = this.fixture('open');
+        // People open or raise a hand flat, fingers together (the fish's pose); the others spread them.
+        t.fixture = this.fixture(this.persona === 'comfortable' ? 'fish' : 'open');
         t.reach = restReach();
         t.u = 0;
         t.v = 0;
