@@ -24,6 +24,7 @@ import { gazeRuntime } from './gaze-dwell.js';
 import { coachRuntime } from './mo-coach.js';
 import { fireflyRuntime } from './fireflies.js';
 import { finaleLightsRuntime } from './finale-lights.js';
+import { captionRuntime } from './captions.js';
 import { voiceRuntime } from './voice-control.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
@@ -261,6 +262,8 @@ export class AutomationSystem extends createSystem({
           coach: { ...coachRuntime },
           fireflies: { ...fireflyRuntime },
           finaleLights: { ...finaleLightsRuntime },
+          dreaming: accessRuntime.dreaming,
+          underStage: captionRuntime.nudge,
           voiceCommands: { ...voiceRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },

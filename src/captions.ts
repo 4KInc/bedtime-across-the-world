@@ -19,6 +19,11 @@ const NUDGE_W = 1024;
 const NUDGE_H = 120;
 /** Hands keep dropping out of tracking during a shape request (usually too little light). */
 const LIGHT_HINT = 'Hands lost — try turning a light on';
+/** For tests: the line under the stage now (a nudge, "Heard: ...", or that Mo is dreaming). */
+export const captionRuntime = { nudge: '' };
+
+/** While a new story is being dreamed up (settings.ts dream). */
+const DREAMING = 'Mo is dreaming up your story...';
 
 const NUDGE_TEXT: Record<string, string> = {
   almost: 'Almost! Hold it still...',
@@ -131,7 +136,8 @@ export class CaptionSystem extends createSystem({
     const rec = this.queries.recognizers.entities.values().next().value;
     // Voice commands: what was understood, for a moment.
     const heard = accessRuntime.voiceHeard && performance.now() - accessRuntime.voiceHeardAt < HEARD_MS ? accessRuntime.voiceHeard : '';
-    const nudge = trackingRuntime.lightHint ? LIGHT_HINT : heard || (NUDGE_TEXT[rec?.getValue(ShapeRecognizer, 'nudge') ?? 'none'] ?? '');
+    const nudge = trackingRuntime.lightHint ? LIGHT_HINT : accessRuntime.dreaming ? DREAMING : heard || (NUDGE_TEXT[rec?.getValue(ShapeRecognizer, 'nudge') ?? 'none'] ?? '');
+    captionRuntime.nudge = nudge;
     this.updateNudge(nudge, delta);
   }
 

@@ -88,6 +88,8 @@ const MOTH_SCRIPT = 'story/the-moth.story.json';
 const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky'] as const;
 /** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
+/** "Mo is dreaming", its dots coming and going. */
+const DREAMING_LABELS = ['Mo is dreaming', 'Mo is dreaming.', 'Mo is dreaming..', 'Mo is dreaming...'];
 const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail']);
 
 /** Buttons with their own look (the rest are options and toggles). */
@@ -138,6 +140,9 @@ export class SettingsSystem extends createSystem({
   /** "Say your idea": listening for a spoken story idea (null when not). */
   private wishListening: WishListening | null = null;
   private sayLabel: UIKit.Text | undefined;
+  /** "Dream a new one", which reads "Mo is dreaming..." while a story is being dreamed up. */
+  private dreamLabel: UIKit.Text | undefined;
+  private dreamDots = -1;
   /** The dream chooser: open, and what it has picked. */
   private choosing = false;
   private dreamTheme: string = DREAM_THEMES[0];
@@ -154,6 +159,7 @@ export class SettingsSystem extends createSystem({
     if (!this.loaded && !this.loading) this.load(settings);
     if (!this.panel) this.bind(settings);
     if (!this.loaded) return;
+    this.showDreaming();
 
     const tolerance = settings.getValue(Settings, 'tolerance') ?? ToleranceLevels.Normal;
     const hints = settings.getValue(Settings, 'hints') ?? HintModes.Delayed;
@@ -377,6 +383,7 @@ export class SettingsSystem extends createSystem({
       };
     }
     this.dreaming = true;
+    accessRuntime.dreaming = true;
     this.status?.setProperties({ text: wish ? `Heard: "${wish}". Mo is dreaming it up...` : 'Mo is dreaming up a story...' });
     dreamRuntime.asked = { theme: body.theme ?? '', shapes: [...body.shapes], ...(wish ? { wish } : {}) };
     const t0 = performance.now();
@@ -399,7 +406,24 @@ export class SettingsSystem extends createSystem({
         dreamRuntime.failed++;
         this.status?.setProperties({ text: 'Mo could not dream one just now. Try again in a moment.' });
       })
-      .finally(() => (this.dreaming = false));
+      .finally(() => {
+        this.dreaming = false;
+        accessRuntime.dreaming = false;
+      });
+  }
+
+  /**
+   * While a story is being dreamed up, "Dream a new one" reads "Mo is dreaming"
+   * with dots that come and go (the wall says so too, captions.ts): there were
+   * 3 to 5 quiet seconds after an idea was heard (Quest 3S, Nov 16).
+   */
+  private showDreaming(): void {
+    const dots = this.dreaming ? Math.floor(performance.now() / 400) % 4 : -1;
+    if (dots === this.dreamDots) return;
+    this.dreamDots = dots;
+    const p = palette();
+    this.buttons.get('story-dream')?.setProperties(dots >= 0 ? p.selected : p.unselected);
+    this.dreamLabel?.setProperties(dots >= 0 ? { text: DREAMING_LABELS[dots], color: p.ink } : { text: 'Dream a new one', color: p.cream });
   }
 
   /** Dim chapters the player has not reached yet. */
@@ -512,6 +536,7 @@ export class SettingsSystem extends createSystem({
     on('dream-cancel', () => this.closeDreamChooser());
     on('dream-say', () => this.sayWish());
     this.sayLabel = panel.getElementById<UIKit.Text>('dream-say-label') ?? undefined;
+    this.dreamLabel = panel.getElementById<UIKit.Text>('story-dream-label') ?? undefined;
     panel.getElementById('dream-section')?.setProperties({ display: 'none' });
     this.choosing = false;
     fetch('/api/dream')
