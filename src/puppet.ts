@@ -25,7 +25,9 @@ const CHARACTER_SCALE = 1.15;
  * lamp behind them) makes its creature bigger, a little more than a real shadow
  * would, so the story's "grow" asks are playable (about 1.8x at 20 cm from the eyes).
  */
-const GROW_GAIN = 3.5;
+// About 12 cm of pull from the natural place grows a creature 1.6x (it needed nearly 25 cm,
+// a hand at the chin: Quest 3, Nov 16, both of The Moth's grow steps waited for the 30 s help).
+const GROW_GAIN = 5;
 const GROW_MAX = 2.2;
 /** Largest character, as a fraction of stage width. */
 const MAX_SIZE = 0.95;
@@ -35,6 +37,15 @@ const RELEASE_LOST_SECONDS = 0.6;
 /** An open hand must stay out of the light this long before it lets go. */
 const RELEASE_OPEN_SECONDS = 0.25;
 const RELEASE_DARK_SECONDS = 1.0;
+/**
+ * A creature woken without a hand crosses the wall by itself: across and back
+ * (stage widths, radians per second), reaching every story's carry target
+ * (u up to 0.34; a flier also climbs to v 0.2), at about half the stage's height.
+ */
+const SELF_SWING = 0.36;
+const SELF_RATE = 0.4;
+const SELF_SIZE = 0.5;
+const FLIERS: ReadonlySet<string> = new Set([ShapeIds.Bird, ShapeIds.Swan]);
 const FADE_SECONDS = 0.8;
 const INK = 0x0a0810;
 /** How long a woken creature takes to bloom into its colour (seconds). */
@@ -69,6 +80,9 @@ interface PuppetRuntime {
   byChild: boolean;
   /** Seconds until it next makes its little sound while awake. */
   voiceIn: number;
+  /** Woken without a hand (said aloud, or Look to press): it performs by itself until a hand takes it over. */
+  selfDriven: boolean;
+  selfTime: number;
   label: { mesh: Mesh<PlaneGeometry, MeshBasicMaterial>; canvas: HTMLCanvasElement; texture: CanvasTexture } | null;
 }
 
@@ -125,6 +139,7 @@ export class PuppetSystem extends createSystem({
       lastState: PuppetStates.Hidden, twoHanded: false,
       colour: new Color(creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK), bloom: 0,
       ownColour: creatureColour(entity.getValue(ShadowPuppet, 'shape') ?? '') || INK, byChild: false, label: null, voiceIn: 5,
+      selfDriven: false, selfTime: 0,
     };
     this.runtimes.set(entity, rt);
     return rt;
@@ -248,6 +263,9 @@ export class PuppetSystem extends createSystem({
       rt.alive = 0;
       rt.bloom = 0;
       rt.pos.copy(stageRuntime.center);
+      rt.selfDriven = accessRuntime.handsFreeWake;
+      rt.selfTime = 0;
+      accessRuntime.handsFreeWake = false;
     }
   }
 
@@ -277,6 +295,22 @@ export class PuppetSystem extends createSystem({
     let onStage = false;
     let released = false;
     let features: Float32Array | null = null;
+    // A creature performing by itself is taken over only by a hand making its shape in the light. Any hand
+    // within reach took it over, then let it go when lowered, before it had carried Mo (Quest 3S, Nov 16).
+    if (rt.selfDriven) {
+      const taker = this.handMaking(shapeId, rec);
+      if (taker) {
+        rt.selfDriven = false;
+        entity.setValue(ShadowPuppet, 'hand', taker);
+        handRuntime[taker].hideCasters = true;
+        return null;
+      }
+    }
+    if (rt.selfDriven) {
+      this.performAlone(entity, rt, delta);
+      this.blink(rt, delta);
+      return null;
+    }
     if (hand?.tracked) {
       this.palmOf(hand, this.palm);
       const other = side === 'left' ? handRuntime.right : handRuntime.left;
@@ -314,6 +348,34 @@ export class PuppetSystem extends createSystem({
       rt.fade = 1;
     }
     return features;
+  }
+
+  /** The hand recognised making this shape in the light (two-hand shapes count on either hand), or null. */
+  private handMaking(shape: string | null | undefined, rec: Entity | undefined): 'left' | 'right' | null {
+    if (!rec || !shape) return null;
+    if (rec.getValue(ShapeRecognizer, 'rightShape') === shape && rec.getValue(ShapeRecognizer, 'rightInLight')) return 'right';
+    if (rec.getValue(ShapeRecognizer, 'leftShape') === shape && rec.getValue(ShapeRecognizer, 'leftInLight')) return 'left';
+    return null;
+  }
+
+  /** A creature with no hand to follow: across the wall and back, hopping (or flying higher), at its own size. */
+  private performAlone(entity: Entity, rt: PuppetRuntime, delta: number): void {
+    rt.selfTime += delta;
+    const phase = rt.selfTime * SELF_RATE;
+    const u = SELF_SWING * Math.sin(phase);
+    const flier = FLIERS.has(entity.getValue(ShadowPuppet, 'shape') ?? '');
+    const v = flier ? 0.1 + 0.1 * Math.sin(phase) : 0;
+    rt.facing = Math.cos(phase) >= 0 ? 1 : -1;
+    rt.hop += delta * 6;
+    const k = Math.min(1, delta * 4);
+    this.v
+      .copy(stageRuntime.center)
+      .addScaledVector(stageRuntime.right, u * stageRuntime.width)
+      .addScaledVector(stageRuntime.up, v * stageRuntime.height);
+    rt.pos.lerp(this.v, k);
+    const size = Math.min(stageRuntime.width * MAX_SIZE, stageRuntime.height * SELF_SIZE);
+    rt.pos.addScaledVector(stageRuntime.up, Math.abs(Math.sin(rt.hop)) * size * (flier ? 0.04 : 0.1) * k);
+    rt.scale += (size - rt.scale) * k;
   }
 
   /**

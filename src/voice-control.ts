@@ -1,4 +1,5 @@
 import { createSystem, Entity, VisibilityState } from '@iwsdk/core';
+import { away } from './away.js';
 import { playClick } from './sfx.js';
 import {
   Hands,
@@ -14,13 +15,15 @@ import {
 import { accessRuntime, gazeTargets, stageRuntime } from './stage-runtime.js';
 import { dreamRuntime } from './settings.js';
 import { describe, parseCommand, type VoiceCommand } from './voice-commands.js';
+import { downsample, encodeWav, joinParts, PcmRing } from './voice-clip.js';
 
 /** Speech onset: louder than this (RMS, 0-1) for ONSET_SECONDS starts a clip. */
 const SPEECH_RMS = 0.025;
 const ONSET_SECONDS = 0.06;
 /** A clip ends after this much quiet, or at MAX_CLIP_SECONDS; shorter than MIN_CLIP_SECONDS is a noise. */
 const END_SILENCE_SECONDS = 0.6;
-const MAX_CLIP_SECONDS = 3.5;
+/** Long enough for a story asked for in plain words ("I need a forest story with a dog and a rabbit"). */
+const MAX_CLIP_SECONDS = 6;
 const MIN_CLIP_SECONDS = 0.25;
 
 type Recognition = {
@@ -54,6 +57,27 @@ function recognitionClass(): RecognitionClass | undefined {
  * commands is on, and commands are ignored while a story is being recorded
  * with voice or a live Talk is on (that speech is for the family).
  */
+/**
+ * For diagnostics (diag-system.ts) and tests: how voice commands are going. Counts
+ * only, never the words or the audio. Clips are pieces of speech sent to the
+ * server (`short` ones were too short to send); each comes back understood
+ * (words), empty (nothing understood) or failed. Words heard are acted on,
+ * refused (not now), not a command, or ignored (speech for the family, or a story idea).
+ */
+export const voiceRuntime = {
+  audio: '' as string,
+  resumes: 0,
+  short: 0,
+  clips: 0,
+  understood: 0,
+  empty: 0,
+  failed: 0,
+  acted: 0,
+  refused: 0,
+  notCommands: 0,
+  ignored: 0,
+};
+
 export class VoiceControlSystem extends createSystem({
   settings: { required: [Settings] },
   stories: { required: [StoryState] },
@@ -68,8 +92,10 @@ export class VoiceControlSystem extends createSystem({
   private audio: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private samples = new Float32Array(1024);
-  private recorder: MediaRecorder | null = null;
-  private chunks: Blob[] = [];
+  /** Raw microphone audio (voice-clip.ts): the last half second always kept; a clip starts with it. */
+  private capture: ScriptProcessorNode | null = null;
+  private ring: PcmRing | null = null;
+  private clipParts: Float32Array[] | null = null;
   private loud = 0;
   private quiet = 0;
   private clipTime = 0;
@@ -80,7 +106,20 @@ export class VoiceControlSystem extends createSystem({
     this.cleanupFuncs.push(() => this.stopListening());
   }
 
+  /** A resume of the microphone's audio is under way. */
+  private resuming = false;
+
   update(delta: number): void {
+    // The headset can suspend the microphone's audio (Quest menu, headset off); it then hears only silence. Wake it.
+    if (this.audio?.state === 'suspended' && !away.now && !this.resuming) {
+      this.resuming = true;
+      voiceRuntime.resumes++;
+      void this.audio
+        .resume()
+        .catch(() => undefined)
+        .finally(() => (this.resuming = false));
+    }
+    voiceRuntime.audio = this.audio?.state ?? '';
     const settings = this.queries.settings.entities.values().next().value as Entity | undefined;
     const on = Boolean(settings?.getValue(Settings, 'voiceCommands')) && this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
     if (on !== this.wanted) {
@@ -91,8 +130,10 @@ export class VoiceControlSystem extends createSystem({
     if (this.analyser) this.listen(delta);
   }
 
-  /** Speech meant for the family (recording with voice, or Talk in a live story) is not a command. */
+  /** Speech meant for the family (recording with voice, or Talk in a live story), or a story idea, is not a command. */
   private suspended(): boolean {
+    // "Say your idea" is listening for a story idea: that is not a command either.
+    if (dreamRuntime.wish.state === 'listening') return true;
     for (const r of this.queries.recorders.entities) {
       if (r.getValue(PerformanceRecorder, 'recording') && r.getValue(PerformanceRecorder, 'withVoice')) return true;
     }
@@ -125,8 +166,13 @@ export class VoiceControlSystem extends createSystem({
       this.recognition.abort();
       this.recognition = null;
     }
-    if (this.recorder && this.recorder.state !== 'inactive') this.recorder.stop();
-    this.recorder = null;
+    this.clipParts = null;
+    if (this.capture) {
+      this.capture.onaudioprocess = null;
+      this.capture.disconnect();
+      this.capture = null;
+    }
+    this.ring = null;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
     void this.audio?.close();
@@ -184,7 +230,20 @@ export class VoiceControlSystem extends createSystem({
       void this.audio.resume();
       this.analyser = this.audio.createAnalyser();
       this.analyser.fftSize = this.samples.length;
-      this.audio.createMediaStreamSource(stream).connect(this.analyser);
+      const source = this.audio.createMediaStreamSource(stream);
+      source.connect(this.analyser);
+      // Raw audio for the clips: the last half second is always at hand, so a clip
+      // includes the start of a word said before the loudness was noticed.
+      this.ring = new PcmRing(this.audio.sampleRate);
+      this.capture = this.audio.createScriptProcessor(2048, 1, 1);
+      this.capture.onaudioprocess = (e) => {
+        const samples = e.inputBuffer.getChannelData(0);
+        this.clipParts?.push(new Float32Array(samples));
+        this.ring?.push(samples);
+      };
+      source.connect(this.capture);
+      // (It only runs while connected to an output; it writes silence.)
+      this.capture.connect(this.audio.destination);
       accessRuntime.voiceState = 'server';
     } catch {
       if (generation !== this.generation) return;
@@ -199,7 +258,7 @@ export class VoiceControlSystem extends createSystem({
     let sum = 0;
     for (let i = 0; i < this.samples.length; i++) sum += this.samples[i] * this.samples[i];
     const speaking = Math.sqrt(sum / this.samples.length) > SPEECH_RMS && !this.suspended();
-    if (!this.recorder) {
+    if (!this.clipParts) {
       this.loud = speaking ? this.loud + delta : 0;
       if (this.loud >= ONSET_SECONDS) this.beginClip();
       return;
@@ -210,43 +269,56 @@ export class VoiceControlSystem extends createSystem({
   }
 
   private beginClip(): void {
-    if (!this.stream) return;
-    const type = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
-    if (!type) return this.unavailable('Voice commands are not available in this browser.');
-    this.chunks = [];
+    if (!this.stream || !this.ring) return;
+    // The clip begins with the half second before the speech was noticed.
+    this.clipParts = [this.ring.snapshot()];
     this.clipTime = 0;
     this.quiet = 0;
     this.loud = 0;
-    const recorder = new MediaRecorder(this.stream, { mimeType: type });
-    recorder.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
-    this.recorder = recorder;
-    recorder.start();
   }
 
   private endClip(): void {
-    const recorder = this.recorder!;
+    const parts = this.clipParts;
     const seconds = this.clipTime;
-    this.recorder = null;
+    this.clipParts = null;
+    if (!parts || !this.audio) return;
+    if (seconds < MIN_CLIP_SECONDS) {
+      voiceRuntime.short++;
+      return;
+    }
     const generation = this.generation;
-    recorder.onstop = () => {
-      if (generation !== this.generation || seconds < MIN_CLIP_SECONDS) return;
-      const clip = new Blob(this.chunks, { type: 'audio/webm' });
-      fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: clip })
-        .then((r) => (r.ok ? (r.json() as Promise<{ text?: string }>) : { text: '' }))
-        .then((r) => generation === this.generation && this.heard(r.text ?? ''))
-        .catch(() => undefined);
-    };
-    recorder.stop();
+    const wav = encodeWav(downsample(joinParts(parts), this.audio.sampleRate));
+    voiceRuntime.clips++;
+    fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: new Blob([wav as BlobPart], { type: 'audio/wav' }) })
+      .then((r) => {
+        if (!r.ok) voiceRuntime.failed++;
+        return r.ok ? (r.json() as Promise<{ text?: string }>) : null;
+      })
+      .then((r) => {
+        if (!r) return;
+        if (r.text) voiceRuntime.understood++;
+        else voiceRuntime.empty++;
+        if (generation === this.generation) this.heard(r.text ?? '');
+      })
+      .catch(() => voiceRuntime.failed++);
   }
 
   // ------------------------------------------------------------ understanding and acting
 
   /** Something was said (a final transcript): act on it if it is a command. */
   heard(text: string): void {
-    if (this.suspended()) return;
+    if (this.suspended()) {
+      voiceRuntime.ignored++;
+      return;
+    }
     const command = parseCommand(text);
-    if (!command) return;
+    if (!command) {
+      voiceRuntime.notCommands++;
+      return;
+    }
     const done = this.run(command);
+    if (done) voiceRuntime.acted++;
+    else voiceRuntime.refused++;
     this.show(done ? `Heard: ${describe(command)}` : done === false ? `Heard "${describe(command)}" - not now` : '');
   }
 
@@ -266,6 +338,7 @@ export class VoiceControlSystem extends createSystem({
         stage.setValue(ShapeRecognizer, 'matchedHand', Hands.Right);
         stage.setValue(ShapeRecognizer, 'matchedShape', c.shape as never);
         stage.setValue(ShapeRecognizer, 'twoHanded', false);
+        accessRuntime.handsFreeWake = true;
         return true;
       }
       case 'journal': {
@@ -287,7 +360,7 @@ export class VoiceControlSystem extends createSystem({
         return true;
       case 'dream':
         // The Settings system dreams it (it knows whether the server can).
-        dreamRuntime.request = { theme: c.theme, shapes: c.shapes };
+        dreamRuntime.request = { theme: c.theme, shapes: c.shapes, ...(c.wish ? { wish: c.wish } : {}) };
         return true;
       case 'press': {
         const target = gazeTargets.get(c.id);

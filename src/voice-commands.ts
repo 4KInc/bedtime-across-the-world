@@ -17,8 +17,13 @@ export type VoiceCommand =
   | { kind: 'press'; id: string }
   /** Ask Mo for a tip on the shape the story wants. */
   | { kind: 'help' }
-  /** Dream a new story: a place and shapes if named (the rest picked at random). */
-  | { kind: 'dream'; theme: string; shapes: string[] }
+  /**
+   * Dream a new story: a place and shapes if named (the rest chosen by the
+   * server's model from the wish, else at random). `wish` is what was said, in
+   * plain words, when it was a sentence ("I need a forest story with a dog and
+   * a rabbit"); the model writes the story with that idea in mind.
+   */
+  | { kind: 'dream'; theme: string; shapes: string[]; wish?: string }
   /** Turn a setting on or off (null: toggle). */
   | { kind: 'setting'; which: 'oneHand' | 'highContrast' | 'gazeDwell' | 'forgiving' | 'voiceCommands' | 'music'; on: boolean | null };
 
@@ -124,25 +129,53 @@ const DREAM_THEMES: Readonly<Record<string, readonly string[]>> = {
   rain: ['rain', 'rainy', 'storm', 'puddles'],
   sky: ['sky', 'stars', 'clouds', 'moon', 'space'],
 };
+/** Hints for the speech service when a story is being asked for in plain words. */
+export function wishPhrases(): string[] {
+  return ['story', 'bedtime story', ...Object.values(DREAM_THEMES).flat(), ...['rabbit', 'bunny', 'fish', 'dog', 'puppy', 'bird', 'cup']];
+}
 /** Shapes a dreamed story can ask for (server/dream.ts DREAM_SHAPES). */
-const DREAM_SHAPE_IDS = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup']);
+const DREAM_SHAPE_IDS = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail']);
+/** Words in a "dream ..." command that add no idea of their own. */
+const FILLER = new Set('mo lets let s us can you please dream a an the about with and in at on of by story new one some little'.split(' '));
 /** A dream request may be a longer sentence: "dream a story about the river with a fish and a bird". */
 const MAX_DREAM_WORDS = 16;
+/** A wish in plain words is longer still: "I need a forest story with a dog and a rabbit, and make it funny". */
+export const MAX_WISH_WORDS = 30;
+/**
+ * Asking for a story in plain words: "I need / I want / can we have / tell me /
+ * how about ... a story". Someone asking, not a story line that mentions one
+ * (the narration never says "I need a story").
+ */
+const ASKING_FOR_STORY =
+  /^(mo )?(i need|i want|i d like|i would like|we want|we need|we d like|can we have|can i have|can you tell|can you make|could you tell|could we have|tell me|tell us|make me|make us|give me|give us|lets have|let s have|let s hear|lets hear|how about|what about)\b.*\bstor(y|ies)\b/;
 
-/** "Dream ..." with the place and shapes named in it, in the order said. */
-function parseDream(said: string): VoiceCommand | null {
-  const words = said.split(' ');
-  // A command, not a story line that happens to say "dream": it starts with it.
-  if (!/^(mo )?(lets |let s |let us |can you |please )?dream\b/.test(said) || words.length > MAX_DREAM_WORDS) return null;
-  const padded = ` ${said} `;
+/** The place and the shapes (dreamable ones, in the order said, at most three) named in some words. */
+export function readWish(text: string): { theme: string; shapes: string[] } {
+  const padded = ` ${normalise(text)} `;
   const theme = Object.entries(DREAM_THEMES).find(([, names]) => names.some((n) => padded.includes(` ${n} `)))?.[0] ?? '';
   const found: [number, string][] = [];
   for (const [shape, names] of Object.entries(SHAPES)) {
     if (!DREAM_SHAPE_IDS.has(shape)) continue;
-    const at = Math.min(...names.map((n) => padded.indexOf(` ${n} `)).filter((i) => i >= 0));
+    // Plurals too: "dogs", "puppies".
+    const forms = names.flatMap((n) => [n, `${n}s`, ...(n.endsWith('y') ? [`${n.slice(0, -1)}ies`] : [])]);
+    const at = Math.min(...forms.map((n) => padded.indexOf(` ${n} `)).filter((i) => i >= 0));
     if (Number.isFinite(at)) found.push([at, shape]);
   }
-  return { kind: 'dream', theme, shapes: found.sort((a, b) => a[0] - b[0]).map(([, s]) => s).slice(0, 3) };
+  return { theme, shapes: found.sort((a, b) => a[0] - b[0]).map(([, s]) => s).slice(0, 3) };
+}
+
+/** "Dream ...", or a story asked for in plain words, with the place and shapes named in it. */
+function parseDream(said: string): VoiceCommand | null {
+  const words = said.split(' ');
+  // A command, not a story line that happens to say "dream": it starts with it.
+  const dream = /^(mo )?(lets |let s |let us |can you |please )?dream\b/.test(said) && words.length <= MAX_DREAM_WORDS;
+  const asking = !dream && ASKING_FOR_STORY.test(said) && words.length <= MAX_WISH_WORDS;
+  if (!dream && !asking) return null;
+  const read = readWish(said);
+  // Words beyond the place and the shapes ("...and make it funny") are an idea for the model to use.
+  const named = new Set([...Object.values(DREAM_THEMES).flat(), ...read.shapes.flatMap((sh) => SHAPES[sh])]);
+  const idea = words.some((w) => !FILLER.has(w) && !named.has(w) && !named.has(w.replace(/(ies|s)$/, (m) => (m === 'ies' ? 'y' : ''))));
+  return { kind: 'dream', ...read, ...(asking || idea ? { wish: said } : {}) };
 }
 
 /** The command in a short utterance, or null (unknown, or too long to be a command). */

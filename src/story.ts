@@ -32,6 +32,8 @@ const LAMP_SECONDS = 1.8;
  */
 const FIRST_HINT_SECONDS = 2;
 const GROW_HOLD_SECONDS = 0.6;
+/** The most a grow step asks for, as a share of the stage width. */
+const GROW_NEED_MAX = 0.7;
 const CONTINUE_HOLD_SECONDS = 1.0;
 const REVEAL_HOLD_SECONDS = 0.8;
 const LETGO_HOLD_SECONDS = 0.5;
@@ -95,6 +97,13 @@ const MAX_STEP_SECONDS = 0.25;
  * off, the headset is removed or the journal is open, and saves progress at
  * each chapter so a returning player resumes where they left off.
  */
+/**
+ * Why the story is paused now, for diagnostics: '' (playing), 'lamp' (the lamp
+ * switched off), 'away' (Quest menu or headset off), 'journal' (the Shadow
+ * Journal open), 'hands' (waiting to see hands) or 'sound' (waiting for a gesture to start sound).
+ */
+export const pauseRuntime = { why: '' as '' | 'lamp' | 'away' | 'journal' | 'hands' | 'sound' };
+
 export class StorySystem extends createSystem({
   stories: { required: [StoryState] },
   stages: { required: [Stage, ShapeRecognizer] },
@@ -371,6 +380,7 @@ export class StorySystem extends createSystem({
     }
     const needSound = soundLock.blocked && !soundLock.waived;
     const paused = !stage.getValue(Stage, 'lampOn') || away.now || journalOpen || needHands || needSound;
+    pauseRuntime.why = !paused ? '' : away.now ? 'away' : !stage.getValue(Stage, 'lampOn') ? 'lamp' : journalOpen ? 'journal' : needHands ? 'hands' : 'sound';
     if (paused) {
       setIfChanged(story, 'status', StoryStatuses.Paused);
       setIfChanged(
@@ -653,7 +663,8 @@ export class StorySystem extends createSystem({
         const alive = this.alivePuppet();
         const size = alive?.getValue(ShadowPuppet, 'size') ?? 0;
         if (this.growFrom <= 0) this.growFrom = size;
-        const need = Math.max(beat.minSize ?? 0, this.growFrom * beat.factor);
+        // Never more than GROW_NEED_MAX of the stage: a creature already big must not need a hand at the eyes.
+        const need = Math.min(GROW_NEED_MAX, Math.max(beat.minSize ?? 0, this.growFrom * beat.factor));
         const big = alive !== undefined && size >= need;
         this.holdTime = big ? this.holdTime + delta : 0;
         if (this.assistLevel >= 2 && alive) return done;
@@ -816,9 +827,14 @@ function setIfChanged(story: Entity, field: 'status' | 'caption', value: string)
 }
 
 /** An open hand held in the lamp light (to continue to the next chapter). */
+/**
+ * "Raise an open hand into the light to go on": an uncurled hand in the light,
+ * fingers together or spread (handOpened). A palm raised toward the wall is
+ * usually flat with the fingers together, read as a fish, and was not counted
+ * (Quest 3, Nov 16: go-on steps waited 8 to 21 s for a spread-finger pose).
+ */
 function openInLight(stage: Entity, side: 'left' | 'right'): boolean {
-  const shape = stage.getValue(ShapeRecognizer, side === 'left' ? 'leftShape' : 'rightShape');
-  return shape === ShapeIds.Open && Boolean(stage.getValue(ShapeRecognizer, side === 'left' ? 'leftInLight' : 'rightInLight'));
+  return Boolean(stage.getValue(ShapeRecognizer, side === 'left' ? 'leftInLight' : 'rightInLight')) && handOpened(stage, side);
 }
 
 /** Hands opened (one open hand, or both as the open-winged pair). */

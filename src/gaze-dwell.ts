@@ -207,6 +207,7 @@ export class GazeDwellSystem extends createSystem({
           stage.setValue(ShapeRecognizer, 'matchedHand', Hands.Right);
           stage.setValue(ShapeRecognizer, 'matchedShape', shape as never);
           stage.setValue(ShapeRecognizer, 'twoHanded', false);
+          accessRuntime.handsFreeWake = true;
           gazeRuntime.shapes++;
         },
       });

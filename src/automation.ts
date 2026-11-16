@@ -10,6 +10,7 @@ import {
   Scenery,
   Settings,
   ShadowJournal,
+  ShadowPuppet,
   ShapeRecognizer,
   Stage,
   StoryState,
@@ -22,6 +23,8 @@ import { toWire } from './performance/sharing.js';
 import { gazeRuntime } from './gaze-dwell.js';
 import { coachRuntime } from './mo-coach.js';
 import { fireflyRuntime } from './fireflies.js';
+import { finaleLightsRuntime } from './finale-lights.js';
+import { voiceRuntime } from './voice-control.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
 import { soundRuntime } from './sfx.js';
@@ -81,6 +84,7 @@ export class AutomationSystem extends createSystem({
   Stage: { required: [Stage] },
   StoryState: { required: [StoryState] },
   WebcamHands: { required: [WebcamHands] },
+  puppets: { required: [ShadowPuppet] },
 }) {
   private frames = 0;
   /** Milliseconds of app work (all systems) per frame, last 600 frames. */
@@ -149,6 +153,20 @@ export class AutomationSystem extends createSystem({
       where: (name: string) => {
         const o = this.world.scene.getObjectByName(name);
         return o ? o.getWorldPosition(new Vector3()).toArray() : null;
+      },
+      /** The shadow creatures that are not hidden: shape, state and place on the stage (u across, v up, in stage sizes). */
+      puppets: () => {
+        const r = stageRuntime;
+        const out: { shape: string; state: string; u: number; v: number }[] = [];
+        for (const e of this.queries.puppets.entities) {
+          const state = String(e.getValue(ShadowPuppet, 'state'));
+          const o = e.object3D;
+          if (state === 'hidden' || !o) continue;
+          const d = o.getWorldPosition(new Vector3()).sub(r.center);
+          const round = (n: number) => Math.round(n * 1000) / 1000;
+          out.push({ shape: String(e.getValue(ShadowPuppet, 'shape')), state, u: round((d.x * r.right.x + d.z * r.right.z) / r.width), v: round(d.y / r.height) });
+        }
+        return out;
       },
       /** A named object's world size (metres) and world scale, or null (layout tests). */
       sizeOf: (name: string) => {
@@ -261,6 +279,8 @@ export class AutomationSystem extends createSystem({
           voice: { state: accessRuntime.voiceState, heard: accessRuntime.voiceHeard },
           coach: { ...coachRuntime },
           fireflies: { ...fireflyRuntime },
+          finaleLights: { ...finaleLightsRuntime },
+          voiceCommands: { ...voiceRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
           pwa: { ...pwaRuntime },
@@ -280,6 +300,7 @@ export class AutomationSystem extends createSystem({
           anchorLastTime: stageRuntime.anchorFromLastTime,
           anchorFixes: stageRuntime.anchorFixes,
           center: stageRuntime.center.toArray().map((v) => Math.round(v * 1000) / 1000),
+          walls: [...stageRuntime.wallWhy],
           // The desk's height, where the lamp's switch stands (the lamp itself is behind the viewer).
           deskY: Math.round((this.world.scene.getObjectByName('desk-switch')?.position.y ?? 0) * 1000) / 1000,
         };

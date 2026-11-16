@@ -4,6 +4,7 @@
 //   gsutil cat 'gs://<bucket>/diag/2026-11-12/*.jsonl' | node scripts/diag/summarize.mjs -
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { transitionWindows } from './windows.mjs';
 
 function files(path) {
   if (statSync(path).isDirectory()) return readdirSync(path).flatMap((f) => files(join(path, f)));
@@ -48,17 +49,44 @@ for (const [id, rows] of [...sessions].sort((a, b) => a[1][0].at - b[1][0].at)) 
   const p95 = xrSnaps.map((s) => s.p95Ms).filter((x) => x > 0);
   const worst = xrSnaps.map((s) => s.worstMs).filter((x) => x > 0);
   console.log(`fps in XR (per 5 s window): p5 ${pct(fps, 0.05)}  median ${pct(fps, 0.5)}  p95 ${pct(fps, 0.95)}   frame p95 ms: median ${pct(p95, 0.5)}  worst window ${pct(worst, 1)}`);
-  const below = fps.filter((f) => f < 60).length;
-  console.log(`windows under 60 fps: ${below}/${fps.length}   session frame rate: ${[...new Set(xrSnaps.map((s) => s.rate))].join('/') || '-'}  supported: ${(xrSnaps.at(-1)?.rates ?? []).join(',') || '-'}`);
+  // The headset's own transitions (sleep, wake, the system menu's blur) are counted on their own (windows.mjs).
+  const transitions = transitionWindows(rows);
+  const playing = xrSnaps.filter((s) => !transitions.has(s)).map((s) => s.fps).filter((x) => x > 0);
+  const during = xrSnaps.filter((s) => transitions.has(s)).map((s) => s.fps).filter((x) => x > 0);
+  const below = playing.filter((f) => f < 60).length;
+  const lowest = during.length ? Math.min(...during).toFixed(1) : '-';
+  console.log(`windows under 60 fps: ${below}/${playing.length}   system transitions (sleep, wake, menu): ${during.length} window(s), lowest ${lowest} fps   session frame rate: ${[...new Set(xrSnaps.map((s) => s.rate))].join('/') || '-'}  supported: ${(xrSnaps.at(-1)?.rates ?? []).join(',') || '-'}`);
   const rate = ev('rate')[0];
   if (rate) console.log(`requested 72 Hz: ${rate.result ?? (rate.ok ? 'granted' : 'refused')}`);
   const q = ev('quality');
   console.log(`quality: ${q.length ? q.map((e) => `-> ${e.level} at ${e.t}s (${e.fps} fps)`).join(', ') : 'stayed at 0'}   final shadow map ${snaps.at(-1)?.shadowMap ?? '-'}`);
   for (const p of ev('placed')) {
     console.log(`placed: ${p.place}  wall ${p.wallW} m wide at ${p.wallD} m  stage ${p.stageW} m  planes ${p.planes} (vertical ${p.vplanes})${p.labels?.length ? ' labels: ' + p.labels.join(', ') : p.vlabels ? ': ' + p.vlabels : ''}  meshes ${p.meshes}${p.desk ? `  desk ${p.desk}` : ''}${p.fovH ? `  view ${p.fovH}°` : ''}  at ${p.t}s`);
+    // Why each wall could or could not hold the stage (label, distance, angle from the view, verdict).
+    if (p.walls?.length) console.log(`   walls: ${p.walls.join(' | ')}`);
   }
   const tips = ev('coach');
   if (tips.length) console.log(`Mo's tips: ${tips.length} (${tips.filter((t) => t.source === 'ai').length} by AI), median ${pct(tips.map((t) => t.ms), 0.5)} ms; facts: ${count(tips.flatMap((t) => t.facts ?? []))}`);
+  // Settings at the start and each change (accessibility and comfort), and why the story paused.
+  const sets = ev('settings');
+  if (sets.length) {
+    const fmt = (e) => `tolerance ${e.tolerance}, hints ${e.hints}${e.oneHand ? ', one hand' : ''}${e.highContrast ? ', high contrast' : ''}${e.lookToPress ? ', look to press' : ''}${e.voiceCommands ? ', voice commands' : ''}${e.music ? '' : ', no music'}`;
+    console.log(`settings: ${fmt(sets[0])}${sets.length > 1 ? `  then ${sets.slice(1).map((e) => `[${e.t}s] ${fmt(e)}`).join('  ')}` : ''}`);
+  }
+  const pauses = ev('pause').filter((e) => e.why !== 'playing');
+  if (pauses.length) {
+    const resumed = ev('pause').filter((e) => e.why === 'playing').length;
+    console.log(`pauses: ${pauses.length} (${count(pauses.map((e) => e.why))}), story went on after ${resumed}`);
+  }
+  const voices = ev('voice');
+  if (voices.length) {
+    // Voice commands: how they ran, and what became of each piece of speech (counts only).
+    const v = voices.at(-1);
+    const states = voices.map((e) => e.state).filter((x, i, all) => x !== all[i - 1]).join(' > ');
+    const audio = voices.map((e) => e.audio || '-').filter((x, i, all) => x !== all[i - 1]).join(' > ');
+    console.log(`voice commands: ${states}   microphone audio: ${audio}${v.resumes ? ` (woken ${v.resumes}x)` : ''}`);
+    console.log(`   speech sent ${v.clips} (too short ${v.short}): understood ${v.understood}, nothing ${v.empty}, failed ${v.failed}; acted on ${v.acted}, not now ${v.refused}, not a command ${v.notCommands}, ignored ${v.ignored}`);
+  }
   const anchors = ev('anchor');
   if (anchors.length) {
     const a = anchors.at(-1);

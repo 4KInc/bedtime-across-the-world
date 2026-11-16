@@ -111,7 +111,7 @@ function flatHand(g: CanvasRenderingContext2D, ox: number, oy: number, thumbUp: 
   capsule(g, ox - 110, oy + 50, ox - 60, oy + 50, 44); // wrist
 }
 
-/** Ghost hand demonstrating a shape (rabbit, fish, dog or the two-hand bird). */
+/** Ghost hand demonstrating a shape: every shape a story asks for (an unknown one shows the rabbit). */
 export function drawHandHint(g: CanvasRenderingContext2D, shape: string): void {
   g.clearRect(0, 0, HINT_SIZE, HINT_SIZE);
   ghostStyle(g);
@@ -155,6 +155,59 @@ export function drawHandHint(g: CanvasRenderingContext2D, shape: string): void {
     }
     capsule(g, 200, 330, 312, 330, 16);
     hintLabel(g, 'two hands, side by side');
+    return;
+  }
+  // The swan, crocodile, deer and snail had no drawing and showed the rabbit (Quest 3S, Nov 16).
+  if (shape === 'swan') {
+    // The forearm rising as the neck; the flat hand bent down at the wrist as the head, fingers the beak.
+    capsule(g, 170, 480, 236, 190, 40);
+    capsule(g, 236, 175, 340, 225, 40);
+    capsule(g, 330, 222, 404, 300, 24);
+    hintLabel(g, 'bent down at the wrist');
+    return;
+  }
+  if (shape === 'crocodile') {
+    // Two flat hands, one on top of the other, fingers forward and a little apart like long jaws.
+    for (const [y, tip] of [[150, 196], [300, 336]]) {
+      capsule(g, 40, y + 50, 90, y + 50, 40); // wrist
+      g.beginPath();
+      g.roundRect(70, y, 140, 100, 38); // palm
+      g.fill();
+      g.stroke();
+      capsule(g, 190, y + 50, 440, tip + (y === 150 ? 20 : -20), 32); // fingers together
+    }
+    hintLabel(g, 'hands like long jaws');
+    return;
+  }
+  if (shape === 'deer') {
+    // Wrists together at the bottom, fingers up and spread wide like antlers.
+    for (const side of [-1, 1]) {
+      const cx = 256 + side * 58;
+      capsule(g, 256 + side * 18, 470, cx, 400, 34); // wrist, touching at the centre
+      g.beginPath();
+      g.roundRect(cx - 46, 290, 92, 110, 34);
+      g.fill();
+      g.stroke();
+      for (let f = 0; f < 4; f++) {
+        const bx = cx - 34 + f * 23;
+        // Outermost finger spreads most, on both hands.
+        const spread = side * (side > 0 ? f : 3 - f) * 32;
+        capsule(g, bx, 295, bx + spread, 120 + Math.abs(f - 1.5) * 18, 13);
+      }
+    }
+    hintLabel(g, 'fingers up, spread');
+    return;
+  }
+  if (shape === 'snail') {
+    // A fist for the shell, two fingers poking forward and up for its eyes.
+    capsule(g, 170, 400, 110, 480, 44); // wrist
+    capsule(g, 300, 270, 410, 170, 17); // index (eye)
+    capsule(g, 310, 300, 430, 230, 17); // middle (eye)
+    g.beginPath();
+    g.roundRect(140, 230, 190, 170, 75); // fist
+    g.fill();
+    g.stroke();
+    hintLabel(g, 'a fist, two fingers out');
     return;
   }
   drawRabbitHand(g);

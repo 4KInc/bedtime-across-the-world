@@ -10,7 +10,7 @@ import {
   Types,
   Vector3,
 } from '@iwsdk/core';
-import { handOverride, handRuntime, HandSample, JOINT_COUNT, secondHands, SILHOUETTE_LAYER, xrSecond } from './stage-runtime.js';
+import { handOverride, handRuntime, HandSample, JOINT_COUNT, secondHands, SILHOUETTE_LAYER, stageRuntime, xrSecond } from './stage-runtime.js';
 
 type Pair = readonly [number, number, number]; // joint a, joint b, fixed radius (0 = from joints)
 
@@ -38,7 +38,19 @@ interface HandCaster {
   bones: InstancedMesh;
   xrHand: XRHand | null;
   spaces: XRJointSpace[];
+  /** This player's own hand, lowered to rest: it casts no shadow (only own hands; a Live partner's always cast). */
+  own: boolean;
+  resting: boolean;
 }
+
+/**
+ * A hand lowered below the performance zone (stage-runtime.ts reachZone: down to
+ * 40 cm under the eyes) is resting, and casts no shadow: hands put down between
+ * shapes put their shadows on the wall and distracted from the story (Quest 3,
+ * Nov 16). Metres below the eyes, with a gap so a hand at the edge does not flicker.
+ */
+const REST_BELOW = 0.42;
+const REST_ABOVE = 0.36;
 
 /**
  * Builds invisible, shadow-casting capsules (spheres at joints, cylinders along
@@ -91,7 +103,7 @@ export class HandCasterSystem extends createSystem(
         if (!second) mesh.layers.enable(SILHOUETTE_LAYER[side]);
         root.add(mesh);
       }
-      return { sample, joints, bones, xrHand: null, spaces: [] };
+      return { sample, joints, bones, xrHand: null, spaces: [], own: !second, resting: false };
     };
     this.hands = { left: make(handRuntime.left, 'left'), right: make(handRuntime.right, 'right') };
     const secondSample = (): HandSample => ({
@@ -220,7 +232,14 @@ export class HandCasterSystem extends createSystem(
       caster.joints.visible = caster.bones.visible = false;
       return;
     }
-    const casting = !caster.sample.hideCasters;
+    if (caster.own && stageRuntime.ready) {
+      // Palm height (wrist and middle-finger base) under the eyes.
+      const j = caster.sample.joints;
+      const below = stageRuntime.eye.y - (j[1] + j[34]) * 0.5;
+      caster.resting = below > REST_BELOW ? true : below < REST_ABOVE ? false : caster.resting;
+    } else caster.resting = false;
+    caster.sample.resting = caster.resting;
+    const casting = !caster.sample.hideCasters && !caster.resting;
     caster.joints.castShadow = casting;
     caster.bones.castShadow = casting;
     const joints = caster.sample.joints;

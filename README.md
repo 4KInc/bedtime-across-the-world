@@ -31,9 +31,27 @@ fixed, and checked again on the headset.
 | Play it | https://shadowplay-1031148889398.us-central1.run.app |
 | Play it with live diagnostics on screen | https://shadowplay-1031148889398.us-central1.run.app/?diag |
 
-**Smooth on both headsets.** Every session held the requested 72 Hz: median
-71.5 to 72 fps, a frame-time 95th percentile around 15 ms, and not one
-5-second window under 60 fps, on Quest 3 and Quest 3S alike.
+**Meets the 60 fps minimum on both headsets.** Every session held the requested
+72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.8 to 15.5 ms (under
+the 16.7 ms that 60 fps allows). Not one of 457 five-second windows of the app
+running dropped under 60 fps. The 25 windows while the headset itself slept,
+woke or showed its system menu are counted apart; the lowest of those (47 fps)
+was a Quest 3 waking after three hours asleep and finding the room again.
+
+**The device sessions (the evidence).** Each `?diag` session has an anonymous
+id; its raw data is in [`docs/diag/`](docs/diag) (frame times, hand tracking,
+room detection, story beats; never audio, video, names or codes). Check any
+number here with `node scripts/diag/summarize.mjs docs/diag`.
+
+| Session | Headset | Started (UTC) | In the headset | What was played | fps (median, lowest 5 s) | Frame p95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| [`cdj3st58rm`](docs/diag/2026-11-14/cdj3st58rm.jsonl) ([part 2](docs/diag/2026-11-15/cdj3st58rm.jsonl)) | Quest 3 | Nov 14, 22:56 | 12 min | Counting Stars: 12 minutes waiting on the opening bird, made the textbook way (the evidence behind recognising shapes as people really make them) | 71.8, 46.9 | 15.0 ms |
+| [`49768whrpd`](docs/diag/2026-11-15/49768whrpd.jsonl) | Quest 3 | Nov 15, 02:20 | 26 min | Counting Stars, The Brave Little Dog, The Night Garden and The Letter That Took the Slow Way (the opening bird in 22 s, then 6 s). Only its last half minute (16:28) survives in `docs/diag`: the rest was overwritten when the page was reopened, a server bug now fixed, so the numbers here are that half minute's | 72.0, 61.1 | 15.5 ms |
+| [`32kbw476u2`](docs/diag/2026-11-15/32kbw476u2.jsonl) | Quest 3S | Nov 15, 07:19 | 0.3 min | A dreamed story; stage found on a labelled wall (27 room planes) | 71.4, 68.0 | 16.2 ms |
+| [`xhz96jhkv9`](docs/diag/2026-11-15/xhz96jhkv9.jsonl) | Quest 3 | Nov 15, 16:28 | 4.6 min | Two dreamed stories, each to The End | 71.6, 67.4 | 14.8 ms |
+| [`xnhuwf56d6`](docs/diag/2026-11-15/xnhuwf56d6.jsonl) | Quest 3S | Nov 15, 16:38 | 0.6 min | The Night Garden | 71.5, 68.3 | 15.5 ms |
+| [`afthmamdpn`](docs/diag/2026-11-15/afthmamdpn.jsonl) | Quest 3S | Nov 15, 16:39 | 8.4 min | The Night Garden, The Moth, Mo and the Midnight Moon Buggy (to The End), Goodnight Across the Sea | 71.6, 67.5 | 14.8 ms |
+| [`m3zdndu6vq`](docs/diag/2026-11-15/m3zdndu6vq.jsonl) | Quest 3 | Nov 15, 19:25 | 11.7 min | A dreamed story, Moon Buggy, Sleepy Little Dinosaur and Little Lost Spaceship, each to The End; six of Mo's AI tips in 0.6 to 0.9 s | 71.8, 70.4 | 14.8 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
 
@@ -139,8 +157,11 @@ hand held still in front of you will do.
   the next story.
 - **Dream a new one** (Tonight's story): Mo dreams up a new short story for a
   place (sea, forest, meadow, river, rain or sky) and two or three shapes the
-  storyteller picks, in the order the story should ask for them (or say
-  "dream a story about the river with a fish and a bird"). Gemini writes the
+  storyteller picks, in the order the story should ask for them. Or press
+  **Say your idea** and ask in your own words: "I need a forest story with a
+  dog and a rabbit" (the place and shapes named are used; Gemini picks
+  whatever the idea leaves out, and lets the idea colour the story). With
+  Voice commands on, the same sentence works without the button. Gemini writes the
   narration lines; the app builds the story itself (the same pattern as
   Counting Stars) and checks every line, so it plays like any other story, with
   captions and a narrator's voice that says the child's name. A dreamed story
@@ -180,7 +201,7 @@ never puts a word on the wall that the app has not checked.
 | | What it does | What it is given | Guardrails |
 | --- | --- | --- | --- |
 | **Mo the coach** (Gemini 3.5 Flash Lite) | When a hand is stuck on a shape, Mo gives one short, warm tip in about 0.7 s ("curl your ring finger down") | Only the shape's name and a few fixed facts the headset worked out from the hand's joints | The facts come from the app's own recognition, not from the model; the reply must fit them, pass the content checks (no brands, Mo is "she", no pose from another shape), or the app's own words are used |
-| **Dream a new story** (Gemini 3.8 Flash) | A new bedtime story for the place and shapes the storyteller picks, in about 4 s | A theme and shape names, never names or anything typed or said | The model writes only lines of narration into a fixed shape; the app builds the story itself (scenes, requests, scenery that fits each creature), checks every line, and refuses anything off. Shared, it is checked again by the server and the family's device |
+| **Dream a new story** (Gemini 3.8 Flash) | A new bedtime story for the place and shapes the storyteller picks, or for an idea said in their own words ("a forest story with a dog and a rabbit"), in about 4 s | A theme and shape names; with **Say your idea**, the words said (plain words only, at most 30, checked first; brands and never-say words are dropped and not sent) | The model writes only lines of narration into a fixed shape; the app builds the story itself (scenes, requests, scenery that fits each creature), checks every line, and refuses anything off. Shared, it is checked again by the server and the family's device |
 | **A voice for every line** | The library is read by five narrators recorded offline with **Kokoro**, an open model (Apache-2.0); a dreamed story is read live by **Google Cloud Text-to-Speech**, saying the child's name | Story lines only | Only plain story lines that pass the content checks are spoken; each is cached and deleted after 30 days. When a parent records, *they* are the narrator |
 | **Voice commands** | Say the shape, "pause", "go on", "music off" | A spoken phrase of a second or two (the browser's own recognition, else **Google Cloud Speech-to-Text**) | Only on when switched on; the clip is forgotten; ignored while recording or talking live |
 | **The child's hands** | The family viewer turns the phone's camera into hand positions with **MediaPipe**, on the device | Camera frames, on the device only | Video never leaves the device; a grown-up allows the camera first |
@@ -209,7 +230,8 @@ are private to the family and deleted after 30 days.
   private family code and is deleted after 30 days.
 - The camera starts only after a grown-up allows it on that device. Video never
   leaves the device; only hand positions are used (and, in Live, sent).
-- The microphone opens only when the person presses Record with voice or Talk,
+- The microphone opens only when the person presses Record with voice, Talk or
+  Say your idea (from the press until the idea is said, at most 10 seconds),
   or turns on Voice commands. With Voice commands on, a short spoken phrase is
   understood by the browser's own speech recognition or, where the headset
   browser has none, sent to a speech-to-text service and forgotten; commands
@@ -219,8 +241,12 @@ are private to the family and deleted after 30 days.
   should be curled down"), never names, video, audio or free text. Where the
   server has AI enabled, Google's Gemini words Mo's tip from those; otherwise
   the app's own words are used. Nothing is stored.
-- A dreamed story: the app sends a theme and shape names only (never names or
-  anything typed or said), and keeps the story on the device. Its lines are
+- A dreamed story: the app sends a theme and shape names, and, only when the
+  storyteller uses Say your idea, the words of their idea (turned into text as
+  above). The server checks those words first (plain words, at most 30, no
+  brands or never-say words, else they are dropped) and sends them to Gemini as
+  an idea for the story, asking it to use no names from them; they are never
+  stored, logged or put in the story. The story is kept on the device. Its lines are
   voiced by Google Cloud Text-to-Speech on the server; a line that names the
   child sends that first name with it. Each spoken line is kept in the story
   bucket by its words (not linked to any family) and deleted after 30 days.
@@ -317,7 +343,7 @@ recordings; the models are built in code). It uses:
 | --- | --- | --- |
 | [Kokoro-82M](https://github.com/hexgrad/kokoro) (hexgrad) | the storyteller voice, generated offline into `public/narration/` | Apache-2.0 |
 | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Google) | camera hands in the family viewer, on the device; see `public/models/NOTICE.md` | Apache-2.0 |
-| [Gemini API](https://ai.google.dev/gemini-api) (Google) | words Mo's tips and dreamed stories, on the server (only shape names and fixed hand facts are sent) | Gemini API Terms of Service |
+| [Gemini API](https://ai.google.dev/gemini-api) (Google) | words Mo's tips and dreamed stories, on the server (shape names, fixed hand facts, and a spoken story idea when Say your idea is used) | Gemini API Terms of Service |
 | [Cloud Speech-to-Text](https://cloud.google.com/speech-to-text) (Google) | voice commands when the headset browser has no speech recognition (short clips, not stored) | Google Cloud Terms of Service |
 | [Cloud Text-to-Speech](https://cloud.google.com/text-to-speech) (Google) | the narrator's voice for dreamed stories, on the server | Google Cloud Terms of Service |
 | [Inter](https://rsms.me/inter/) (The Inter Project Authors) | typeface of the headset panels (via `@pmndrs/msdfonts`) | SIL OFL 1.1 |
@@ -363,6 +389,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/new-stories.mjs`, `story-worlds.mjs`, `dino-space.mjs` | The newer stories told to the end with their narration; choosing each story world by hand ray, its scenery, and the dinosaur and spaceship going home at the finale |
 | `node scripts/sim/sound-unlock.mjs` | Sound held back until a gesture: the story waits on its line, a pinch plays it, captions carry on without one |
 | `node scripts/sim/dream-stories.mjs`, `dream-voice.mjs`, `share-dreamed.mjs` | Dreaming a story (place and shapes), its narrator's voice with the child's name, recording and sending it |
+| `node scripts/sim/dream-wish.mjs` | Say your idea: "I need a forest story with dog and rabbit" heard by the browser, and (as on the Quest Browser) recorded until the second press and turned into words by the server; an idea that names nothing completed by the model's pick |
 | `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |

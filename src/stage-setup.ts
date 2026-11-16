@@ -102,6 +102,8 @@ export class StageSetupSystem extends createSystem({
   private roomPool: RoomPlane[] = [];
   private wall: WallChoice | null = null;
   private planeNormal = new Vector3();
+  private planePoint = new Vector3();
+  private planeQ = new Quaternion();
   private bookSpot = new Vector3();
   private lateCheck = 0;
   /** Chosen wall's horizontal extent, relative to the point straight ahead. */
@@ -373,10 +375,14 @@ export class StageSetupSystem extends createSystem({
       obj.updateMatrixWorld();
       r.orientation = plane.orientation;
       r.label = (plane as XRPlane & { semanticLabel?: string }).semanticLabel;
-      r.point.x = obj.position.x;
-      r.point.y = obj.position.y;
-      r.point.z = obj.position.z;
-      this.planeNormal.set(0, 1, 0).applyQuaternion(obj.quaternion);
+      // World position and direction, like the corners and the head: the plane's own
+      // transform is local to its parent, which need not sit at the origin.
+      obj.getWorldPosition(this.planePoint);
+      obj.getWorldQuaternion(this.planeQ);
+      r.point.x = this.planePoint.x;
+      r.point.y = this.planePoint.y;
+      r.point.z = this.planePoint.z;
+      this.planeNormal.set(0, 1, 0).applyQuaternion(this.planeQ);
       r.normal.x = this.planeNormal.x;
       r.normal.y = this.planeNormal.y;
       r.normal.z = this.planeNormal.z;
@@ -413,7 +419,7 @@ export class StageSetupSystem extends createSystem({
 
   /** Pick the wall most directly in front of the player (see wall-choice.ts for the rules). */
   private findWall(): boolean {
-    this.wall = chooseWall(this.head, this.forward, this.readRoom(), stageWidthPerMeter(this.measureFov()));
+    this.wall = chooseWall(this.head, this.forward, this.readRoom(), stageWidthPerMeter(this.measureFov()), stageRuntime.wallWhy);
     return this.wall !== null;
   }
 

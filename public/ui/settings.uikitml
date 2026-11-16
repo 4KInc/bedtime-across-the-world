@@ -228,7 +228,13 @@
   </div>
 
   <div id="dream-section" class="section">
-    <div class="label">Dream a story about</div>
+    <div class="label">Tell Mo what story you would like, in your own words</div>
+    <div class="row">
+      <button id="dream-say" class="family">
+        <span id="dream-say-label" class="toggle-text">Say your idea</span>
+      </button>
+    </div>
+    <div class="label">Or dream a story about</div>
     <div class="row">
       <button id="dream-theme-sea" class="option">Sea</button>
       <button id="dream-theme-forest" class="option">Forest</button>

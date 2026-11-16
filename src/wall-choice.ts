@@ -100,6 +100,8 @@ export function labelKind(label: string | undefined): LabelKind {
 }
 
 interface Measured {
+  /** Why measure() turned the plane down: 'side' (edge-on or facing away) or 'height' (not at eye height). */
+  why: '' | 'side' | 'height';
   nx: number;
   nz: number;
   dist: number;
@@ -124,6 +126,9 @@ function measure(plane: RoomPlane, head: V3, fx: number, fz: number, out: Measur
     dist = -dist;
   }
   const facing = -(nx * fx + nz * fz);
+  out.why = 'side';
+  out.dist = dist;
+  out.facing = facing;
   if (facing <= 0.05) return false;
   const along = dist / Math.max(0.2, facing);
   const ax = head.x + fx * along;
@@ -150,7 +155,9 @@ function measure(plane: RoomPlane, head: V3, fx: number, fz: number, out: Measur
   out.uMin = uMin;
   out.uMax = uMax;
   // Eye height must fall within (or near) the outline too.
-  return vMin - 0.5 <= 0 && vMax + 0.5 >= 0;
+  const atEye = vMin - 0.5 <= 0 && vMax + 0.5 >= 0;
+  out.why = atEye ? '' : 'height';
+  return atEye;
 }
 
 /**
@@ -201,8 +208,8 @@ export function fitOnWall(
   return best;
 }
 
-const scratch: Measured = { nx: 0, nz: 0, dist: 0, facing: 0, uMin: 0, uMax: 0 };
-const other: Measured = { nx: 0, nz: 0, dist: 0, facing: 0, uMin: 0, uMax: 0 };
+const scratch: Measured = { why: '', nx: 0, nz: 0, dist: 0, facing: 0, uMin: 0, uMax: 0 };
+const other: Measured = { why: '', nx: 0, nz: 0, dist: 0, facing: 0, uMin: 0, uMax: 0 };
 
 /** The stage width a wall at `dist` metres gets before fitting it between obstacles. */
 function desiredWidth(dist: number, widthPerMeter: number): number {
@@ -216,45 +223,78 @@ function desiredWidth(dist: number, widthPerMeter: number): number {
  * door or window on it. Labelled walls win over unlabelled planes at equal footing.
  * `forward` is the horizontal view direction.
  */
-export function chooseWall(head: V3, forward: V3, planes: readonly RoomPlane[], widthPerMeter = WIDTH_PER_METER): WallChoice | null {
+export function chooseWall(head: V3, forward: V3, planes: readonly RoomPlane[], widthPerMeter = WIDTH_PER_METER, why?: string[]): WallChoice | null {
   const flen = Math.hypot(forward.x, forward.z) || 1;
   const fx = forward.x / flen;
   const fz = forward.z / flen;
   let best: WallChoice | null = null;
   let bestScore = -Infinity;
+  if (why) why.length = 0;
   for (const plane of planes) {
+    if (plane.orientation !== 'vertical') continue;
     const kind = labelKind(plane.label);
-    if (kind === 'opening') continue;
-    if (!measure(plane, head, fx, fz, scratch)) continue;
-    const { nx, nz, dist, facing, uMin, uMax } = scratch;
-    if (dist < MIN_WALL || dist > MAX_WALL || facing < FRONT_COS) continue;
-    if (uMin - WALL_MARGIN > 0 || uMax + WALL_MARGIN < 0) continue;
-    // Doors and windows lying on this wall, within the stage's band of height.
-    const blocked: Array<[number, number]> = [];
-    for (const o of planes) {
-      if (o === plane || labelKind(o.label) !== 'opening') continue;
-      if (!measure(o, head, fx, fz, other)) continue;
-      if (Math.abs(other.dist - dist) > OPENING_DEPTH || other.nx * nx + other.nz * nz < 0.95) continue;
-      let vMin = Infinity;
-      let vMax = -Infinity;
-      for (const c of o.corners) {
-        vMin = Math.min(vMin, c.y - head.y);
-        vMax = Math.max(vMax, c.y - head.y);
-      }
-      if (vMax < STAGE_BAND_LOW || vMin > STAGE_BAND_HIGH) continue;
-      blocked.push([other.uMin, other.uMax]);
+    const verdict = judge(plane, kind, head, fx, fz, planes, widthPerMeter);
+    if (why && why.length < MAX_WHY) {
+      // "wall 1.9m 12d ok": label, distance, angle from the view, and the verdict (diagnostics).
+      const angle = Math.round((Math.acos(Math.max(-1, Math.min(1, scratch.facing))) * 180) / Math.PI);
+      // The label in plain characters only: the diagnostics refuse anything else.
+      const label = (plane.label ?? '-').toLowerCase().replace(/[^a-z0-9_ -]/g, '').slice(0, 16) || '-';
+      why.push(`${label} ${scratch.dist.toFixed(1)}m ${angle}d ${verdict}`);
     }
-    const desired = desiredWidth(dist, widthPerMeter);
-    const fit = fitOnWall(uMin, uMax, desired, blocked, blocked.length ? Math.max(0.3, dist * MAX_SHIFT_TAN) : Infinity);
-    if (!fit) continue;
+    if (verdict !== 'ok') continue;
+    const { nx, nz, dist, facing, uMin, uMax } = scratch;
     const label = kind === 'wall' ? WALL_LABEL_BONUS : kind === 'other' ? -OTHER_LABEL_PENALTY : 0;
-    const score = facing - dist * 0.05 + label - Math.abs(fit.shift) * 0.1;
+    const score = facing - dist * 0.05 + label - Math.abs(fitted.shift) * 0.1;
     if (score > bestScore) {
       bestScore = score;
-      best = { nx, nz, point: { ...plane.point }, dist, width: fit.width, shift: fit.shift, wallWidth: uMax - uMin };
+      best = { nx, nz, point: { ...plane.point }, dist, width: fitted.width, shift: fitted.shift, wallWidth: uMax - uMin };
     }
   }
   return best;
+}
+
+/** Walls described for diagnostics, at most (the diagnostics accept arrays of up to 16). */
+const MAX_WHY = 16;
+const fitted = { width: 0, shift: 0 };
+
+/**
+ * Whether one vertical plane can hold the stage ('ok', with `scratch` and
+ * `fitted` filled in), or why not: 'opening' (a door or window), 'side' (edge-on
+ * or facing away), 'height' (not at eye height), 'near' or 'far' (outside
+ * 0.6-4 m), 'angle' (turned more than 40 degrees), 'aside' (the point straight
+ * ahead is off its outline), 'nofit' (no room clear of doors and windows).
+ */
+function judge(plane: RoomPlane, kind: LabelKind, head: V3, fx: number, fz: number, planes: readonly RoomPlane[], widthPerMeter: number): string {
+  scratch.dist = 0;
+  scratch.facing = 0;
+  if (!measure(plane, head, fx, fz, scratch)) return kind === 'opening' ? 'opening' : scratch.why || 'side';
+  if (kind === 'opening') return 'opening';
+  const { nx, nz, dist, facing, uMin, uMax } = scratch;
+  if (dist < MIN_WALL) return 'near';
+  if (dist > MAX_WALL) return 'far';
+  if (facing < FRONT_COS) return 'angle';
+  if (uMin - WALL_MARGIN > 0 || uMax + WALL_MARGIN < 0) return 'aside';
+  // Doors and windows lying on this wall, within the stage's band of height.
+  const blocked: Array<[number, number]> = [];
+  for (const o of planes) {
+    if (o === plane || labelKind(o.label) !== 'opening') continue;
+    if (!measure(o, head, fx, fz, other)) continue;
+    if (Math.abs(other.dist - dist) > OPENING_DEPTH || other.nx * nx + other.nz * nz < 0.95) continue;
+    let vMin = Infinity;
+    let vMax = -Infinity;
+    for (const c of o.corners) {
+      vMin = Math.min(vMin, c.y - head.y);
+      vMax = Math.max(vMax, c.y - head.y);
+    }
+    if (vMax < STAGE_BAND_LOW || vMin > STAGE_BAND_HIGH) continue;
+    blocked.push([other.uMin, other.uMax]);
+  }
+  const desired = desiredWidth(dist, widthPerMeter);
+  const fit = fitOnWall(uMin, uMax, desired, blocked, blocked.length ? Math.max(0.3, dist * MAX_SHIFT_TAN) : Infinity);
+  if (!fit) return 'nofit';
+  fitted.width = fit.width;
+  fitted.shift = fit.shift;
+  return 'ok';
 }
 
 /**

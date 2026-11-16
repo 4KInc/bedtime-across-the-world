@@ -252,7 +252,8 @@ export class ShapeMatchSystem extends createSystem({
     pairRuntime.rUp = r.features[8];
     pairRuntime.lPalm = palmUp(lj, true);
     pairRuntime.rPalm = palmUp(rj, false);
-    if (!this.left.inLight || !this.right.inLight) return null;
+    // Two hands held together: one in reach is enough (the other is right beside it).
+    if (!this.left.inLight && !this.right.inLight) return null;
     this.pairL.joints = this.smoothL.joints;
     this.pairL.features = l.features;
     this.pairL.curl = this.left.curl;

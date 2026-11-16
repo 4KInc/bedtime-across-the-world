@@ -64,6 +64,8 @@ export const stageRuntime = {
    * planes instead of the headset's detected planes.
    */
   testPlanes: null as RoomPlane[] | null,
+  /** Each vertical plane at the last wall search, and whether it could hold the stage or why not ("wall 1.9m 12d ok"; diagnostics). */
+  wallWhy: [] as string[],
   /** Automation only: behave as a browser without WebXR anchors. */
   testNoAnchors: false,
 };
@@ -85,6 +87,11 @@ export const accessRuntime = {
   /** The last thing understood, shown on the stage for a moment ('' for nothing), and when (performance.now()). */
   voiceHeard: '',
   voiceHeardAt: 0,
+  /**
+   * Set with a shape woken without a hand (said aloud, or Look to press): its
+   * creature performs on the wall by itself (puppet.ts takes and clears it).
+   */
+  handsFreeWake: false,
   /** Set by a spoken "help": Mo the coach gives a tip now (mo-coach.ts clears it). */
   coachRequested: false,
 };
@@ -110,6 +117,8 @@ export interface HandSample {
   radii: Float32Array;
   /** Set by the puppet system while a character replaces this hand's shadow. */
   hideCasters: boolean;
+  /** Lowered below the performance zone: casts no shadow (hand-caster.ts). */
+  resting?: boolean;
   /** Joint-angle features for this frame (written by the shape matcher). */
   features: Float32Array;
   /** Best silhouette template match at or above threshold ('' if none). */

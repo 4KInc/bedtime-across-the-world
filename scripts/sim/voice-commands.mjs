@@ -5,8 +5,9 @@
 //     waking the creature, pause and continue, the whole of Counting Stars told
 //     by voice with controllers in hand, and "voice commands off".
 //  B. no speech recognition in the browser: Chromium's synthetic audio device
-//     (a beep) is cut into short clips that are posted to /api/voice (answered
-//     here by the test), and the answer acted on.
+//     (a beep) is cut into short 16 kHz WAV clips, each starting half a second
+//     before the speech was noticed, posted to /api/voice (answered here by the
+//     test), and the answer acted on.
 //
 //   node scripts/sim/voice-commands.mjs [--gpu]
 // Needs the dev server (npm run dev) on https://localhost:8082.
@@ -96,9 +97,30 @@ const browser = await chromium.launch({
   await page.waitForFunction(() => __sp.get('StoryState', 'voiceDone'), null, { timeout: 30000 });
   v = await say('rabbit');
   const stillAsking = (await get('StoryState', 'beatId')) === 'stars-want-bird';
+  // A hand held up in the light, relaxed (not the bird): it must not take the spoken bird over (Quest 3S, Nov 16:
+  // a raised hand took it, and lowering it let the bird go to the desk before it had carried Mo).
+  await page.evaluate(() => IWER_DEVICE.remote.dispatch('set_input_mode', { mode: 'hand' }));
+  await sleep(800);
+  const { head, center } = await page.evaluate(() => ({ head: __sp.view().head, center: __sp.view().center }));
+  const handAt = [0, 1, 2].map((k) => head[k] + (center[k] - head[k]) * (0.4 / Math.hypot(center[0] - head[0], center[1] - head[1], center[2] - head[2])));
+  await page.evaluate((p) => IWER_DEVICE.remote.dispatch('set_transform', { device: 'hand-right', position: { x: p[0], y: p[1] - 0.05, z: p[2] } }), handAt);
+  await sleep(800);
+  const raised = await page.evaluate(() => ({ tracked: __sp.hands().right, lit: __sp.get('ShapeRecognizer', 'rightInLight'), shape: __sp.get('ShapeRecognizer', 'rightShape') }));
   await say('the bird please', 1200);
   const after = await get('StoryState', 'beatId');
   check('a shape not asked for is refused; the asked one wakes the creature', stillAsking && /not now/.test(v.heard) && after !== 'stars-want-bird', { refused: v.heard, after });
+  // With no hand in the light, the spoken bird performs by itself: it stays awake and crosses the wall (Quest 3, Nov 15: it went straight to the desk).
+  const path = [];
+  for (let i = 0; i < 12; i++) {
+    path.push((await page.evaluate(() => __sp.puppets())).find((p) => p.shape === 'bird') ?? null);
+    await page.waitForTimeout(500);
+  }
+  const awake = path.filter((p) => p?.state === 'alive');
+  const us = awake.map((p) => p.u);
+  const carried = (await page.evaluate(() => __sp.beats())).some((x) => x.id === 'stars-bird-carry') && (await get('StoryState', 'beatId')) !== 'stars-bird-carry';
+  check('the spoken bird performs on the wall by itself, and carries Mo, with a relaxed hand held up in the light', raised.tracked && raised.lit && raised.shape !== 'bird' && awake.length >= 6 && Math.max(...us) - Math.min(...us) > 0.1 && carried, { raised, carried, path: path.map((p) => p && `${p.state} ${p.u},${p.v}`) });
+  await page.evaluate(() => IWER_DEVICE.remote.dispatch('set_input_mode', { mode: 'controller' }));
+  await sleep(500);
 
   await say('pause');
   const paused = await get('StoryState', 'status');
@@ -150,12 +172,18 @@ const browser = await chromium.launch({
   for (let i = 0; i < 40 && !posts.length; i++) await sleep(250);
   await sleep(800);
   const opened = await page.evaluate(() => __sp.get('ShadowJournal', 'open'));
-  check('no browser recognition: short webm clips go to /api/voice and the answer is acted on', state === 'server' && posts.length >= 1 && /^audio\/webm/.test(posts[0].type) && posts[0].bytes > 200 && opened === true, {
+  // 16 kHz WAV, starting half a second before the speech was noticed (so "fish" is not sent as "ish"):
+  // at least 0.5 s + the shortest clip (0.25 s) of 16-bit samples, plus the header.
+  const minBytes = 44 + Math.round((0.5 + 0.25) * 16000) * 2;
+  check('no browser recognition: WAV clips (with the half second before the speech) go to /api/voice and the answer is acted on', state === 'server' && posts.length >= 1 && /^audio\/wav/.test(posts[0].type) && posts[0].bytes >= minBytes && opened === true, {
     state,
     clips: posts.length,
     first: posts[0],
     opened,
   });
+  // What became of the speech, as the headset's diagnostics log it (counts only).
+  const counts = await page.evaluate(() => __sp.view().voiceCommands);
+  check('diagnostics count the speech: sent, understood, acted on; the microphone audio running', counts.audio === 'running' && counts.clips === posts.length && counts.understood >= 1 && counts.acted >= 1 && counts.failed === 0, counts);
   await page.evaluate(() => __sp.set('Settings', 'voiceCommands', false));
   await sleep(500);
   check('turned off: microphone released', (await page.evaluate(() => __sp.view().voice.state)) === 'off', {});

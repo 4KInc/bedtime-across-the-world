@@ -12,11 +12,13 @@ import {
   XRMesh,
   XRPlane,
 } from '@iwsdk/core';
-import { ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js';
-import { handRuntime, stageRuntime } from '../stage-runtime.js';
+import { Settings, ShapeRecognizer, Stage, StoryState } from '../shadowplay-components.js';
+import { pauseRuntime } from '../story.js';
+import { accessRuntime, handRuntime, stageRuntime } from '../stage-runtime.js';
 import { coachRuntime } from '../mo-coach.js';
+import { voiceRuntime } from '../voice-control.js';
 import { dreamRuntime } from '../settings.js';
-import { FrameStats } from './frame-stats.js';
+import { FrameStats, TransitionGate } from './frame-stats.js';
 import { shadowMapSize } from '../quality-levels.js';
 import { formatSessionId, newSessionId } from './session-id.js';
 import { DropoutWatch } from '../tracking-watch.js';
@@ -70,10 +72,13 @@ export class DiagSystem extends createSystem({
   stages: { required: [Stage] },
   stories: { required: [StoryState] },
   recognizers: { required: [ShapeRecognizer] },
+  settings: { required: [Settings] },
   planes: { required: [XRPlane] },
   meshes: { required: [XRMesh] },
 }) {
   private stats = new FrameStats(5000);
+  /** Frames while the headset sleeps, wakes or blurs the view: tallied apart from the frame-rate windows. */
+  private transition = new TransitionGate(2000);
   private read = { avg: 0, p95: 0, worst: 0, fps: 0, frames: 0 };
   private session = newSessionId();
   private device = deviceClass();
@@ -86,7 +91,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, rec: '' };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '', rec: '' };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -144,8 +149,16 @@ export class DiagSystem extends createSystem({
       () => window.removeEventListener('unhandledrejection', onRejection),
       () => document.removeEventListener('visibilitychange', onHide),
       this.world.visibilityState.subscribe((state) => {
+        const before = this.visibility;
         this.visibility = state;
         if (state !== VisibilityState.NonImmersive && !this.xrAt) this.xrAt = performance.now();
+        if (state !== VisibilityState.NonImmersive) {
+          // A fresh window in the headset: frames from before (the 2D page, asleep, the system's view) are not this.
+          this.stats.reset();
+          // Entering XR is the app's own work (placing the stage, first draws): it counts. A change while
+          // in XR (sleep, wake, the system menu's blur) is the headset's: held out until it settles.
+          if (before !== VisibilityState.NonImmersive) this.transition.change(performance.now(), state === VisibilityState.Visible);
+        }
         this.event({ e: 'vis', state });
       }),
       () => {
@@ -163,9 +176,9 @@ export class DiagSystem extends createSystem({
       this.rateReported = true;
       this.event({ e: 'rate', requested: 72, result: stageRuntime.frameRateRequest });
     }
-    this.stats.push(delta * 1000);
-    this.watchLamp();
     const now = performance.now();
+    if (this.visibility === VisibilityState.NonImmersive || this.transition.admit(now, delta * 1000)) this.stats.push(delta * 1000);
+    this.watchLamp();
     this.watch(now);
     if (now - this.lastOverlay >= OVERLAY_MS) {
       this.lastOverlay = now;
@@ -219,6 +232,37 @@ export class DiagSystem extends createSystem({
     if (dreamRuntime.ok + dreamRuntime.failed !== this.last.dreams) {
       this.last.dreams = dreamRuntime.ok + dreamRuntime.failed;
       this.event({ e: 'dream', ok: dreamRuntime.ok, failed: dreamRuntime.failed, ms: dreamRuntime.ms, shapes: dreamRuntime.asked?.shapes ?? [] });
+    }
+    // Voice commands: on or off and how (browser or server), the microphone's audio, and what became of
+    // each piece of speech (counts only: never the words or the audio).
+    const v = voiceRuntime;
+    const voice = `${accessRuntime.voiceState}|${v.audio}|${v.clips}|${v.understood}|${v.empty}|${v.failed}|${v.acted}|${v.refused}|${v.ignored}|${v.notCommands}`;
+    if (voice !== this.last.voice) {
+      this.last.voice = voice;
+      this.event({ e: 'voice', state: accessRuntime.voiceState, audio: v.audio, resumes: v.resumes, short: v.short, clips: v.clips, understood: v.understood, empty: v.empty, failed: v.failed, acted: v.acted, refused: v.refused, notCommands: v.notCommands, ignored: v.ignored });
+    }
+    // The player's settings (accessibility and comfort), at the start and whenever one changes.
+    const set = this.queries.settings.entities.values().next().value;
+    if (set) {
+      const s = {
+        tolerance: String(set.getValue(Settings, 'tolerance') ?? ''),
+        hints: String(set.getValue(Settings, 'hints') ?? ''),
+        oneHand: Boolean(set.getValue(Settings, 'oneHand')),
+        highContrast: Boolean(set.getValue(Settings, 'highContrast')),
+        lookToPress: Boolean(set.getValue(Settings, 'gazeDwell')),
+        voiceCommands: Boolean(set.getValue(Settings, 'voiceCommands')),
+        music: Boolean(set.getValue(Settings, 'music')),
+      };
+      const key = Object.values(s).join('|');
+      if (key !== this.last.settings) {
+        this.last.settings = key;
+        this.event({ e: 'settings', ...s });
+      }
+    }
+    // The story paused or went on, and why (the lamp switch, the Quest menu, the journal, no hands, no sound yet).
+    if (pauseRuntime.why !== this.last.pause) {
+      this.event({ e: 'pause', why: pauseRuntime.why || 'playing', was: this.last.pause || 'playing', beat: story?.getValue(StoryState, 'beatId') ?? '' });
+      this.last.pause = pauseRuntime.why;
     }
     // Mo the coach gave a tip: which facts, AI or fixed words, how long it took.
     if (coachRuntime.tips !== this.last.tips) {
@@ -316,6 +360,8 @@ export class DiagSystem extends createSystem({
       anchor: stageRuntime.anchor,
       anchorLast: stageRuntime.anchorFromLastTime,
       meshes: this.queries.meshes.entities.size,
+      // Each wall at the last search and why it could not hold the stage (wall-choice.ts judge).
+      walls: [...stageRuntime.wallWhy],
     };
   }
 
@@ -347,6 +393,7 @@ export class DiagSystem extends createSystem({
 
   private snapshot(): Item {
     const r = this.stats.read(this.read);
+    const held = this.transition.take();
     const stage = this.queries.stages.entities.values().next().value;
     const story = this.queries.stories.entities.values().next().value;
     const session = this.world.xrSession as (XRSession & { frameRate?: number; supportedFrameRates?: Float32Array }) | null;
@@ -367,6 +414,8 @@ export class DiagSystem extends createSystem({
       avgMs: round(r.avg, 2),
       p95Ms: round(r.p95, 2),
       worstMs: round(r.worst, 2),
+      // Frames held out of the window as a system transition (sleep, wake, blur), and the longest of them.
+      ...(held.frames ? { transFrames: held.frames, transWorstMs: round(held.worst, 2) } : {}),
       quality,
       shadowMap: shadowMapSize(quality),
       // Two hands: wrist gap (m), finger curl and thumb bend each side, and whether each is in the light.
