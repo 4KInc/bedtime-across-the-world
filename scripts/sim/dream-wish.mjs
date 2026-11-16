@@ -60,8 +60,9 @@ async function session({ browserSpeech }) {
     const req = route.request();
     if (req.method() === 'GET') return route.fulfill({ json: { available: true } });
     clips.push({ url: req.url(), bytes: req.postDataBuffer()?.length ?? 0, type: req.headers()['content-type'] });
-    // A moment to work out the words, as the server takes (the button says Got it meanwhile).
-    await sleep(1500);
+    // A moment to work out the words, as the server takes (the button says Got it meanwhile):
+    // long enough for the check below to see it on a slow machine.
+    await sleep(4000);
     return route.fulfill({ json: { text: 'Can we have a story about being brave' } });
   });
   await context.addInitScript((browserSpeech) => {
@@ -170,11 +171,15 @@ const shapesOf = (story) => ({
   const before = prompts.length;
   const { page, pinch, asked, clips, context } = await session({ browserSpeech: false });
   await pinch('dream-say');
-  await sleep(2500);
+  // Soon after the press: the emulator's fake microphone plays a tone, which counts as speech, so
+  // listening can end by itself after a pause.
+  await sleep(800);
   const listening = await page.evaluate(() => __sp.view().dream.wish.state);
   const whileListening = await page.evaluate(() => __sp.view().dream.wish.label);
   if (process.env.DEBUG) console.log('  presses', await page.evaluate(() => __sp.presses()));
-  await pinch('dream-say'); // done
+  if (listening === 'listening') await pinch('dream-say'); // done
+  // The microphone is off and the words are being worked out.
+  await page.waitForFunction(() => __sp.view().dream.wish.state === 'understanding', null, { timeout: 4000, polling: 50 }).catch(() => undefined);
   const afterDone = await page.evaluate(() => ({ ...__sp.view().dream.wish, listen: undefined }));
   if (process.env.DEBUG) {
     for (let i = 0; i < 8; i++) {

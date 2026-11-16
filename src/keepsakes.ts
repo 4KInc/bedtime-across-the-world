@@ -25,6 +25,7 @@ import {
 } from '@iwsdk/core';
 import { Keepsake, loadKeepsakes, saveKeepsakes } from './journal-store.js';
 import { ShadowJournal } from './shadowplay-components.js';
+import { SHELF, shelfRuntime, shelfSpot } from './shelf.js';
 import { accessRuntime, stageRuntime } from './stage-runtime.js';
 import { storyRuntime } from './story-script.js';
 
@@ -35,6 +36,8 @@ const HEIGHT = 0.085;
 const BESIDE_BOOK = new Vector3(-0.14, 0, -0.07);
 /** Stars shown in the jar (the most recent); all are kept. */
 const SHOWN = 40;
+/** The jar on the family viewer's shelf, seen from further away than a desk. */
+const SHELF_SCALE = 1.5;
 const KEPT = 500;
 /** Seconds for a new star to rise off the wall and float into the jar. */
 const FLIGHT = 2.6;
@@ -98,9 +101,10 @@ function spot(i: number, out: Vector3): Vector3 {
  * story told to the end leaves a star, in the colour of the last creature
  * woken, which rises off the wall and floats into the jar. The stars are kept
  * (journal store) and the jar stands with the anchored stage, so they are
- * there again the next night: a quiet count of bedtimes told. In the headset
- * only. In high contrast
- * the stars are plain warm white.
+ * there again the next night: a quiet count of bedtimes told. On the family
+ * viewer the jar stands on the shelf under the stage (shelf.ts) and keeps the
+ * stories watched to the end on that phone or tablet. In high contrast the
+ * stars are plain warm white.
  */
 export class KeepsakeSystem extends createSystem({
   journals: { required: [ShadowJournal] },
@@ -184,20 +188,29 @@ export class KeepsakeSystem extends createSystem({
     this.time += delta;
     keepsakeRuntime.count = this.stars.length;
     const book = (this.queries.journals.entities.values().next().value as Entity | undefined)?.object3D;
-    // On the desk in the headset only (the family viewer on a phone has no desk).
+    // On the desk in the headset; on the family viewer's shelf on a phone or tablet (no desk there).
     const inXR = this.world.visibilityState.peek() !== VisibilityState.NonImmersive;
-    if (!book || !stageRuntime.ready || !inXR) {
+    const onShelf = !inXR && shelfRuntime.on;
+    if (!stageRuntime.ready || !(onShelf || (inXR && book))) {
       this.jar.visible = false;
       this.wasAtEnd = stageRuntime.atEnd;
       return;
     }
-    // Beside the book, turned with it (so it stays on the anchored desk with the stage).
-    book.getWorldPosition(this.v);
-    book.getWorldQuaternion(this.bookQ);
-    this.jar.position.copy(BESIDE_BOOK).applyQuaternion(this.bookQ).add(this.v);
-    this.jar.quaternion.copy(this.bookQ);
+    if (onShelf) {
+      // At the shelf's left end, facing the screen, a little bigger so it reads on a phone.
+      shelfSpot(SHELF.jar, this.jar.position);
+      this.jar.rotation.set(0, Math.atan2(stageRuntime.eye.x - this.jar.position.x, stageRuntime.eye.z - this.jar.position.z), 0);
+      this.jar.scale.setScalar(SHELF_SCALE);
+    } else {
+      // Beside the book, turned with it (so it stays on the anchored desk with the stage).
+      book!.getWorldPosition(this.v);
+      book!.getWorldQuaternion(this.bookQ);
+      this.jar.position.copy(BESIDE_BOOK).applyQuaternion(this.bookQ).add(this.v);
+      this.jar.quaternion.copy(this.bookQ);
+      this.jar.scale.setScalar(1);
+    }
     this.jar.visible = true;
-    this.player.head.getWorldPosition(this.head);
+    this.head.copy(stageRuntime.eye);
 
     // A story told to the end: a star leaves the wall for the jar.
     if (stageRuntime.atEnd && !this.wasAtEnd && this.flight < 0) this.award();
@@ -241,7 +254,7 @@ export class KeepsakeSystem extends createSystem({
     this.flight += delta;
     const k = Math.min(1, this.flight / FLIGHT);
     const e = k * k * (3 - 2 * k);
-    spot(this.stars.length, this.to).applyQuaternion(this.jar.quaternion).add(this.jar.position);
+    spot(this.stars.length, this.to).multiplyScalar(this.jar.scale.x).applyQuaternion(this.jar.quaternion).add(this.jar.position);
     this.flyer.position.lerpVectors(this.from, this.to, e);
     this.flyer.position.y += Math.sin(Math.PI * e) * 0.22;
     this.flyer.scale.setScalar(1.6 - 0.6 * e + 0.15 * Math.sin(this.time * 9));

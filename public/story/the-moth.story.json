@@ -457,6 +457,11 @@
       "text": "Make a bird with two hands side by side, and carry Mo on the wind."
     },
     {
+      "id": "sea-ahead",
+      "type": "scenery",
+      "set": "sea"
+    },
+    {
       "id": "mo-flies",
       "type": "moth",
       "mode": "riding"
