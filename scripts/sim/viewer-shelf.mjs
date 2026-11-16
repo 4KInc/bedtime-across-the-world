@@ -83,6 +83,16 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   check(`${device}: a story watched to the end leaves a star in the jar on the shelf`, ended && end.keepsakes.count === jarBefore + 1 && Math.abs(end.keepsakes.jar[1] - end.shelf.centre[1]) < 0.02 && end.jar && end.jar[3] <= layout.h, { before: jarBefore, after: end.keepsakes.count, jar: end.jar });
   check(`${device}: Mo comes down and sleeps on the shelf, and the lanterns are still there`, end.mo.phase === 'sleep' && end.moBox && mid(end.moBox)[1] < layout.h && !inside(mid(end.moBox), layout.pill) && end.lanterns.length >= 1, { mo: end.mo, moBox: end.moBox, lanterns: end.lanterns });
   await page.screenshot({ path: join(OUT, `${device}-end.png`) });
+  // The ending stays in view: no story list or goodnight over the shelf yet (Nov 16: they covered Mo and the jar
+  // at once); then, a few seconds later, the list of stories again.
+  const covered = () => page.evaluate(() => ({ list: !document.querySelector('.sp-list')?.hidden, goodnight: !!document.querySelector('.sp-goodnight') }));
+  // Measured from when the recording finishes playing (that is when they used to appear).
+  await page.waitForFunction(() => !__sp.get('PerformancePlayer', 'playing'), null, { timeout: 120000, polling: 100 });
+  await sleep(1500);
+  const atEnd = await covered();
+  await sleep(8000);
+  const later = await covered();
+  check(`${device}: the ending stays in view, then the stories come back`, !atEnd.list && !atEnd.goodnight && later.list, { atEnd, later });
   await page.context().close();
 }
 await browser.close();

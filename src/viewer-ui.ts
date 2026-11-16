@@ -68,6 +68,13 @@ const CSS = `
 `;
 
 /**
+ * After The End, the stage and its shelf stay in view this long before the
+ * goodnight and the list of stories: Mo flies down to sleep and the star drops
+ * into the jar then, and the goodnight card covered both at once (Nov 16).
+ */
+const ENDING_LINGER_MS = 7000;
+
+/**
  * The family viewer: a phone/tablet page for watching a bedtime story a
  * parent recorded, and joining in with your own hands through the camera
  * (only after a grown-up allows it; frames stay on the device).
@@ -371,6 +378,10 @@ export class ViewerUISystem extends createSystem({
     sheet.querySelector('[data-act="no"]')?.addEventListener('click', () => sheet.remove());
   }
 
+  /** When a finished story's ending has been seen (performance.now()), and whose goodnight to show then. */
+  private endingAt = 0;
+  private endingNames: FamilyNames | null = null;
+
   update(): void {
     if (viewerMode.on && !this.root) this.build();
     if (!viewerMode.on && this.root) this.teardownUI();
@@ -382,16 +393,30 @@ export class ViewerUISystem extends createSystem({
     const playing = Boolean(p.getValue(PerformancePlayer, 'playing'));
     if (playing !== this.lastPlaying) {
       this.lastPlaying = playing;
-      if (this.list) this.list.hidden = playing;
+      this.endingAt = 0;
+      const finished = !playing && p.getValue(PerformancePlayer, 'status') === 'Finished.';
+      // A story that reached The End keeps the stage and the shelf in view a little longer (see endingLinger).
+      if (this.list) this.list.hidden = playing || finished;
       if (this.controls) this.controls.hidden = !playing;
-      this.root.classList.toggle('playing', playing || Boolean(this.lastLive));
+      this.root.classList.toggle('playing', playing || finished || Boolean(this.lastLive));
       if (!playing) {
-        if (p.getValue(PerformancePlayer, 'status') === 'Finished.' && this.playingNames) this.goodnight(this.playingNames);
+        if (finished) {
+          this.endingAt = performance.now() + ENDING_LINGER_MS;
+          this.endingNames = this.playingNames;
+        }
         this.playingNames = null;
         // Story over: the camera goes off.
         if (p.getValue(PerformancePlayer, 'joinIn')) this.setCamera(false, 'replay');
         void this.refreshList();
       }
+    }
+    // The ending has been seen: the goodnight, then the list of stories again.
+    if (this.endingAt && performance.now() >= this.endingAt) {
+      this.endingAt = 0;
+      if (this.list) this.list.hidden = false;
+      this.root.classList.toggle('playing', Boolean(this.lastLive));
+      if (this.endingNames) this.goodnight(this.endingNames);
+      this.endingNames = null;
     }
     if (playing && family.current !== family.own) this.playingNames ??= { ...family.current };
     this.updateLive();
