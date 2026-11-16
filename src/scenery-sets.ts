@@ -78,11 +78,15 @@ export function buildStorm(ink: MeshBasicMaterial): ScenerySet {
     c.absellipse(x, 0.9 + row * 0.05 + rand() * 0.04, r * 1.3, r, 0, Math.PI * 2, false, 0);
     cloudShapes.push(c);
   }
-  const cloudGeo = new ShapeGeometry(cloudShapes, 12);
-  const clouds = new Mesh(cloudGeo, ink);
-  clouds.name = 'scenery-storm-clouds';
-  clouds.renderOrder = 3;
-  group.add(clouds);
+  // Left and right halves, so they can part at the finale.
+  const cloudGeos = [new ShapeGeometry(cloudShapes.slice(0, 8), 12), new ShapeGeometry(cloudShapes.slice(8), 12)];
+  const clouds = cloudGeos.map((geo, i) => {
+    const mesh = new Mesh(geo, ink);
+    mesh.name = `scenery-storm-clouds-${i ? 'right' : 'left'}`;
+    mesh.renderOrder = 3;
+    group.add(mesh);
+    return mesh;
+  });
 
   const m = new Matrix4();
   const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 0.35);
@@ -90,8 +94,10 @@ export function buildStorm(ink: MeshBasicMaterial): ScenerySet {
   const s = new Vector3(1, 1, 1);
   return {
     group,
-    update(time, level) {
-      rainMat.opacity = 0.55 * level;
+    update(time, level, finale) {
+      // At the finale the rain stops and the clouds part, for the stars (finale-lights.ts).
+      rainMat.opacity = 0.55 * level * (1 - finale);
+      rain.visible = finale < 0.99;
       // Quality 3 (last resort): half the raindrops.
       const drops = stageRuntime.quality >= 3 ? DROPS >> 1 : DROPS;
       rain.count = drops;
@@ -103,12 +109,19 @@ export function buildStorm(ink: MeshBasicMaterial): ScenerySet {
         rain.setMatrixAt(i, m);
       }
       rain.instanceMatrix.needsUpdate = true;
-      clouds.position.x = Math.sin(time * 0.15) * 0.04;
+      // The clouds drift, and at the finale draw back into the stage's sides like curtains.
+      const sway = Math.sin(time * 0.15) * 0.04;
+      const open = finale * finale * (3 - 2 * finale);
+      const keep = 1 - open;
+      clouds[0].scale.x = clouds[1].scale.x = Math.max(0.001, keep);
+      clouds[0].position.x = -0.6 * open + sway * keep;
+      clouds[1].position.x = 0.6 * open + sway * keep;
+      clouds[0].visible = clouds[1].visible = keep > 0.03;
     },
     dispose() {
       rainMat.dispose();
       dropGeo.dispose();
-      cloudGeo.dispose();
+      cloudGeos.forEach((g) => g.dispose());
     },
   };
 }

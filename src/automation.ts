@@ -23,6 +23,7 @@ import { toWire } from './performance/sharing.js';
 import { gazeRuntime } from './gaze-dwell.js';
 import { coachRuntime } from './mo-coach.js';
 import { fireflyRuntime } from './fireflies.js';
+import { finaleLightsRuntime } from './finale-lights.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
 import { soundRuntime } from './sfx.js';
@@ -258,6 +259,7 @@ export class AutomationSystem extends createSystem({
           voice: { state: accessRuntime.voiceState, heard: accessRuntime.voiceHeard },
           coach: { ...coachRuntime },
           fireflies: { ...fireflyRuntime },
+          finaleLights: { ...finaleLightsRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
           pwa: { ...pwaRuntime },
