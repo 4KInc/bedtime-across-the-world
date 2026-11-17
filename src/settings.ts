@@ -18,7 +18,7 @@ import { creatureName } from './creatures.js';
 import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
 import { answerAsk, childClock, hasTaste, loadStoryRequests, planAsk, refreshSuggestions, requestsRuntime } from './story-requests.js';
 import { MAX_DREAM_SHAPES } from './voice-commands.js';
-import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
+import { accessRuntime, gazeTargets, pickerRuntime, stageRuntime, uiPresses } from './stage-runtime.js';
 
 const PANEL_NODE = 'settings-panel';
 /** Authored panel width in metres (UIKit cm / 100). */
@@ -164,6 +164,8 @@ export class SettingsSystem extends createSystem({
   private applied = '';
   /** What the story picker last showed. */
   private shownScript = '';
+  /** Tonight's story when the picker last looked: a new one resets pickerRuntime.browsed. */
+  private tonight = '';
   private library: LibraryStory[] = [];
   /** Worlds that have at least one story, in library order. */
   private worlds: StoryWorld[] = [];
@@ -253,6 +255,11 @@ export class SettingsSystem extends createSystem({
   /** The browsed story's name and blurb; the start button shows whether it is tonight's. */
   private refreshStories(): void {
     const script = first(this.queries.stories.entities)?.getValue(StoryState, 'script') ?? '';
+    if (script !== this.tonight) {
+      this.tonight = script;
+      pickerRuntime.browsed = false;
+    }
+    pickerRuntime.script = this.library[this.browsing]?.script ?? '';
     const key = `${script}|${this.browsingWorld}|${this.browsing}|${this.library.length}`;
     if (key === this.shownScript || !this.panel) return;
     this.shownScript = key;
@@ -711,11 +718,13 @@ export class SettingsSystem extends createSystem({
       if (!inWorld.length) return;
       const at = Math.max(0, inWorld.indexOf(this.browsing));
       this.browsing = inWorld[(at + step + inWorld.length) % inWorld.length];
+      pickerRuntime.browsed = true;
     };
     const browseWorld = (step: number) => {
       if (!this.worlds.length) return;
       this.browsingWorld = (this.browsingWorld + step + this.worlds.length) % this.worlds.length;
       this.browsing = this.storiesInWorld()[0] ?? this.browsing;
+      pickerRuntime.browsed = true;
     };
     on('world-prev', () => browseWorld(-1));
     on('world-next', () => browseWorld(1));

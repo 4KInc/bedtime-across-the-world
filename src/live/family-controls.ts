@@ -2,10 +2,10 @@ import { createSystem, Entity, UIKit, UIKitMLAsset } from '@iwsdk/core';
 import { listRecordings } from '../journal-store.js';
 import type { Performance } from '../performance/format.js';
 import { recordingRuntime, recordingsRuntime } from '../performance/recorder.js';
-import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder, ShadowJournal } from '../shadowplay-components.js';
+import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder, ShadowJournal, StoryState } from '../shadowplay-components.js';
 import { playClick } from '../sfx.js';
 import { palette } from '../panel-palette.js';
-import { accessRuntime, gazeTargets, uiPresses } from '../stage-runtime.js';
+import { accessRuntime, gazeTargets, pickerRuntime, uiPresses } from '../stage-runtime.js';
 import { recordingName, storyNames } from '../story-names.js';
 
 
@@ -41,6 +41,7 @@ export class FamilyControlsSystem extends createSystem({
   inboxes: { required: [FamilyInbox] },
   players: { required: [PerformancePlayer] },
   journals: { required: [ShadowJournal] },
+  stories: { required: [StoryState] },
 }) {
   private controls = new Map<string, Control>();
   private status: UIKit.Text | undefined;
@@ -153,7 +154,14 @@ export class FamilyControlsSystem extends createSystem({
     };
     on('record-button', 'record-label', () => {
       if (live.getValue(LiveSession, 'role') !== 'off') return;
-      rec.setValue(PerformanceRecorder, 'recording', !rec.getValue(PerformanceRecorder, 'recording'));
+      // Record a story records the story picked in the Journal (Quest 3, Nov 17: a story was picked, Record
+      // pressed, and the old one went on being told and recorded): it starts at its title, recording.
+      const story = this.queries.stories.entities.values().next().value;
+      const starting = !rec.getValue(PerformanceRecorder, 'recording');
+      if (starting && story && pickerRuntime.browsed && pickerRuntime.script && story.getValue(StoryState, 'script') !== pickerRuntime.script) {
+        story.setValue(StoryState, 'script', pickerRuntime.script);
+      }
+      rec.setValue(PerformanceRecorder, 'recording', starting);
     });
     on('send-button', 'send-label', () => {
       if (recordingRuntime.sending) return;
