@@ -118,18 +118,21 @@ await vctx.close();
 // B. The storyteller's headset: the story was sent with CODE; the goodnight and the request arrive.
 const hctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true, timezoneId: 'America/Chicago' });
 await serve(hctx);
+// The app's own copies of the modules read below: after a hot reload the dev server serves them with a version
+// stamp, and importing the plain path gives an empty second copy (all files loaded are listed, past the default 250).
+await hctx.addInitScript(() => performance.setResourceTimingBufferSize(5000));
 const page = await hctx.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && !/status of 404/.test(m.text()) && errors.push(m.text()));
 await page.goto(APP + '/', { waitUntil: 'load' });
 await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
-await page.evaluate((code) => import('/src/journal-store.ts').then((s) => s.saveRecording({
+await page.evaluate((code) => import(performance.getEntriesByType('resource').map((e) => e.name).find((n) => n.includes('/src/journal-store.ts')) ?? '/src/journal-store.ts').then((s) => s.saveRecording({
   version: 'shadowplay.performance.v1', id: 'sent-to-sam', title: 'A story for Sam', performer: 'Dad', child: 'Sam', shareCode: code,
   createdAt: Date.now() - 86_400_000, durationMs: 1000, script: 'story/counting-stars.story.json', frameHz: 30, hands: '', frameCount: 0, events: [],
 })), CODE);
 await page.reload({ waitUntil: 'load' });
 await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
-await page.evaluate(() => import('/src/story-requests.ts').then((m) => (window.__req = m.requestsRuntime)));
+await page.evaluate(() => import(performance.getEntriesByType('resource').map((e) => e.name).find((n) => n.includes('/src/story-requests.ts')) ?? '/src/story-requests.ts').then((m) => (window.__req = m.requestsRuntime)));
 const req = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__req)));
 await page.waitForFunction(() => window.__req.pending && window.__req.child, null, { timeout: 30000, polling: 500 }).catch(() => undefined);
 const arrived = await req();

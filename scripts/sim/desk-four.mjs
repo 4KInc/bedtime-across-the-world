@@ -57,7 +57,7 @@ try {
   await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
   await sleep(1500);
   await page.getByRole('button', { name: /Enter XR/i }).click();
-  await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().ready, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().head[1] > 1 && window.__sp.view().ready, null, { timeout: 30000 });
   await sleep(2000);
   await pinch(page, 'story-dream');
   await pinch(page, 'dream-go');
