@@ -13,6 +13,8 @@ const CONSENT_KEY = 'shadowplay.cameraConsent';
 
 const CSS = `
 .sp-grownups { margin: 4px 0 2px; color: #9d8f78; font: 12px/1.4 Georgia, 'Times New Roman', serif; }
+.sp-small-row { gap: 8px; }
+.sp-viewer.playing .sp-small-row { display: none; }
 .sp-credits-btn { align-self: flex-start; min-height: 36px; margin: 2px 0 6px; padding: 0 12px; border-radius: 18px; border: 1px solid #4a3d5c;
   background: transparent; color: #bfae8e; font: 13px Georgia, 'Times New Roman', serif; cursor: pointer; }
 .sp-viewer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
@@ -174,7 +176,10 @@ export class ViewerUISystem extends createSystem({
         <div class="sp-note" aria-live="polite"></div>
         <p class="sp-grownups">For grown-ups: you set this up. Stories open only with your family's private code and are
         deleted after 30 days; there are no accounts. The camera and the voice for a goodnight start only when you allow them.</p>
-        <button class="sp-credits-btn" type="button" data-act="credits">Credits</button>
+        <div class="sp-row sp-small-row">
+          <button class="sp-credits-btn" type="button" data-act="credits">Credits</button>
+          <button class="sp-credits-btn sp-full" type="button" data-act="fullscreen" hidden>Full screen</button>
+        </div>
         <div class="sp-row sp-controls" hidden>
           <button class="sp-btn" data-act="pause" aria-label="Pause">Pause</button>
           <button class="sp-btn" data-act="join" aria-label="Join in with your hands">Join in</button>
@@ -204,6 +209,29 @@ export class ViewerUISystem extends createSystem({
     });
     this.joinBtn?.addEventListener('click', () => this.toggleJoin());
     root.querySelector('[data-act="credits"]')?.addEventListener('click', openCredits);
+    // Full screen where the browser allows it (computers, Android, iPadOS 16.4+; not iPhone), Nov 17. On the
+    // story list's panel: it stays on through the story (a button in the playback controls widened them over the shelf).
+    const doc = document as Document & { webkitFullscreenEnabled?: boolean; webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
+    const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+    const canFull = Boolean(document.fullscreenEnabled || doc.webkitFullscreenEnabled);
+    const isFull = () => Boolean(document.fullscreenElement || doc.webkitFullscreenElement);
+    const fullButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-act="fullscreen"]')];
+    const label = () => {
+      for (const b of fullButtons) {
+        b.hidden = !canFull;
+        b.textContent = isFull() ? 'Exit full screen' : 'Full screen';
+        b.setAttribute('aria-label', b.textContent);
+      }
+    };
+    for (const b of fullButtons) {
+      b.addEventListener('click', () => {
+        if (isFull()) void (document.exitFullscreen?.() ?? doc.webkitExitFullscreen?.());
+        else void (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch?.(() => undefined);
+      });
+    }
+    document.addEventListener('fullscreenchange', label);
+    document.addEventListener('webkitfullscreenchange', label);
+    label();
     this.liveControls = root.querySelector('.sp-live');
     this.liveStatus = root.querySelector('.sp-live-status');
     this.talkBtn = root.querySelector('[data-act="talk"]');
