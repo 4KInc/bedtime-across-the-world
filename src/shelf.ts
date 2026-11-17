@@ -53,19 +53,26 @@ export function shelfSpot(along: number, out: Vector3): Vector3 {
  */
 export class ShelfSystem extends createSystem({}) {
   private group = new Group();
+  /**
+   * The plank writes no depth: seen from above, its top hid the lower part of the glows behind
+   * the creatures on it (Nov 17: each glowing circle was cut off). It is drawn first
+   * (renderOrder), so everything on it still stands in front of it.
+   */
   private materials = [
-    new MeshBasicMaterial({ color: 0x4a3322 }), // ends
-    new MeshBasicMaterial({ color: 0x4a3322 }),
-    new MeshBasicMaterial({ color: 0x7a5638 }), // top, catching the light
-    new MeshBasicMaterial({ color: 0x24180f }),
-    new MeshBasicMaterial({ color: 0x3a281a }), // front edge
-    new MeshBasicMaterial({ color: 0x24180f }),
+    new MeshBasicMaterial({ depthWrite: false, color: 0x4a3322 }), // ends
+    new MeshBasicMaterial({ depthWrite: false, color: 0x4a3322 }),
+    new MeshBasicMaterial({ depthWrite: false, color: 0x7a5638 }), // top, catching the light
+    new MeshBasicMaterial({ depthWrite: false, color: 0x24180f }),
+    new MeshBasicMaterial({ depthWrite: false, color: 0x3a281a }), // front edge
+    new MeshBasicMaterial({ depthWrite: false, color: 0x24180f }),
   ];
   private plank = new Mesh(new BoxGeometry(1, THICK, 0.12), this.materials);
+
   private basis = new Matrix4();
 
   init(): void {
     this.plank.name = 'shelf-plank';
+    this.plank.renderOrder = -1;
     this.group.name = 'viewer-shelf';
     this.group.add(this.plank);
     this.group.visible = false;

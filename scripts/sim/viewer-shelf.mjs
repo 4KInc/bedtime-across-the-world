@@ -43,6 +43,18 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   page.on('pageerror', (e) => errors.push(`${device}: ${e}`));
   await page.goto(APP + '/?viewer', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
+  // Full screen, where the browser allows it (Nov 17): on, then off again.
+  const fsBtn = page.locator('.sp-small-row [data-act="fullscreen"]');
+  await fsBtn.waitFor({ timeout: 15000 }).catch(() => undefined);
+  // (Once the page has settled: a click while it is still starting can be lost.)
+  await page.waitForFunction(() => document.querySelector('.sp-card'), null, { timeout: 30000 }).catch(() => undefined);
+  await fsBtn.click();
+  const fsOn = await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
+  await fsBtn.click();
+  await sleep(600);
+  const fsOff = await page.evaluate(() => !document.fullscreenElement);
+  check(`${device}: Full screen goes full screen, and back`, fsOn && fsOff, { fsOn, fsOff });
+
   const card = page.getByRole('button', { name: /Watch A story from far away from Dad/ }).first();
   await card.waitFor({ timeout: 30000 });
   await card.click();

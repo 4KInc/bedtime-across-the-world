@@ -85,10 +85,17 @@ async function pinch(page, id) {
   await pinch(page, 'dream-go');
   // While the story is dreamed up, the wall says so (Quest 3S, Nov 16: 3-5 quiet seconds after an idea).
   const waiting = await page.evaluate(() => ({ dreaming: __sp.view().dreaming, underStage: __sp.view().underStage }));
+  // The dots move, like a loading screen, and the words stay (Nov 17: the line flickered).
+  const frames = [];
+  for (let i = 0; i < 6; i++) {
+    frames.push(await page.evaluate(() => __sp.view().underStage));
+    await sleep(300);
+  }
+  check('while Mo dreams the line holds and only its dots move', frames.every((f) => f.startsWith('Mo is dreaming up your story')) && new Set(frames).size >= 2, { frames });
   await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 15000 });
   const d = await page.evaluate(() => ({ script: __sp.get('StoryState', 'script'), dream: __sp.view().dream, open: __sp.get('ShadowJournal', 'open') }));
   const after = await page.evaluate(() => ({ dreaming: __sp.view().dreaming, underStage: __sp.view().underStage }));
-  check('while Mo dreams: "Mo is dreaming up your story..." under the stage; gone once the story starts', waiting.dreaming === true && waiting.underStage === 'Mo is dreaming up your story...' && after.dreaming === false && after.underStage !== waiting.underStage, { waiting, after });
+  check('while Mo dreams: "Mo is dreaming up your story" under the stage, its dots moving; gone once the story starts', waiting.dreaming === true && /^Mo is dreaming up your story\.{1,3}$/.test(waiting.underStage) && after.dreaming === false && !after.underStage.startsWith('Mo is dreaming'), { waiting, after });
   check('pinching "Dream a new one": a new story, told at once', asked.length === 1 && asked[0].shapes.length >= 2 && d.script === 'dreamed:1' && d.dream.title === 'The Lantern Tide' && d.open === false, { asked: asked[0], ...d });
 
   // Played by the demo player; reload after the first creature: the next launch carries on in it.

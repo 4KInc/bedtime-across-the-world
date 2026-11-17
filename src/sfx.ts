@@ -34,6 +34,24 @@ export function wakeAudio(): void {
   audio();
 }
 
+/**
+ * A recorded voice through a gain node, so it can be faded where an audio
+ * element's volume does nothing (iOS) and muted without being paused (a paused
+ * element may not start again without a tap on iOS). Null when the audio
+ * context is not running yet: then the element plays on its own.
+ */
+export function voiceGain(el: HTMLMediaElement): GainNode | null {
+  const a = audio();
+  if (!a || a.state !== 'running') return null;
+  try {
+    const gain = a.createGain();
+    a.createMediaElementSource(el).connect(gain).connect(a.destination);
+    return gain;
+  } catch {
+    return null;
+  }
+}
+
 /** True once the browser lets audio play (after a user gesture such as entering XR). */
 export function audioRunning(): boolean {
   return ctx?.state === 'running';

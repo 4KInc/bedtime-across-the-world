@@ -24,7 +24,10 @@ const LIGHT_HINT = 'Hands lost — try turning a light on';
 export const captionRuntime = { nudge: '' };
 
 /** While a new story is being dreamed up (settings.ts dream). */
-const DREAMING = 'Mo is dreaming up your story...';
+const DREAMING = 'Mo is dreaming up your story';
+/** Its dots, one more every DOT_SECONDS, drawn in place like a loading screen (Nov 17: the line flickered). */
+const DREAMING_FRAMES = [`${DREAMING}.`, `${DREAMING}..`, `${DREAMING}...`];
+const DOT_SECONDS = 0.45;
 
 const NUDGE_TEXT: Record<string, string> = {
   almost: 'Almost! Hold it still...',
@@ -36,16 +39,32 @@ function drawNudge(g: CanvasRenderingContext2D, text: string, highContrast: bool
   g.clearRect(0, 0, NUDGE_W, NUDGE_H);
   if (!text) return;
   g.font = highContrast ? '700 48px "Helvetica Neue", Arial, sans-serif' : 'italic 600 48px Georgia, "Times New Roman", serif';
-  const w = Math.min(NUDGE_W - 8, g.measureText(text).width + 80);
+  // Mo dreaming: the words stay put and its three dots light one by one, in place.
+  const dots = text.startsWith(DREAMING) ? text.length - DREAMING.length : -1;
+  const full = dots >= 0 ? `${DREAMING}...` : text;
+  const w = Math.min(NUDGE_W - 8, g.measureText(full).width + 80);
   const x = (NUDGE_W - w) / 2;
   g.fillStyle = highContrast ? '#ffd400' : 'rgba(224, 162, 74, 0.92)';
   g.beginPath();
   g.roundRect(x, 12, w, NUDGE_H - 24, (NUDGE_H - 24) / 2);
   g.fill();
   g.fillStyle = highContrast ? '#000000' : '#1a1320';
-  g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(text, NUDGE_W / 2, NUDGE_H / 2 + 2);
+  if (dots < 0) {
+    g.textAlign = 'center';
+    g.fillText(text, NUDGE_W / 2, NUDGE_H / 2 + 2);
+    return;
+  }
+  g.textAlign = 'left';
+  let at = (NUDGE_W - g.measureText(full).width) / 2;
+  g.fillText(DREAMING, at, NUDGE_H / 2 + 2);
+  at += g.measureText(DREAMING).width;
+  for (let i = 0; i < 3; i++) {
+    g.globalAlpha = i < dots ? 1 : 0.25;
+    g.fillText('.', at, NUDGE_H / 2 + 2);
+    at += g.measureText('.').width;
+  }
+  g.globalAlpha = 1;
 }
 
 function canvasQuad(width: number, height: number, name: string) {
@@ -142,7 +161,12 @@ export class CaptionSystem extends createSystem({
     const player = this.queries.players.entities.values().next().value;
     const ownHands = !viewerMode.on || Boolean(player?.getValue(PerformancePlayer, 'inJoinIn'));
     const recognised = ownHands ? (NUDGE_TEXT[rec?.getValue(ShapeRecognizer, 'nudge') ?? 'none'] ?? '') : '';
-    const nudge = trackingRuntime.lightHint ? LIGHT_HINT : accessRuntime.dreaming ? DREAMING : heard || recognised;
+    // While Mo dreams, that line holds (the light hint could swap in and out over it).
+    const nudge = accessRuntime.dreaming
+      ? DREAMING_FRAMES[Math.floor(this.time / DOT_SECONDS) % 3]
+      : trackingRuntime.lightHint
+        ? LIGHT_HINT
+        : heard || recognised;
     captionRuntime.nudge = nudge;
     this.updateNudge(nudge, delta);
   }

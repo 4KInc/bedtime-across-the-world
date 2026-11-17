@@ -33,7 +33,7 @@ fixed, and checked again on the headset.
 
 **Meets the 60 fps minimum on both headsets.** Every session held the requested
 72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.7 to 15.5 ms (under
-the 16.7 ms that 60 fps allows), across 13 sessions and 1,324 five-second
+the 16.7 ms that 60 fps allows), across 14 sessions and 1,555 five-second
 windows of the app running. One window was under 60 fps: the first five seconds
 of one session (47 fps), as it entered XR and the room loaded, before the story
 began. The 31 windows while the headset itself slept, woke or showed its system
@@ -60,6 +60,7 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | [`r9w45r8ghs`](docs/diag/2026-11-16/r9w45r8ghs.jsonl) | Quest 3 | Nov 16, 16:54 | 1.8 min | Launched again: the stage came back to the same spot on the wall | 71.8, 65.9 | 14.7 ms |
 | [`9f89mnu4ye`](docs/diag/2026-11-16/9f89mnu4ye.jsonl) | Quest 3S | Nov 16, 17:13 | 15.7 min | On the wall, the desk props on the real desk; a dreamed story, Moon Buggy, Little Lost Spaceship and Sleepy Little Dinosaur | 71.6, 63.5 | 14.9 ms |
 | [`v7sw83fr98`](docs/diag/2026-11-16/v7sw83fr98.jsonl) | Quest 3S | Nov 16, 18:44 | 11.2 min | Back on last time's wall; Moon Buggy, The Moth and a dreamed story | 71.8, 62.5 | 14.9 ms |
+| [`4zp7d8t7yg`](docs/diag/2026-11-17/4zp7d8t7yg.jsonl) | Quest 3 | Nov 17, 00:34 | 19.3 min | Every story-world creature woken with real hands: rocket, alien, asteroid, shark, octopus, whale, car, aeroplane, digger, T. rex and pterodactyl, across six stories and a dream; two recordings saved and sent | 71.6, 66.8 | 15.0 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
 
@@ -79,6 +80,11 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | Hands put down between shapes still threw their shadows on the wall | A lowered hand casts no shadow until it is raised again |
 | A shape said aloud went straight to the desk without carrying Mo; a hand held up nearby took the creature over | A spoken creature crosses the wall by itself and carries Mo; only a hand making its shape takes it over |
 | A dreamed story asked for "a fish and a crocodile" came back with a dog; a fourth shape was dropped; its rabbit took 25 s (The Moth's: 2.4 s) | Any creature an idea names, up to four, with the library's easier poses (two fingers up for the rabbit) |
+| A T. rex and a pterodactyl asked for in a dream were left out, and Mo's tips for the new creatures were the app's fixed words | Dreams, voice commands and Mo's tips know every story-world creature, each dreamed in its own world's place |
+| Carrying a whale or a snail toward the lighthouse took up to 45 s: they were asked to rise like a bird, and a fist pose turned toward it stopped reading as itself | Only fliers rise; the whale and snail carry a shorter way |
+| A recording played on the headset had to be watched to the end: the lamp switch and the Journal answered only the recording's hands | Your own hands still pinch the switch and the Journal while a recording plays |
+| On an iPad, Join in lost the recorded voice after the first shape: iOS would not start it again without a tap | The voice is muted, never paused, between lines, so it comes back |
+| A child's drawing from a goodnight stayed on the wall in every story, over the creatures | It walks on once, stays a moment, and hops off |
 | Most endings let the light go onto a wall that did not change (only the lighthouse lit up) | The released light comes home into the scene: stars come out, fireflies rise, the river's moon lays a silver path |
 
 The room side works on real Room Setup data: the stage finds a labelled wall
@@ -171,6 +177,9 @@ hand held still in front of you will do.
     under a ringed planet, *Mo and the Sleepy Space Rocks* and *The Aliens'
     Lullaby* (a rocket, an alien, an asteroid).
 
+  Each world opens with a story of its own creatures (the shark, the car, the
+  T. rex, the rocket), and the journal's creatures page keeps every one met.
+
   The newer stories each have their own narrator. Seventeen hand shapes, from
   a rabbit to a two-handed crocodile, a rocket (one finger up) or a whale (a
   fist, thumb up), recognised as people really make them; a world's own poses
@@ -179,15 +188,17 @@ hand held still in front of you will do.
 - **Record a story** (hands, story and your voice: you are the narrator, the
   captions are your script) and **Send to family**: a private family code
   (three words and a number, like `lantern-otter-moss-417`), no accounts. Every
-  recording is kept on the headset and listed in the journal, to replay on the
-  wall or pick which one to send.
+  recording is kept on the headset and listed in the journal with its family
+  code once sent, to replay on the wall or pick which one to send. While a
+  recording plays, your own hands still pinch the lamp switch to pause and the
+  journal to stop.
 - **Go live**: your family joins with the code and sees your shadows on their
   screen in real time; talk to each other; **Take turns** so the child makes
   every other creature, which wakes in the child's own colour with their name.
 - **Goodnights**: what your family sent back plays on your wall (the journal
   steps aside for it); Mo takes the
-  colours the child chose, and the creature they drew walks onto the wall in
-  the next story.
+  colours the child chose, and the creature they drew walks onto the wall at
+  the start of the next story, then hops off.
 - **A story the child asked for**: a goodnight can ask for tomorrow's story
   ("Dad, tell me a story about Mo at the carnival"). The journal's chooser
   shows "Mia asked: ..." and **Dream Mia's story**: Mo plans it into the
@@ -201,14 +212,15 @@ hand held still in front of you will do.
   stories from it under "Mia might like": one close to what they love, one
   that mixes two of them, one gentle new thing.
 - **Dream a new one** (Tonight's story): Mo dreams up a new short story for a
-  place (sea, forest, meadow, river, rain or sky) and two or three shapes the
+  place (sea, forest, meadow, river, rain, sky, or the worlds' space, road and
+  dinosaur valley, with their own creatures) and two or three shapes the
   storyteller picks, in the order the story should ask for them. Or press
   **Say your idea** and ask in your own words: "I need a forest story with a
-  dog and a rabbit" (the place and up to four creatures named are used, a swan,
-  a crocodile, a deer or a snail too; Gemini picks whatever the idea leaves
+  dog and a rabbit" (the place and up to four creatures named are used, any
+  of them, a T. rex or a whale too; Gemini picks whatever the idea leaves
   out, and lets the idea colour the story). The button reads **Done** while Mo
   listens and **Got it** once she has heard, and "Mo is dreaming up your
-  story..." shows under the stage while it is written. With
+  story" shows under the stage, its dots moving, while it is written. With
   Voice commands on, the same sentence works without the button. Gemini writes the
   narration lines; the app builds the story itself (the same pattern as
   Counting Stars) and checks every line, so it plays like any other story, with
@@ -237,9 +249,12 @@ hand held still in front of you will do.
 - Watch a story someone recorded for you, in their voice, with your name in it.
   What steps off the wall lands on a little shelf under the stage, as on the
   storyteller's desk: the glowing creatures, the keepsake jar, and Mo asleep
-  at the end. The controls fade away while the story plays.
+  at the end. Each story is listed by its name; **Full screen** where the
+  browser allows it (computers, Android, iPad); the controls fade away while
+  the story plays.
 - **Join in**: at each shape the story waits for *your* hands (camera, after a
-  grown-up allows it).
+  grown-up allows it); the storyteller's recorded voice carries on around your
+  turn, on iPads too.
 - **Join live** with a family code; talk, show your hands, take turns.
 - **Send a goodnight back**: twenty seconds of your shadow creature and, if a
   grown-up switches it on, your voice; choose colours for Mo, and draw a
@@ -462,7 +477,9 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
 | `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste |
 | `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
-| `node scripts/sim/world-creatures.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone |
+| `node scripts/sim/world-creatures.mjs`, `world-free-stage.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone; Free Stage wakes the creatures a child has met |
+| `node scripts/sim/playback-hands.mjs` | While a recording plays on the headset, your own pinches still pause it and open the Journal |
+| `node scripts/sim/join-in-voice.mjs` | Join in as on an iPad (every play() after the first refused): the recorded voice is heard again at the child's next line and after the turn |
 | `node scripts/sim/finale-lights.mjs` | The light let go comes home into each scene (stars, fireflies, the moon's path), and Counting Stars ends under a sky of stars |
 | `node scripts/sim/raise-hand.mjs`, `grow.mjs`, `resting-hands.mjs` | Hands as people hold them: a flat raised palm goes on, a 12 cm pull grows a creature, a lowered hand casts no shadow |
 | `node scripts/sim/viewer-shelf.mjs`, `recordings.mjs` | The shelf under the stage on a phone and tablet (creatures, jar, Mo at the end, controls that fade); every recording kept, replayed and sent |
@@ -471,7 +488,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 Peak load measured through a whole story at full quality: about 95 draw calls
 and 38k triangles, with a budget enforced by the playtest. On the headsets, every
 `?diag` session on Quest 3 and Quest 3S held the requested 72 Hz (median 71.5 to
-72 fps; one 5-second window in 1,324 under 60 fps, the first of a session as it
+72 fps; one 5-second window in 1,555 under 60 fps, the first of a session as it
 entered XR).
 
 ### Device testing
@@ -492,6 +509,6 @@ their own URL; the checklist is [docs/DEVICE-TEST.md](docs/DEVICE-TEST.md).
 Complete and deployed, and hardened for the competition: diagnostics,
 performance, cold start (about 560 KB to first render), recognition, untested
 rooms, the first five minutes, and compliance with the rules. Tested in the IWSDK
-Quest emulator, in simulation, and on Meta Quest 3 and Quest 3S (13 `?diag`
-sessions, November 14 to 16, 2026), with recognition, the lamp, the stage on the
+Quest emulator, in simulation, and on Meta Quest 3 and Quest 3S (14 `?diag`
+sessions, November 14 to 17, 2026), with recognition, the lamp, the stage on the
 wall, narration, sound and voice tuned from those sessions.
