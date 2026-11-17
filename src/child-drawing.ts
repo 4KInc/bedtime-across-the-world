@@ -35,6 +35,11 @@ function saveShown(at: number): void {
   }
 }
 const TEX = 256;
+/** The name tag: its canvas width (px) and height as a share of it, its width (drawing sizes), its gap above the drawing. */
+const LABEL_W = 1024;
+const LABEL_ASPECT = 0.18;
+const LABEL_SCALE = 1.7;
+const LABEL_GAP = 0.06;
 
 /** For tests: whether the drawn creature is on the wall, walking or settled, and its label. */
 export const childDrawingRuntime = { phase: 'none' as 'none' | 'walk' | 'sit' | 'leave', label: '' };
@@ -56,7 +61,7 @@ export class ChildDrawingSystem extends createSystem({
   private mesh = new Mesh(new PlaneGeometry(1, 1), this.material);
   private labelCanvas = document.createElement('canvas');
   private labelTexture = new CanvasTexture(this.labelCanvas);
-  private label = new Mesh(new PlaneGeometry(1, 0.25), new MeshBasicMaterial({ map: this.labelTexture, transparent: true, depthWrite: false }));
+  private label = new Mesh(new PlaneGeometry(1, LABEL_ASPECT), new MeshBasicMaterial({ map: this.labelTexture, transparent: true, depthWrite: false }));
   private attached = false;
   private drawnAt = -1;
   /** A drawing not yet shown: it walks on when a story is being told. */
@@ -67,8 +72,8 @@ export class ChildDrawingSystem extends createSystem({
 
   init(): void {
     this.canvas.width = this.canvas.height = TEX;
-    this.labelCanvas.width = 512;
-    this.labelCanvas.height = 128;
+    this.labelCanvas.width = LABEL_W;
+    this.labelCanvas.height = LABEL_W * LABEL_ASPECT;
     this.mesh.name = 'child-drawing';
     this.label.name = 'child-drawing-label';
     this.mesh.renderOrder = 21;
@@ -156,8 +161,10 @@ export class ChildDrawingSystem extends createSystem({
     const fadeIn = childDrawingRuntime.phase === 'walk' ? Math.min(1, this.t / 0.6) : 1;
     const fadeOut = childDrawingRuntime.phase === 'leave' ? 1 - Math.min(1, this.t / WALK_SECONDS) : 1;
     this.material.opacity = fadeIn * fadeOut * 0.95;
-    this.label.position.set(x * w, Y * h - size * 0.62, 0.003);
-    this.label.scale.setScalar(size * 1.4);
+    // A name tag above the drawing, clear of it and of the story's caption along the stage's bottom
+    // (Quest 3, Nov 17: under it, it touched the drawing and crowded the caption).
+    this.label.position.set(x * w, Y * h + hop + size * 0.5 + LABEL_GAP * size + size * LABEL_SCALE * LABEL_ASPECT * 0.5, 0.003);
+    this.label.scale.setScalar(size * LABEL_SCALE);
     this.label.material.opacity = this.material.opacity;
   }
 
@@ -182,17 +189,25 @@ export class ChildDrawingSystem extends createSystem({
     this.texture.needsUpdate = true;
 
     const text2 = from ? `${from}'s creature` : 'A creature for you';
+    const shown = text2.length > 22 ? `${text2.slice(0, 21)}…` : text2;
+    // As the story's captions: cream on a dark pill, sharp at headset distance, edged in the child's colour.
     const l = this.labelCanvas.getContext('2d')!;
-    l.clearRect(0, 0, 512, 128);
-    l.fillStyle = 'rgba(13, 10, 20, 0.8)';
+    const W = LABEL_W;
+    const H = LABEL_W * LABEL_ASPECT;
+    l.clearRect(0, 0, W, H);
+    l.font = 'italic 600 92px Georgia, "Times New Roman", serif';
+    const pill = Math.min(W - 16, l.measureText(shown).width + 110);
+    l.fillStyle = 'rgba(20, 15, 28, 0.88)';
+    l.strokeStyle = `#${CHILD_COLOUR.toString(16).padStart(6, '0')}`;
+    l.lineWidth = 6;
     l.beginPath();
-    l.roundRect(16, 20, 480, 88, 44);
+    l.roundRect((W - pill) / 2, 14, pill, H - 28, (H - 28) / 2);
     l.fill();
-    l.fillStyle = '#f6c6f0';
-    l.font = 'italic 700 56px Georgia, serif';
+    l.stroke();
+    l.fillStyle = '#f6e3bd';
     l.textAlign = 'center';
     l.textBaseline = 'middle';
-    l.fillText(text2.length > 22 ? `${text2.slice(0, 21)}…` : text2, 256, 66);
+    l.fillText(shown, W / 2, H / 2 + 4);
     this.labelTexture.needsUpdate = true;
     childDrawingRuntime.label = text2;
     return true;
