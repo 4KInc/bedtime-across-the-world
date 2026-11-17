@@ -33,6 +33,8 @@ const STORIES = [
   ['counting-stars', 'stars'], ['the-night-garden', 'garden'], ['the-kind-crocodile', 'kind'],
   ['the-slow-letter', 'letter'], ['the-brave-little-dog', 'brave'], ['the-little-rainstorm', 'rain'],
   ['across-the-sea', 'sea'],
+  // World creatures carried across (not up) by comfortable hands (Quest 3, Nov 17: the whale and the snail).
+  ['whale-song', 'song'], ['gentle-trex', 'rex'],
 ];
 // --only <story> [story...]: just those.
 const only = process.argv.includes('--only') ? process.argv.slice(process.argv.indexOf('--only') + 1).filter((a) => !a.startsWith('--')) : null;

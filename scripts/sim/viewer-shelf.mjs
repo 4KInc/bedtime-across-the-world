@@ -62,6 +62,10 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   const drawn = [c[0] + cw * 0.08, c[1] + (c[3] - c[1]) * 0.25, c[2] - cw * 0.08, c[3] - (c[3] - c[1]) * 0.1];
   check(`${device}: the viewer's controls never cover the caption`, !overlap(drawn, layout.pill), { caption: drawn.map(Math.round), pill: layout.pill });
 
+  // No lamp hum on the viewer: there is no lamp on its screen (Nov 17: a constant buzz from the speakers).
+  const sound = await page.evaluate(() => __sp.view().sound);
+  check(`${device}: no lamp hum on the family viewer`, sound.hum === false && sound.lullabyNotes >= 0, sound);
+
   // The controls fade while the recording plays untouched (they sometimes covered the caption, Nov 16),
   // and come back on a mouse move or a tap.
   const pill = () => page.evaluate(() => {

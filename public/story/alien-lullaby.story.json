@@ -159,8 +159,7 @@
       "id": "lull-alien-carry",
       "type": "carry",
       "toU": 0.3,
-      "text": "La la la, up toward the singers.",
-      "minV": 0.12
+      "text": "La la la, up toward the singers."
     },
     {
       "id": "lull-alien-land",

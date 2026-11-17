@@ -12,7 +12,30 @@ import { FACTS, localLine } from '../src/coach-vocab.ts';
 import { contentProblems } from '../src/story-checks.ts';
 import type { Llm } from './llm.ts';
 
-export const COACH_SHAPES = new Set(['rabbit', 'dog', 'fish', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
+export const COACH_SHAPES = new Set([
+  'rabbit', 'dog', 'fish', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile',
+  // The story worlds' creatures (Quest 3, Nov 17: their tips fell back to the app's own words).
+  'rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl',
+]);
+
+/**
+ * How a world creature is made, for the model (it cannot know an alien is two
+ * fingers up): the same words as the stories' requests. Its name as said, too.
+ */
+const MADE_WITH: Readonly<Record<string, string>> = {
+  rocket: 'one finger pointing straight up, the others curled in',
+  alien: 'the pointer finger and the little finger up, like antennae',
+  asteroid: 'a fist',
+  shark: 'a flat hand, fingers together, pointing up like a fin',
+  octopus: 'a hand hanging down, fingers spread',
+  whale: 'a fist for its body and the thumb up for its spout',
+  car: 'a fist with two fingers pointing forward like headlights',
+  plane: 'the thumb and the little finger out, like wings',
+  digger: 'a flat hand bent down at the wrist, like a scoop',
+  trex: 'two flat hands, one on top of the other, like a big mouth',
+  pterodactyl: 'two hands side by side, like big wings',
+};
+const SAID: Readonly<Record<string, string>> = { plane: 'aeroplane', trex: 'T. rex' };
 const MAX_WORDS = 22;
 /** At most 110 characters: four lines of Mo's bubble (mo-coach.ts). */
 const LINE = /^[A-Za-z0-9 ,.!?'’;:-]{8,110}$/;
@@ -77,7 +100,7 @@ export class Coach {
       const text = await this.llm.text({
         model: this.model,
         system: SYSTEM,
-        user: `Shape: ${req.shape}\nWhat the hand tracker noticed:\n${noticed}${again}`,
+        user: `Shape: ${SAID[req.shape] ?? req.shape}${MADE_WITH[req.shape] ? ` (made with ${MADE_WITH[req.shape]})` : ''}\nWhat the hand tracker noticed:\n${noticed}${again}`,
         maxTokens: 80,
         effort: 'low',
         timeoutMs: 6000,

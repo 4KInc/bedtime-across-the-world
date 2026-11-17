@@ -399,6 +399,17 @@ test('coach: Mo\'s tip from Claude, built only from the shape and fixed fact ids
   assert.equal(claudeSeen.length, before);
 });
 
+test('coach: a world creature\'s tip from the model, told how the creature is made (Quest 3, Nov 17: they fell back to fixed lines)', async () => {
+  const res = await as().post('/api/coach', { shape: 'alien', facts: ['pinky-straighten'], attempt: 0 });
+  assert.equal(res.status, 200);
+  assert.equal(((await res.json()) as { source: string }).source, 'ai');
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /Shape: alien \(made with the pointer finger and the little finger up/);
+  const rex = await as().post('/api/coach', { shape: 'trex', facts: ['hands-apart'], attempt: 0 });
+  assert.equal(rex.status, 200);
+  assert.match(claudeSeen.at(-1)!.body.messages?.[0].content ?? '', /Shape: T\. rex \(made with two flat hands/);
+});
+
 test('coach: an unusable reply becomes the fixed line; free text and unknown facts are refused', async () => {
   const c = as();
   const res = await (await c.post('/api/coach', { shape: 'dog', facts: ['thumb-out'], attempt: 1 })).json();

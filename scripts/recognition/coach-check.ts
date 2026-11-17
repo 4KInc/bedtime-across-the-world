@@ -47,6 +47,11 @@ const apart = coachFacts('bird', hand('bird', 'left', [-0.3, 0]), hand('bird', '
 check('bird, hands far apart: bring them together', apart.includes('hands-apart'), apart);
 check('one-hand mode: the bird is an open hand', coachFacts('bird', none, hand('open', 'right'), true)[0] === 'almost', null);
 check('no hands: say so', coachFacts('rabbit', none, none)[0] === 'no-hands', null);
+// World creatures are measured against the pose that makes them (Quest 3, Nov 17: the car and the digger had no facts).
+check('a car made with the snail pose: "almost"', coachFacts('car', none, hand('snail', 'right'))[0] === 'almost', coachFacts('car', none, hand('snail', 'right')));
+const carFromOpen = coachFacts('car', none, hand('open', 'right'));
+check('asked for a car, open hand: something to change, as for a snail', carFromOpen.length > 0 && carFromOpen[0] !== 'almost', carFromOpen);
+check('a pterodactyl with one hand: needs both, like the bird', coachFacts('pterodactyl', none, hand('bird', 'right'))[0] === 'one-hand-seen', null);
 // Words for every fact.
 const missing = Object.keys(FACTS).filter((f) => !localLine('rabbit', [f]) || localLine('rabbit', [f]).length > 110 || /watch the ghost hand/i.test(localLine('rabbit', [f])));
 check('every fact has its own short local line', missing.length === 0, missing);
