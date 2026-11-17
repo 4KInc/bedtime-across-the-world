@@ -63,7 +63,8 @@ before(async () => {
         text = content.includes('muddle') ? 'I am not sure.' : '{"theme":"meadow","shapes":["dog","bird"]}';
       } else if (/shadow-puppet game/.test(parsed.system)) {
         // A new story: the shapes asked for, in order; a "river" story comes back without the shapes' names.
-        const shapes = /shapes: ([a-z, ]+)\./.exec(content)![1].split(', ');
+        // The shape ids, from the reply's template (the prose names them: "T. rex").
+        const shapes = [...content.matchAll(/"shape":"([a-z]+)"/g)].map((m) => m[1]);
         text = 'Here is your story:\n' + cannedWords(shapes, { broken: content.includes('silver river') });
       } else {
         text = content.includes('Shape: dog') ? 'See www.example.com for help' : '"Curl your ring finger down, and let your thumb kiss it!"';
@@ -521,6 +522,21 @@ test('dream from a wish naming four shapes: all four, in the order said (Quest 3
   // Five named: the first four.
   const five = await (await as().post('/api/dream', { wish: 'a meadow story with a rabbit, a dog, a bird, a cup and a snail' })).json();
   assert.deepEqual(shapesOf(five).shapes, ['rabbit', 'dog', 'bird', 'cup']);
+});
+
+test('dream from a wish naming the story worlds\' creatures: a T. rex and a pterodactyl (Quest 3, Nov 17: both dropped)', async () => {
+  const res = await as().post('/api/dream', { wish: 'a story with a T. rex and a pterodactyl' });
+  assert.equal(res.status, 200);
+  const story = await res.json();
+  assert.deepEqual(shapesOf(story).shapes, ['trex', 'pterodactyl']);
+  const carries = story.beats.filter((b: { type: string }) => b.type === 'carry') as { minV?: number }[];
+  assert.deepEqual(carries.map((c) => c.minV ?? 0), [0, 0.12], 'the pterodactyl flies up; the T. rex walks');
+  // The model is told their names, not their ids.
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /T\. rex, pterodactyl/);
+  // Each creature in a place it belongs: the T. rex in the forest or meadow, the pterodactyl in the sky or there.
+  const sets = story.beats.filter((b: { type: string }) => b.type === 'scenery').map((b: { set: string }) => b.set);
+  assert.ok(sets.every((s: string) => ['forest', 'field', 'none'].includes(s)), JSON.stringify(sets));
 });
 
 test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {

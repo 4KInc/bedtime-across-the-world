@@ -91,7 +91,10 @@ const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky'] as cons
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 /** "Mo is dreaming", its dots coming and going. */
 const DREAMING_LABELS = ['Mo is dreaming', 'Mo is dreaming.', 'Mo is dreaming..', 'Mo is dreaming...'];
-const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail']);
+const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([
+  ...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail',
+  'rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl',
+]);
 
 /** Buttons with their own look (the rest are options and toggles). */
 const REPLAY_BUTTONS = new Set(['replay-button']);

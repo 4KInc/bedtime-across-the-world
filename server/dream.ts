@@ -15,7 +15,11 @@ import { MAX_DREAM_SHAPES, MAX_WISH_WORDS, readWish } from '../src/voice-command
 import type { Llm } from './llm.ts';
 
 /** Every shape a dreamed story can tell: the five the chooser offers, and the ones an idea can name ("a fish and a crocodile"). */
-export const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail'] as const;
+export const DREAM_SHAPES = [
+  'rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail',
+  // The story worlds' creatures (world-creatures.ts): "a T. rex and a pterodactyl" (Quest 3, Nov 17: both were dropped).
+  'rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl',
+] as const;
 /** What Mo picks from when an idea names no shapes, or tops up a request: the easiest five. */
 export const PICK_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 export const THEMES: Readonly<Record<string, { words: string; scenery: string }>> = {
@@ -48,6 +52,17 @@ const SHAPE_WORDS: Readonly<Record<string, RegExp>> = {
   crocodile: /\b(crocodile|croc)/i,
   deer: /\b(deer|reindeer)\b/i,
   snail: /\bsnail/i,
+  rocket: /\brocket/i,
+  alien: /\balien/i,
+  asteroid: /\basteroid/i,
+  shark: /\bshark/i,
+  octopus: /\boctop/i,
+  whale: /\bwhale/i,
+  car: /\bcars?\b/i,
+  plane: /\b(aeroplane|airplane|plane)s?\b/i,
+  digger: /\bdigger/i,
+  trex: /\b(t\.? ?-?rex|tyrannosaurus)/i,
+  pterodactyl: /\bpterodactyl/i,
 };
 
 export interface DreamRequest {
@@ -167,8 +182,29 @@ const FITS: Readonly<Record<string, readonly string[]>> = {
   snail: ['forest', 'field', 'storm'],
   rabbit: ['field', 'forest'],
   dog: ['field', 'forest', 'storm', 'none'],
+  shark: ['sea'],
+  octopus: ['sea'],
+  whale: ['sea'],
+  trex: ['forest', 'field'],
+  pterodactyl: ['none', 'field', 'forest'],
+  rocket: ['none'],
+  alien: ['none'],
+  asteroid: ['none'],
+  car: ['field', 'storm'],
+  plane: ['none', 'field'],
+  digger: ['field'],
 };
-const HOME: Readonly<Record<string, string>> = { fish: 'river', swan: 'river', crocodile: 'river', deer: 'forest', snail: 'forest', rabbit: 'field', dog: 'field' };
+const HOME: Readonly<Record<string, string>> = {
+  fish: 'river', swan: 'river', crocodile: 'river', deer: 'forest', snail: 'forest', rabbit: 'field', dog: 'field',
+  shark: 'sea', octopus: 'sea', whale: 'sea', trex: 'forest', pterodactyl: 'none', rocket: 'none', alien: 'none', asteroid: 'none',
+  car: 'field', plane: 'none', digger: 'field',
+};
+/** A shape as the story says it ("T. rex", "aeroplane"); its id otherwise (the reply's "shape" fields keep the id). */
+const SHAPE_NAMES: Readonly<Record<string, string>> = { trex: 'T. rex', plane: 'aeroplane' };
+const nameOf = (shape: string): string => SHAPE_NAMES[shape] ?? shape;
+
+/** Creatures that fly: their carry also climbs (minV), as the birds' do. */
+const FLIERS: ReadonlySet<string> = new Set(['bird', 'pterodactyl', 'plane']);
 /** A place in the words given to the model. */
 const PLACE_WORDS: Readonly<Record<string, string>> = {
   sea: 'by the sea',
@@ -212,7 +248,7 @@ const SYSTEM = [
 function prompt(req: DreamRequest): string {
   const scenes = req.shapes.map((s) => `{"shape":"${s}","setup":"...","ask":"...","ride":"...","after":"...","bow":"..."}`).join(',');
   return [
-    `Write a new story set ${THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.join(', ')}.`,
+    `Write a new story set ${THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.map(nameOf).join(', ')}.`,
     ...(req.wish
       ? [
           `The grown-up asked for it in their own words: ${req.wish}`,
@@ -220,9 +256,9 @@ function prompt(req: DreamRequest): string {
         ]
       : []),
     `Where each scene happens, in order (the story travels there when the place changes; say so in that scene's setup): ${scenePlaces(req)
-      .map((place, i) => `${req.shapes[i]} ${PLACE_WORDS[place]}`)
+      .map((place, i) => `${nameOf(req.shapes[i])} ${PLACE_WORDS[place]}`)
       .join(', ')}.`,
-    'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together; for the swan: a flat hand bent down at the wrist; for the crocodile: two flat hands, one on top of the other, like a long mouth; for the deer: wrists together, fingers up and spread like antlers; for the snail: a fist for the shell and two fingers for its eyes); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
+    'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together; for the swan: a flat hand bent down at the wrist; for the crocodile: two flat hands, one on top of the other, like a long mouth; for the deer: wrists together, fingers up and spread like antlers; for the snail: a fist for the shell and two fingers for its eyes; for the T. rex: two flat hands, one on top of the other, like a big mouth; for the pterodactyl: two hands side by side like big wings; for the rocket: one finger straight up; for the alien: the pointer and little finger up like antennae; for the asteroid: a fist; for the shark: a flat hand, fingers together, pointing up like a fin; for the octopus: a hand hanging down, fingers spread; for the whale: a fist with the thumb up for its spout; for the car: a fist with two fingers pointing forward like headlights; for the aeroplane: thumb and little finger out like wings; for the digger: a flat hand bent down at the wrist like a scoop); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
     'opening = two lines that begin the story; ending = two lines that say goodnight. title = 2 to 5 words.',
     `JSON: {"title":"...","opening":["...","..."],"scenes":[${scenes}],"ending":["...","..."]}`,
   ].join('\n');
@@ -291,7 +327,7 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
       beats.push({ id: `dream-${n}-free`, type: 'release', text: bow });
     } else {
       beats.push({ id: `dream-${n}-ride`, type: 'moth', mode: 'riding' });
-      beats.push({ id: `dream-${n}-carry`, type: 'carry', toU: 0.3, ...(shape === 'bird' ? { minV: 0.12 } : {}), text: ride });
+      beats.push({ id: `dream-${n}-carry`, type: 'carry', toU: 0.3, ...(FLIERS.has(shape) ? { minV: 0.12 } : {}), text: ride });
       beats.push({ id: `dream-${n}-after`, type: 'narrate', text: after });
       beats.push({ id: `dream-${n}-bow`, type: 'release', text: bow });
     }

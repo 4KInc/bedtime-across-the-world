@@ -10,6 +10,10 @@ const ASK = {
   crocodile: 'Make a crocodile: two flat hands, one on top of the other, like a long mouth.',
   deer: 'Make a deer with two hands: wrists together, fingers up and spread, like antlers.',
   snail: 'Make a snail: a fist for the shell, and two fingers poking forward for its eyes.',
+  trex: 'Make a T. rex: two flat hands, one on top of the other, like a big mouth.',
+  pterodactyl: 'Make a pterodactyl: two hands, side by side, like big wings.',
+  rocket: 'Make a rocket: point one finger straight up, and curl the others in.',
+  whale: 'Make a whale: a fist for its big round body, and your thumb up for its spout.',
 };
 
 /** The words for these shapes; `broken` leaves the shape's name out of every request (which must be refused). */

@@ -39,7 +39,7 @@ const llm = {
   text: async ({ system, user }) => {
     prompts.push({ system, user });
     if (/grown-up's idea/.test(system)) return '{"theme":"meadow","shapes":["dog","bird"]}';
-    return cannedWords(/shapes: ([a-z, ]+)\./.exec(user)[1].split(', '));
+    return cannedWords([...user.matchAll(/"shape":"([a-z]+)"/g)].map((m) => m[1]));
   },
 };
 const dreamer = new Dreamer(llm, 'writer', 'picker');
@@ -211,6 +211,30 @@ const shapesOf = (story) => ({
   check('"a fish and a crocodile" is asked for in those words', asked.length === 1 && asked[0].wish === 'Tell me a story with a fish and a crocodile', { asked });
   check('Mo dreams the fish, then the crocodile (no dog added), by the river', !!story && JSON.stringify(shapesOf(story).shapes) === '["fish","crocodile"]' && sets.at(-1) === 'river', { ...(story && shapesOf(story)), sets });
   check('the fish-and-crocodile story starts', /^dreamed:/.test(now.script), now);
+  await context.close();
+}
+
+// 4. The story worlds' creatures, named in an idea (Quest 3, Nov 17: a T. rex and a pterodactyl were dropped),
+//    then played by the demo player: both wake on the wall.
+{
+  const { page, pinch, asked, context } = await session({ browserSpeech: true });
+  await pinch('dream-say');
+  await page.evaluate(() => window.__say('a story with a T. rex and a pterodactyl'));
+  const now = await playing(page);
+  const story = asked.length ? await dreamer.dream(checkDream(asked[0])) : null;
+  check('"a T. rex and a pterodactyl": both in the dreamed story', !!story && JSON.stringify(shapesOf(story).shapes) === '["trex","pterodactyl"]', story && shapesOf(story));
+  await page.evaluate(() => {
+    __sp.set('DemoDirector', 'persona', 'perfect');
+    __sp.set('DemoDirector', 'playing', true);
+  });
+  const woke = new Set();
+  const t0 = Date.now();
+  while (Date.now() - t0 < 240000 && woke.size < 2) {
+    const m = await page.evaluate(() => (__sp.get('ShapeRecognizer', 'matchedHand') !== 'none' ? __sp.get('ShapeRecognizer', 'matchedShape') : ''));
+    if (m === 'trex' || m === 'pterodactyl') woke.add(m);
+    await sleep(250);
+  }
+  check('the T. rex and the pterodactyl both wake on the wall', /^dreamed:/.test(now.script) && woke.size === 2, { woke: [...woke] });
   await context.close();
 }
 

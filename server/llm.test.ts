@@ -25,8 +25,8 @@ before(async () => {
       if (req.headers['x-goog-api-key']) {
         // Gemini: generateContent, a thought part before the answer.
         const user = body.contents[0].parts[0].text as string;
-        const shapes = /shapes: ([a-z, ]+)\./.exec(user)?.[1].split(', ');
-        const text = shapes ? cannedWords(shapes) : 'Tuck your thumb along your hand, like a fin.';
+        const shapes = [...user.matchAll(/"shape":"([a-z]+)"/g)].map((m) => m[1]);
+        const text = shapes.length ? cannedWords(shapes) : 'Tuck your thumb along your hand, like a fin.';
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Thinking about fins...', thought: true }, { text }] } }] }));
       }
@@ -36,8 +36,8 @@ before(async () => {
         return res.end(JSON.stringify({ error: 'anthropic-version is not supported' }));
       }
       const user = (body.messages as { content: string }[])[0].content;
-      const shapes = /shapes: ([a-z, ]+)\./.exec(user)?.[1].split(', ');
-      const text = shapes ? cannedWords(shapes) : 'Tuck your thumb along your hand, like a fin.';
+      const shapes = [...user.matchAll(/"shape":"([a-z]+)"/g)].map((m) => m[1]);
+      const text = shapes.length ? cannedWords(shapes) : 'Tuck your thumb along your hand, like a fin.';
       const content = meta ? [{ type: 'thinking', thinking: 'The child needs a short tip...' }, { type: 'text', text }] : [{ type: 'text', text }];
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ content }));

@@ -60,6 +60,10 @@ test('dreaming by voice: the place and shapes named, in the order said', () => {
   assert.deepEqual(parseCommand('dream with a swan, a fish, a bird, a dog and a rabbit').shapes, ['swan', 'fish', 'bird', 'dog']);
   assert.deepEqual(readWish('a story with a rabbit, a dog, a bird and a cup').shapes, ['rabbit', 'dog', 'bird', 'cup']);
   assert.deepEqual(readWish('a rabbit, a dog, a bird and cups of light').shapes, ['rabbit', 'dog', 'bird', 'cup']);
+  // The story worlds' creatures too, however the words come back (Quest 3, Nov 17: both were dropped).
+  assert.deepEqual(readWish('a story with a T. rex and a pterodactyl').shapes, ['trex', 'pterodactyl']);
+  assert.deepEqual(readWish('T-Rex and two whales and a rocket').shapes, ['trex', 'whale', 'rocket']);
+  assert.deepEqual(parseCommand('whale')?.shape, 'whale');
   // A story line that says "dream" is not a command.
   assert.notEqual(parseCommand('The fish drifts off to dream')?.kind, 'dream');
   assert.equal(parseCommand('Close your eyes and dream of the sea'), null);
