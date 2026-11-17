@@ -82,8 +82,8 @@ check("the goodnight arrives: Mo takes Mia's colours (kept for later nights)", b
 await sleep(1000);
 await page.getByRole('button', { name: /Enter XR/i }).click();
 await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().ready, null, { timeout: 30000 });
+// The story that opens (The Shy Little Shark on a first launch, Nov 17): the drawing walks on at its start.
 await page.evaluate(() => {
-  __sp.set('StoryState', 'script', 'story/counting-stars.story.json');
   __sp.set('DemoDirector', 'persona', 'perfect');
   __sp.set('DemoDirector', 'playing', true);
 });
