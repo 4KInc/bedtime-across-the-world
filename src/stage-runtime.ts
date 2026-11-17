@@ -79,6 +79,13 @@ export const trackingRuntime = { lightHint: false };
  * (performance/recorder.ts listens to the microphone's level): when they last
  * spoke, so a spoken line waits for them to finish (story.ts lineFinished).
  */
+/**
+ * The Journal's story picker (settings.ts): the story it shows, and whether the
+ * parent has browsed to it since tonight's story last changed. Record a story
+ * records the story they picked (live/family-controls.ts).
+ */
+export const pickerRuntime = { script: '', browsed: false };
+
 export const readerRuntime = { listening: false, lastSpokeAt: 0, level: 0, floor: 0, waits: 0 };
 
 export const accessRuntime = {
