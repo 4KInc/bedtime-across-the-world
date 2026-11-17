@@ -26,6 +26,16 @@ const CSS = `
 .sp-viewer.playing .sp-panel { width: max-content; margin: 0 0 0 auto; padding: 8px; transition: opacity 0.6s; }
 /* Playing and left alone: the controls fade away (a tap, a mouse move or a key brings them back). */
 .sp-viewer.playing.idle .sp-panel { opacity: 0; pointer-events: none; }
+/* Full screen while a story plays: a small icon in the top-left corner (the pill has no room), fading with the controls. */
+.sp-fs-corner { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px));
+  width: 44px; height: 44px; border-radius: 22px; padding: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(18, 13, 26, 0.88); border: 1px solid rgba(246, 227, 189, 0.35); color: #f6e3bd; cursor: pointer;
+  pointer-events: auto; transition: opacity 0.6s; }
+.sp-fs-corner svg { width: 22px; height: 22px; }
+.sp-fs-corner .sp-fs-exit, .sp-fs-corner.full .sp-fs-enter { display: none; }
+.sp-fs-corner.full .sp-fs-exit { display: block; }
+.sp-viewer.playing .sp-fs-corner { display: flex; }
+.sp-viewer.playing.idle .sp-fs-corner { opacity: 0; pointer-events: none; }
 .sp-viewer.playing .sp-title, .sp-viewer.playing .sp-status, .sp-viewer.playing .sp-grownups, .sp-viewer.playing .sp-credits-btn { display: none; }
 .sp-panel { pointer-events: auto; max-width: 760px; margin: 0 auto; background: rgba(18, 13, 26, 0.88);
   border: 1px solid #6b4f2a; border-radius: 18px; padding: 14px; backdrop-filter: blur(6px); }
@@ -193,7 +203,11 @@ export class ViewerUISystem extends createSystem({
           <button class="sp-btn" data-act="leave" aria-label="Leave the live story">Leave</button>
           <div class="sp-status sp-live-status" aria-live="polite"></div>
         </div>
-      </div>`;
+      </div>
+      <button class="sp-fs-corner" type="button" data-act="fullscreen" aria-label="Full screen" hidden>
+          <svg class="sp-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          <svg class="sp-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+        </button>`;
     document.body.appendChild(root);
     this.root = root;
     this.activeAt = performance.now();
@@ -210,18 +224,22 @@ export class ViewerUISystem extends createSystem({
     });
     this.joinBtn?.addEventListener('click', () => this.toggleJoin());
     root.querySelector('[data-act="credits"]')?.addEventListener('click', openCredits);
-    // Full screen where the browser allows it (computers, Android, iPadOS 16.4+; not iPhone), Nov 17. On the
-    // story list's panel: it stays on through the story (a button in the playback controls widened them over the shelf).
+    // Full screen where the browser allows it (computers, Android, iPadOS 16.4+; not iPhone), Nov 17: a button on the
+    // story list's panel, and while a story plays an icon in the top-left corner (a button in the playback controls
+    // widened them over the shelf; with only the panel's, full screen could not be chosen once a story began).
     const doc = document as Document & { webkitFullscreenEnabled?: boolean; webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
     const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
     const canFull = Boolean(document.fullscreenEnabled || doc.webkitFullscreenEnabled);
     const isFull = () => Boolean(document.fullscreenElement || doc.webkitFullscreenElement);
     const fullButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-act="fullscreen"]')];
     const label = () => {
+      const words = isFull() ? 'Exit full screen' : 'Full screen';
       for (const b of fullButtons) {
         b.hidden = !canFull;
-        b.textContent = isFull() ? 'Exit full screen' : 'Full screen';
-        b.setAttribute('aria-label', b.textContent);
+        // The corner icon keeps its picture; the panel's button says it.
+        if (b.classList.contains('sp-fs-corner')) b.classList.toggle('full', isFull());
+        else b.textContent = words;
+        b.setAttribute('aria-label', words);
       }
     };
     for (const b of fullButtons) {
