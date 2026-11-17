@@ -1,7 +1,7 @@
 import { createSystem, Entity, Object3D, Vector3 } from '@iwsdk/core';
 import { playClick } from './sfx.js';
 import { DeskLamp, ShadowJournal, Stage } from './shadowplay-components.js';
-import { handRuntime, HandSample, stageRuntime } from './stage-runtime.js';
+import { HandSample, ownHands, stageRuntime } from './stage-runtime.js';
 
 const THUMB_TIP = 4;
 const INDEX_TIP = 9;
@@ -52,7 +52,7 @@ export class LampControlSystem extends createSystem({
     this.headObj ??= lampObj.getObjectByName('lamp-head');
 
     for (const side of ['right', 'left'] as const) {
-      const hand = handRuntime[side];
+      const hand = ownHands[side];
       const state = this.pinch[side];
       const wasPinching = state.pinching;
       state.pinching = hand.tracked && this.isPinching(hand, wasPinching);
@@ -67,7 +67,7 @@ export class LampControlSystem extends createSystem({
     // A hand that stops being tracked lets go.
     const holder = lamp.getValue(DeskLamp, 'heldBy');
     if (holder === 'left' || holder === 'right') {
-      if (!handRuntime[holder].tracked) lamp.setValue(DeskLamp, 'heldBy', 'none');
+      if (!ownHands[holder].tracked) lamp.setValue(DeskLamp, 'heldBy', 'none');
       else this.drag(holder, lampObj);
     }
   }
@@ -124,7 +124,7 @@ export class LampControlSystem extends createSystem({
 
   /** Slide the lamp along the desk (height fixed), keeping it within reach. */
   private drag(side: Side, lampObj: Object3D): void {
-    this.pinchPoint(handRuntime[side]);
+    this.pinchPoint(ownHands[side]);
     const y = lampObj.position.y;
     const p = lampObj.position;
     p.set(this.point.x + this.grabOffset.x, y, this.point.z + this.grabOffset.z);
