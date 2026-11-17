@@ -336,10 +336,16 @@ export class PerformancePlayerSystem extends createSystem({
     if (this.audio.paused) playVoice(this.audio);
   }
 
-  /** The voice's loudness: on its gain node where there is one (iOS ignores an element's volume), else the element's. */
+  /**
+   * The voice's loudness: on its gain node where there is one (iOS ignores an element's volume), else the
+   * element's; and silent is also the element muted. On an iPad (Nov 17) the gain node did not silence it:
+   * waiting for the child's shape the recording was heard going on, then jumped back to the line and caught up.
+   * iOS honours muted, and muted is not paused, so no tap is needed to hear it again.
+   */
   private setVoice(gain: number): void {
     if (this.voiceNode) this.voiceNode.gain.value = gain;
     else if (this.audio) this.audio.volume = gain;
+    if (this.audio) this.audio.muted = gain === 0;
   }
 
   /** Fade the voice toward its target; at a line's end, fade out and stop. */
@@ -357,7 +363,10 @@ export class PerformancePlayerSystem extends createSystem({
     this.fadeAt = now;
     if (this.voiceEndsAt >= 0 && !audio.paused && audio.currentTime >= this.voiceEndsAt - VOICE_FADE) this.gainTarget = 0;
     // Well past the line's end (a long frame): stop now rather than run into the next line.
-    if (this.gainTarget === 0 && this.voiceEndsAt >= 0 && audio.currentTime >= this.voiceEndsAt + VOICE_FADE) this.gain = 0;
+    if (this.gainTarget === 0 && this.voiceEndsAt >= 0 && audio.currentTime >= this.voiceEndsAt + VOICE_FADE && this.gain !== 0) {
+      this.gain = 0;
+      this.setVoice(0);
+    }
     if (this.gain === this.gainTarget) {
       // Muted between lines: with a gain node it keeps playing (silently), so no new play() is needed later.
       if (this.gain === 0 && !audio.paused && !this.voiceNode) audio.pause();
