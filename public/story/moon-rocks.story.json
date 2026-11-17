@@ -158,8 +158,7 @@
       "id": "rocks-alien-carry",
       "type": "carry",
       "toU": 0.3,
-      "text": "Whizz, whizz, along the short cut, toward the planet with the ring.",
-      "minV": 0.12
+      "text": "Whizz, whizz, along the short cut, toward the planet with the ring."
     },
     {
       "id": "rocks-alien-land",
