@@ -98,8 +98,6 @@ const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
 const WORLD_BUTTONS = ['dream-world-1', 'dream-world-2', 'dream-world-3'] as const;
 /** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
-/** "Mo is dreaming", its dots coming and going. */
-const DREAMING_LABELS = ['Mo is dreaming', 'Mo is dreaming.', 'Mo is dreaming..', 'Mo is dreaming...'];
 const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail', ...Object.values(PLACE_CREATURES).flat()]);
 /** Shapes to start from, or top up with, in a place: its own creatures where it has them (and the cup). */
 const startingShapes = (theme: string): readonly string[] => (PLACE_CREATURES[theme] ? [...PLACE_CREATURES[theme], 'cup'] : DREAM_SHAPES);
@@ -435,17 +433,18 @@ export class SettingsSystem extends createSystem({
   }
 
   /**
-   * While a story is being dreamed up, "Dream a new one" reads "Mo is dreaming"
-   * with dots that come and go (the wall says so too, captions.ts): there were
-   * 3 to 5 quiet seconds after an idea was heard (Quest 3S, Nov 16).
+   * While a story is being dreamed up, "Dream a new one" reads "Mo is dreaming..."
+   * (the wall says so too, its dots moving, captions.ts): there were 3 to 5 quiet
+   * seconds after an idea was heard (Quest 3S, Nov 16).
    */
   private showDreaming(): void {
-    const dots = this.dreaming ? Math.floor(performance.now() / 400) % 4 : -1;
+    // Steady: changing dots made the label re-centre and jitter (the wall's line animates them, captions.ts).
+    const dots = this.dreaming ? 1 : -1;
     if (dots === this.dreamDots) return;
     this.dreamDots = dots;
     const p = palette();
     this.buttons.get('story-dream')?.setProperties(dots >= 0 ? p.selected : p.unselected);
-    this.dreamLabel?.setProperties(dots >= 0 ? { text: DREAMING_LABELS[dots], color: p.ink } : { text: 'Dream a new one', color: p.cream });
+    this.dreamLabel?.setProperties(dots >= 0 ? { text: 'Mo is dreaming...', color: p.ink } : { text: 'Dream a new one', color: p.cream });
   }
 
   /** Dim chapters the player has not reached yet. */
