@@ -35,7 +35,27 @@ const LINE_TAIL_MS = 400;
  * voice plays in sync. Pause and resume keep everything together.
  */
 /** For tests: the recorded voice now (its loudness, whether paused, whether through a gain node). */
-export const playbackVoiceRuntime = { gain: 1, paused: true, routed: false };
+export const playbackVoiceRuntime = {
+  gain: 1,
+  paused: true,
+  routed: false,
+  /** For diagnostics: the voice's own position (s), play() calls the browser refused and why, and media errors. */
+  at: 0,
+  /** The story's clock (s), and whether the child's Join in turn is on. */
+  pos: 0,
+  joinIn: false,
+  refused: 0,
+  refusedWhy: '',
+  error: '',
+};
+
+/** A play() of the recorded voice; a refusal is counted (iOS refuses one without a tap). */
+function playVoice(audio: HTMLAudioElement): void {
+  void audio.play().catch((e: Error) => {
+    playbackVoiceRuntime.refused++;
+    playbackVoiceRuntime.refusedWhy = e?.name ?? 'refused';
+  });
+}
 
 export class PerformancePlayerSystem extends createSystem({
   players: { required: [PerformancePlayer] },
@@ -107,7 +127,7 @@ export class PerformancePlayerSystem extends createSystem({
     if (paused !== this.wasPaused) {
       this.wasPaused = paused;
       if (paused) this.audio?.pause();
-      else void this.audio?.play().catch(() => undefined);
+      else if (this.audio) playVoice(this.audio);
     }
     if (paused) return;
     // Wait while the story loads the recording's script.
@@ -194,7 +214,8 @@ export class PerformancePlayerSystem extends createSystem({
       this.audioUrl = URL.createObjectURL(perf.audio);
       this.audio = new Audio(this.audioUrl);
       this.voiceNode = voiceGain(this.audio);
-      void this.audio.play().catch(() => undefined);
+      this.audio.addEventListener('error', () => (playbackVoiceRuntime.error = `media ${this.audio?.error?.code ?? '?'}`));
+      playVoice(this.audio);
     }
   }
 
@@ -312,7 +333,7 @@ export class PerformancePlayerSystem extends createSystem({
     this.gainTarget = 1;
     this.fadeAt = performance.now();
     this.setVoice(0);
-    if (this.audio.paused) void this.audio.play().catch(() => undefined);
+    if (this.audio.paused) playVoice(this.audio);
   }
 
   /** The voice's loudness: on its gain node where there is one (iOS ignores an element's volume), else the element's. */
@@ -328,6 +349,9 @@ export class PerformancePlayerSystem extends createSystem({
     playbackVoiceRuntime.gain = Math.round(this.gain * 100) / 100;
     playbackVoiceRuntime.paused = audio.paused;
     playbackVoiceRuntime.routed = this.voiceNode !== null;
+    playbackVoiceRuntime.at = audio.currentTime;
+    playbackVoiceRuntime.pos = this.clock;
+    playbackVoiceRuntime.joinIn = this.rejoinAt >= 0;
     const now = performance.now();
     const step = (now - this.fadeAt) / 1000 / VOICE_FADE;
     this.fadeAt = now;
