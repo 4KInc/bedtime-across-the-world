@@ -551,6 +551,7 @@ const gate: [string, boolean][] = [
   ['without one-hand mode an open hand is not a bird', requested('open', 'bird', 'none', 'none', 'none', false, false) === 'none'],
   // World creatures that borrow a pose (world-creatures.ts).
   ['a T. rex is made with the crocodile\'s jaws', requested('crocodile', 'trex', 'none', 'none', 'none', false, false) === 'trex'],
+  ['an octopus also takes a hanging hand read as cupped (its alt), but only while an octopus is asked for', requested('cup', 'octopus', 'cup', 'none', 'none', false, false) === 'octopus' && requested('cup', 'octopus', 'none', 'none', 'none', false, false) === 'none'],
   ['a digger also takes a scooped hand (its alt, the cup), but only while a digger is asked for', requested('cup', 'digger', 'cup', 'none', 'none', false, false) === 'digger' && requested('cup', 'digger', 'none', 'none', 'none', false, false) === 'none' && requested('cup', 'car', 'none', 'none', 'none', false, false) === 'none'],
   ['a car with the snail\'s two fingers, a digger with the swan\'s wrist', requested('snail', 'car', 'none', 'none', 'none', false, false) === 'car' && requested('swan', 'digger', 'none', 'none', 'none', false, false) === 'digger'],
   ['an asteroid with a fist, a pterodactyl with the bird', requested('fist', 'asteroid', 'none', 'none', 'none', false, false) === 'asteroid' && requested('bird', 'pterodactyl', 'none', 'none', 'none', false, false) === 'pterodactyl'],

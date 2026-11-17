@@ -99,6 +99,7 @@
       "id": "song-want-octopus",
       "type": "request",
       "shape": "octopus",
+      "alt": "cup",
       "text": "Make an octopus: your hand hanging down, with your fingers spread out wide."
     },
     {
