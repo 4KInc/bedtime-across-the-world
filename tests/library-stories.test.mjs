@@ -78,7 +78,7 @@ test('every world and story colour is a "#rrggbb" colour, and no two worlds shar
 });
 
 test('every scenery set a library story uses is one the stage can draw', () => {
-  const SETS = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);
+  const SETS = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'country-road', 'dino-valley', 'star-port']);
   for (const entry of library) {
     for (const b of read(entry.script).beats) if (b.type === 'scenery') assert.ok(SETS.has(b.set), `${b.id}: ${b.set}`);
   }

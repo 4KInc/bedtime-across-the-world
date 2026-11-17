@@ -23,6 +23,7 @@ export const SKIES: Readonly<Record<string, readonly [number, number]>> = {
   [ScenerySets.Storm]: [0x6a5acd, 0x8fa3c7], // lilac to slate
   [ScenerySets.Sea]: [0x1f6fb8, 0x2cc5b5], // ocean blue to teal
   [ScenerySets.MoonRoad]: [0x2b2fa8, 0xc58cff], // deep indigo to moon-dust lavender
+  [ScenerySets.CountryRoad]: [0x3d3ab0, 0xff9a5c], // dusk blue to a sunset over the hills
   [ScenerySets.DinoValley]: [0x2e9e4f, 0xff7a3a], // jungle green to volcano orange
   [ScenerySets.StarPort]: [0x5a2fd6, 0x2fd6e0], // cosmic violet to nebula cyan
 };

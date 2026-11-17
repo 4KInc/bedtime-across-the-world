@@ -10,7 +10,7 @@ const narration = read('narration/manifest.json');
 
 test("a story's scenery and creatures belong to its world", () => {
   // Ocean and Exploration opened on grassy hills with a rabbit (Quest 3S, Nov 15).
-  const LAND = new Set(['field', 'forest', 'moon-road']);
+  const LAND = new Set(['field', 'forest', 'moon-road', 'country-road']);
   const LAND_ONLY = new Set(['rabbit', 'ears', 'deer', 'snail']);
   for (const entry of library.filter((s) => s.world === 'ocean')) {
     for (const b of read(entry.script).beats) {
