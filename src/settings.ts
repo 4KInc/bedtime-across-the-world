@@ -129,6 +129,14 @@ const shapeList = (shapes: readonly string[]): string => {
 /** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail', ...Object.values(PLACE_CREATURES).flat()]);
+/**
+ * Every shape a dream can have, for the chooser's "All shapes..." page (Quest 3, Nov 17: with this many
+ * creatures the place's rows did not show them all): nature's first, then the story worlds'.
+ */
+const ALL_DREAM_SHAPES = [
+  'rabbit', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile', 'shark',
+  'octopus', 'whale', 'rocket', 'alien', 'asteroid', 'car', 'plane', 'digger', 'trex', 'pterodactyl',
+] as const;
 /** Shapes to start from, or top up with, in a place: its own creatures where it has them (and the cup). */
 const startingShapes = (theme: string): readonly string[] => (WORLD_PLACE_CREATURES[theme] ? [...WORLD_PLACE_CREATURES[theme], 'cup'] : DREAM_SHAPES);
 
@@ -189,6 +197,8 @@ export class SettingsSystem extends createSystem({
   private dreamDots = -1;
   /** The dream chooser: open, and what it has picked. */
   private choosing = false;
+  /** The chooser's "All shapes..." page is showing. */
+  private allShapes = false;
   private dreamTheme: string = DREAM_THEMES[0];
   private dreamShapes: string[] = [];
   private dreams = 0;
@@ -496,19 +506,33 @@ export class SettingsSystem extends createSystem({
     this.clearPending();
     dreamRuntime.chooser = { ...dreamRuntime.chooser, open: false };
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'none' });
+    this.showAllShapes(false);
+  }
+
+  /** "All shapes...": the chooser makes way for every shape (the panel would be too tall with both). */
+  private showAllShapes(on: boolean): void {
+    this.allShapes = on;
+    this.panel?.getElementById('dream-all')?.setProperties({ display: on ? 'flex' : 'none' });
+    if (this.choosing) this.panel?.getElementById('dream-section')?.setProperties({ display: on ? 'none' : 'flex' });
+    if (this.choosing) this.refreshDreamChooser();
   }
 
   /** A shape in the chooser: on or off, kept in the order picked (the order the story asks for them). */
   private toggleDreamShape(shape: string): void {
     if (this.dreamShapes.includes(shape)) this.dreamShapes = this.dreamShapes.filter((s) => s !== shape);
-    else if (this.dreamShapes.length >= 3) this.status?.setProperties({ text: 'Three shapes at most: take one off first.' });
+    else if (this.dreamShapes.length >= MAX_DREAM_SHAPES) this.status?.setProperties({ text: 'Four shapes at most: take one off first.' });
     else this.dreamShapes = [...this.dreamShapes, shape];
     this.refreshDreamChooser();
   }
 
   private refreshDreamChooser(): void {
-    dreamRuntime.chooser = { open: this.choosing, theme: this.dreamTheme, shapes: [...this.dreamShapes], row: [...(PLACE_CREATURES[this.dreamTheme] ?? [])] };
+    dreamRuntime.chooser = { open: this.choosing, theme: this.dreamTheme, shapes: [...this.dreamShapes], row: [...(PLACE_CREATURES[this.dreamTheme] ?? [])], all: this.allShapes };
     const p = palette();
+    // The "All shapes..." page: every shape, the picked ones lit, and what is picked, in order.
+    for (const sh of ALL_DREAM_SHAPES) this.buttons.get(`dream-all-${sh}`)?.setProperties(this.dreamShapes.includes(sh) ? p.selected : p.unselected);
+    this.panel
+      ?.getElementById<UIKit.Text>('dream-all-picked')
+      ?.setProperties({ text: this.dreamShapes.length ? `Picked: ${shapeList(this.dreamShapes)}` : 'Picked: none yet' });
     for (const t of DREAM_THEMES) this.buttons.get(`dream-theme-${t}`)?.setProperties(t === this.dreamTheme ? p.selected : p.unselected);
     for (const sh of DREAM_SHAPES) this.buttons.get(`dream-shape-${sh}`)?.setProperties(this.dreamShapes.includes(sh) ? p.selected : p.unselected);
     // The place's own creatures, if it has them (a shark by the sea, a rocket in space).
@@ -751,6 +775,9 @@ export class SettingsSystem extends createSystem({
       });
     }
     for (const sh of DREAM_SHAPES) on(`dream-shape-${sh}`, () => this.toggleDreamShape(sh));
+    for (const sh of ALL_DREAM_SHAPES) on(`dream-all-${sh}`, () => this.toggleDreamShape(sh));
+    on('dream-all-open', () => this.showAllShapes(true));
+    on('dream-all-done', () => this.showAllShapes(false));
     WORLD_BUTTONS.forEach((id, i) =>
       on(id, () => {
         const shape = PLACE_CREATURES[this.dreamTheme]?.[i];
@@ -769,6 +796,7 @@ export class SettingsSystem extends createSystem({
     this.dreamLabel = panel.getElementById<UIKit.Text>('story-dream-label') ?? undefined;
     panel.getElementById('dream-section')?.setProperties({ display: 'none' });
     panel.getElementById('dream-ready')?.setProperties({ display: 'none' });
+    panel.getElementById('dream-all')?.setProperties({ display: 'none' });
     this.choosing = false;
     fetch('/api/dream')
       .then((r) => (r.ok ? (r.json() as Promise<{ available?: boolean }>) : { available: false }))
@@ -888,7 +916,7 @@ export const dreamRuntime = {
   /** "Say your idea": 'listening' while the microphone is on, 'understanding' while the words are worked out, else ''; and the last words heard. */
   wish: { state: '' as '' | 'listening' | 'understanding', label: 'Say your idea', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
-  chooser: { open: false, theme: '', shapes: [] as string[], row: [] as string[] },
+  chooser: { open: false, theme: '', shapes: [] as string[], row: [] as string[], all: false },
   /** A dreamed story waiting on its title for Tell it or Record and tell it: its title, else ''. */
   ready: '',
   /** A child's request and Mo's suggestions as shown on the panel, and the status line about them. */
