@@ -131,7 +131,7 @@ async function readBody(req: IncomingMessage, limit: number): Promise<string | n
 /** Keep only the fields the app records (never store or hand back anything extra). */
 const STORY_FIELDS = [
   'version', 'id', 'title', 'performer', 'child', 'createdAt', 'durationMs', 'script', 'frameHz',
-  'hands', 'frameCount', 'events', 'audio', 'audioType', 'story', 'mo', 'drawing', 'ask',
+  'hands', 'frameCount', 'events', 'audio', 'audioType', 'story', 'mo', 'drawing', 'ask', 'tz',
 ] as const;
 
 function pick(perf: Record<string, unknown>): Record<string, unknown> {

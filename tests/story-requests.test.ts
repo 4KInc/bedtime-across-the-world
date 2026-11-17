@@ -89,3 +89,29 @@ test("the model's suggestions are checked one by one: known places and shapes, p
   assert.deepEqual(ideas.map((i) => i.title), ['The Carnival Lights']);
   assert.deepEqual(readSuggestions('no idea'), []);
 });
+
+test("bedtime across time zones: the child's time, and how near their bedtime it is", async () => {
+  const { bedtimeLine, checkTz, clockText, localMinutes, usualBedtime, DEFAULT_BEDTIME } = await import('../src/bedtime-clock.ts');
+  // Offsets only: whole quarter hours from UTC-12 to UTC+14.
+  assert.equal(checkTz(60), 60);
+  assert.equal(checkTz(330), 330);
+  assert.equal(checkTz(-720), -720);
+  for (const bad of [61, 900, -735, '60', 1.5, null, undefined]) assert.equal(checkTz(bad), null, String(bad));
+  // 18:10 UTC is 19:10 at UTC+1.
+  const at = Date.UTC(2026, 10, 17, 18, 10);
+  assert.equal(localMinutes(at, 60), 19 * 60 + 10);
+  assert.equal(clockText(19 * 60 + 10), '7:10 pm');
+  assert.equal(clockText(0), '12:00 am');
+  assert.equal(clockText(12 * 60 + 5), '12:05 pm');
+  // A usual bedtime from evening goodnights only (an afternoon one says nothing about it).
+  assert.equal(usualBedtime([]), DEFAULT_BEDTIME);
+  assert.equal(usualBedtime([15 * 60, 19 * 60 + 40, 20 * 60, 19 * 60 + 50]), 19 * 60 + 50);
+  const bed = 19 * 60 + 30;
+  assert.equal(bedtimeLine('Mia', at, 60, bed), "It's 7:10 pm for Mia. Bedtime in about 20 minutes.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 17, 17, 30), 60, bed), "It's 6:30 pm for Mia. Bedtime in about an hour.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 17, 18, 45), 60, bed), "It's 7:45 pm for Mia. It's bedtime now.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 17, 22, 0), 60, bed), "It's 11:00 pm for Mia. Mia is asleep. Record one for tomorrow night.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 18, 4, 0), 60, bed), "It's 5:00 am for Mia. Mia is asleep. Record one for tomorrow night.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 18, 8, 0), 60, bed), "It's 9:00 am for Mia. Record tonight's story while it's day there.");
+  assert.equal(bedtimeLine('Mia', Date.UTC(2026, 10, 18, 14, 0), 60, bed), "It's 3:00 pm for Mia.");
+});

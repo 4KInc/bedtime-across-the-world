@@ -165,6 +165,9 @@
   <div class="title">Settings</div>
 
   <div class="label">For your family</div>
+  <div id="family-clock-row" class="row">
+    <span id="family-clock" class="story-blurb">It's 7:10 pm for Mia. Bedtime in about 20 minutes.</span>
+  </div>
   <div class="row">
     <button id="record-button" class="family">
       <span id="record-label" class="toggle-text">Record a story</span>

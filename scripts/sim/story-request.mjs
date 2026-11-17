@@ -8,6 +8,9 @@
 // and dreams it there; the request is then answered. Mo's suggestions for Sam,
 // from Sam's taste, are on the panel, and one goes into the chooser.
 // Mia's sample goodnight asks for a carnival story too (for someone alone).
+// Across the world: the viewer is in India, the headset in Chicago; Sam's
+// goodnight carries only the phone's offset (UTC+5:30), and the headset's
+// journal shows Sam's time there.
 //
 //   node scripts/sim/story-request.mjs [--gpu]
 // Needs the dev server (npm run dev) on https://localhost:8082 (or SIM_APP).
@@ -19,6 +22,7 @@ import { chromium } from 'playwright';
 import { assembleStory, checkDream, checkTaste, planByWords, suggestByTaste } from '../../server/dream.ts';
 import { checkPerformance } from '../../server/guard.ts';
 import { checkAsk } from '../../src/story-checks.ts';
+import { clockText, localMinutes } from '../../src/bedtime-clock.ts';
 import { cannedWords } from '../../tests/fixtures/dream-words.mjs';
 import { MEDIA_DIR } from './media.mjs';
 
@@ -80,7 +84,7 @@ async function serve(context) {
 }
 
 // A. The family viewer: Sam's goodnight asks for tomorrow's story.
-const vctx = await browser.newContext({ viewport: { width: 900, height: 1100 }, ignoreHTTPSErrors: true });
+const vctx = await browser.newContext({ viewport: { width: 900, height: 1100 }, ignoreHTTPSErrors: true, timezoneId: 'Asia/Kolkata' });
 await serve(vctx);
 const viewer = await vctx.newPage();
 viewer.on('pageerror', (e) => errors.push(String(e)));
@@ -102,15 +106,17 @@ const sent = await viewer.evaluate(async ([code, ask]) => {
     version: 'shadowplay.performance.v1', id: 'goodnight-from-sam', title: 'A goodnight from Sam', performer: 'Sam', createdAt: Date.now(),
     durationMs: 2000, script: '', frameHz: 30, hands: btoa(String.fromCharCode(...new Uint8Array(2 * 151 * 2))), frameCount: 2,
     events: [{ t: 500, type: 'wake', data: { shape: 'whale', hand: 'right', twoHanded: false } }], audio: null, ask,
+    tz: (await import('/src/bedtime-clock.ts')).deviceTz(),
   };
   const r = await fetch(`/api/stories/${code}/replies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(perf) });
   return r.status;
 }, [CODE, gifts.ask]);
 check('the goodnight with its request is accepted by the server, the request checked', sent === 201 && replies[0]?.ask?.words === gifts.ask.words, { status: sent, ask: replies[0]?.ask });
+check("the goodnight carries the phone's offset from UTC (India: +5:30), not a place", replies[0]?.tz === 330, { tz: replies[0]?.tz });
 await vctx.close();
 
 // B. The storyteller's headset: the story was sent with CODE; the goodnight and the request arrive.
-const hctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true });
+const hctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true, timezoneId: 'America/Chicago' });
 await serve(hctx);
 const page = await hctx.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
@@ -132,6 +138,11 @@ check("the requests arrive with the goodnights: Mia's sample asks for the carniv
 await sleep(1000);
 await page.getByRole('button', { name: /Enter XR/i }).click();
 await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().ready, null, { timeout: 30000 });
+// Across the world: the journal shows what time it is for Sam, in India.
+await page.waitForFunction(() => /for Sam\./.test(__sp.view().dream.shown.clock), null, { timeout: 20000, polling: 500 }).catch(() => undefined);
+const clock = await page.evaluate(() => __sp.view().dream.shown.clock);
+const india = [0, 1].map((m) => clockText(localMinutes(Date.now() - m * 60_000, 330)));
+check("the headset's journal shows Sam's time (in India, from a headset in Chicago)", india.some((t) => clock.startsWith(`It's ${t} for Sam.`)), { clock, india });
 const remote = (m, p) => page.evaluate(([m, p]) => IWER_DEVICE.remote.dispatch(m, p), [m, p]);
 async function pinch(id) {
   const t = await page.evaluate((id) => __sp.where(id), id);

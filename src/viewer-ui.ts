@@ -1,6 +1,7 @@
 import { createSystem, Entity } from '@iwsdk/core';
 import { openCredits } from './credits.js';
 import { listRecordings, loadRecording } from './journal-store.js';
+import { closeNightLight, openNightLight } from './night-light.js';
 import type { Performance } from './performance/format.js';
 import { recordingName, storyNames } from './story-names.js';
 import { fetchStory } from './performance/sharing.js';
@@ -145,6 +146,7 @@ export class ViewerUISystem extends createSystem({
   }
 
   private teardownUI(): void {
+    closeNightLight();
     for (const type of ['pointerdown', 'pointermove', 'keydown', 'touchstart'] as const) window.removeEventListener(type, this.wake);
     this.setEnterXRHidden(false);
     this.style?.remove();
@@ -444,6 +446,8 @@ export class ViewerUISystem extends createSystem({
       if (this.list) this.list.hidden = playing || finished;
       if (this.controls) this.controls.hidden = !playing;
       this.root.classList.toggle('playing', playing || finished || Boolean(this.lastLive));
+      // A new story: the night light from the last one goes.
+      if (playing) closeNightLight();
       if (!playing) {
         if (finished) {
           this.endingAt = performance.now() + ENDING_LINGER_MS;
@@ -554,6 +558,16 @@ export class ViewerUISystem extends createSystem({
     };
     card.addEventListener('click', close);
     timer = setTimeout(close, 12000);
+    // Lights down: the phone becomes a night light, with this goodnight on it.
+    const night = document.createElement('button');
+    night.className = 'sp-btn';
+    night.textContent = 'Night light';
+    night.addEventListener('click', (e) => {
+      e.stopPropagation();
+      close();
+      openNightLight(names.child, names.performer);
+    });
+    card.querySelector('small')?.before(night);
     document.body.appendChild(card);
     // A story that came with a family code can be answered.
     void loadRecording<Performance>(this.playingId).then((perf) => {
@@ -566,7 +580,7 @@ export class ViewerUISystem extends createSystem({
         close();
         this.openReply(perf.shareCode!, names);
       });
-      card.querySelector('small')?.before(reply);
+      night.before(reply);
       if (timer) clearTimeout(timer);
       timer = setTimeout(close, 30000);
     });

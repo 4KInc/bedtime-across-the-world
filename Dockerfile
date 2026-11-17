@@ -22,6 +22,8 @@ COPY src/coach-vocab.ts ./src/coach-vocab.ts
 COPY src/story-checks.ts ./src/story-checks.ts
 # A goodnight's gifts (Mo's palettes, the drawing format), checked on upload.
 COPY src/child-gifts.ts ./src/child-gifts.ts
+# A goodnight's time zone (an offset from UTC), checked on upload.
+COPY src/bedtime-clock.ts ./src/bedtime-clock.ts
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 8080

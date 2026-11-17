@@ -612,6 +612,17 @@ test("a goodnight asks for tomorrow's story: the checked request is kept with it
   }
 });
 
+test("a goodnight carries the child's time zone (an offset, never a place); anything else is refused", async () => {
+  const c = as();
+  const { code } = (await (await c.post('/api/stories', story())).json()) as { code: string };
+  assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'tz-1', performer: 'Mia', tz: 60 }))).status, 201);
+  const list = (await (await c.get(`/api/stories/${code}/replies`)).json()) as { replies: { tz?: unknown }[] };
+  assert.equal(list.replies[0].tz, 60);
+  for (const bad of [61, 900, -780, 'Europe/London', 1.5, null]) {
+    assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'tz-bad', tz: bad }))).status, 400, JSON.stringify(bad));
+  }
+});
+
 test("plan: a child's idea goes to the closest place the app has, with where in it the story happens", async () => {
   const plan = await (await as().post('/api/dream/plan', { wish: 'Dad, tell me a story about Mo at the carnival' })).json();
   assert.deepEqual(plan, { theme: 'meadow', shapes: ['dog', 'bird'], setting: 'at a little carnival in the meadow, under strings of lanterns', by: 'ai' });

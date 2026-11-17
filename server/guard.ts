@@ -1,3 +1,4 @@
+import { checkTz } from '../src/bedtime-clock.ts';
 import { decodeDrawing, isMoPalette } from '../src/child-gifts.ts';
 import { checkAsk, checkSharedStory } from '../src/story-checks.ts';
 import type { IncomingMessage } from 'node:http';
@@ -141,6 +142,8 @@ export function checkPerformance(p: unknown, maxAudioChars: number): string | nu
   // A goodnight's gifts: one of Mo's palettes, and a small drawing.
   if (o.mo !== undefined && !isMoPalette(o.mo)) return 'Bad goodnight.';
   if (o.drawing !== undefined && !decodeDrawing(o.drawing)) return 'Bad drawing.';
+  // A goodnight's time zone: an offset from UTC in minutes, never a place.
+  if (o.tz !== undefined && checkTz(o.tz) === null) return 'Bad time zone.';
   // ...and the story the child asks for next (its words already softened on the phone).
   if (o.ask !== undefined && !checkAsk(o.ask)) return 'Bad story request.';
   const dreamed = typeof o.script === 'string' && DREAMED_PATH.test(o.script);
