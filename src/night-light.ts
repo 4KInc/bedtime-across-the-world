@@ -36,17 +36,47 @@ const STYLE = `
 .sp-night .sp-btn { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); opacity: 0; pointer-events: none; transition: opacity 0.4s; }
 .sp-night.ask .sp-btn { opacity: 1; pointer-events: auto; }
 .sp-night.dark { background: #000; cursor: none; }
-.sp-night.dark .sp-night-glow { opacity: 0; }
+.sp-night.dark .sp-night-glow, .sp-night.dark .sp-night-stars { opacity: 0 !important; }
 @keyframes sp-night-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sp-night-breathe { 0%, 100% { opacity: 0.82; transform: scale(1); } 50% { opacity: 1; transform: scale(1.025); } }
-@media (prefers-reduced-motion: reduce) { .sp-night svg { animation: none; } }
+/* Stars twinkling behind, a glow that swells around Mo and the moon, the z's drifting up (Nov 17: on an iPad it
+   looked like a still picture). Twinkle and glow change only brightness, so they stay with Reduce Motion. */
+.sp-night .sp-night-stars { position: absolute; inset: 0; pointer-events: none; transition: opacity 2s linear; }
+.sp-night .sp-night-stars i { position: absolute; border-radius: 50%; background: #fff4d6; box-shadow: 0 0 6px 1px rgba(255, 236, 190, 0.7);
+  opacity: 0.25; animation: sp-night-twinkle 5s ease-in-out infinite; }
+.sp-night .sp-night-glow { position: relative; }
+.sp-night .sp-night-halo { animation: sp-night-halo 6s ease-in-out infinite; }
+.sp-night .sp-night-z { animation: sp-night-z 6s ease-in-out infinite; }
+.sp-night .sp-night-z:nth-child(2) { animation-delay: 2s; }
+.sp-night .sp-night-z:nth-child(3) { animation-delay: 4s; }
+@keyframes sp-night-twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes sp-night-halo { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes sp-night-z { 0% { opacity: 0; transform: translate(0, 6px); } 30% { opacity: 0.85; } 100% { opacity: 0; transform: translate(6px, -14px); } }
+@media (prefers-reduced-motion: reduce) { .sp-night svg, .sp-night .sp-night-z { animation: none; } }
 `;
+
+/** The stars: the same sky every night (a small fixed pattern, not random), twinkling out of step. */
+const STAR_COUNT = 42;
+function starField(): string {
+  let seed = 7;
+  const next = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  let out = '';
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const x = (next() * 100).toFixed(1);
+    const y = (next() * 100).toFixed(1);
+    const size = (1.5 + next() * 2.5).toFixed(1);
+    const duration = (3 + next() * 5).toFixed(1);
+    const delay = (next() * 6).toFixed(1);
+    out += `<i style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-duration:${duration}s;animation-delay:-${delay}s"></i>`;
+  }
+  return `<div class="sp-night-stars" aria-hidden="true">${out}</div>`;
+}
 
 /** Mo asleep on a crescent moon, little z's rising. */
 const SLEEPING_MO = `
 <svg viewBox="0 0 200 170" aria-hidden="true">
   <defs><radialGradient id="sp-night-halo"><stop offset="0" stop-color="#f2c47a" stop-opacity="0.45"/><stop offset="1" stop-color="#f2c47a" stop-opacity="0"/></radialGradient></defs>
-  <circle cx="100" cy="92" r="78" fill="url(#sp-night-halo)"/>
+  <circle class="sp-night-halo" cx="100" cy="92" r="78" fill="url(#sp-night-halo)"/>
   <path d="M130 30 A62 62 0 1 0 150 140 A50 50 0 1 1 130 30 Z" fill="#f2d79a"/>
   <g transform="translate(78 92) rotate(-8)">
     <ellipse cx="-17" cy="-4" rx="20" ry="13" fill="#e7b46a" transform="rotate(-18 -17 -4)"/>
@@ -58,9 +88,9 @@ const SLEEPING_MO = `
     <path d="M-4 -4 q2 2 4 0 M1 -4 q2 2 4 0" stroke="#3a2716" stroke-width="1.4" fill="none" stroke-linecap="round"/>
   </g>
   <g fill="#f6e3bd" font-family="Georgia, serif" font-style="italic">
-    <text x="108" y="64" font-size="14" opacity="0.8">z</text>
-    <text x="120" y="50" font-size="18" opacity="0.6">z</text>
-    <text x="136" y="32" font-size="22" opacity="0.4">z</text>
+    <text class="sp-night-z" x="108" y="64" font-size="14">z</text>
+    <text class="sp-night-z" x="120" y="50" font-size="18">z</text>
+    <text class="sp-night-z" x="136" y="32" font-size="22">z</text>
   </g>
 </svg>`;
 
@@ -80,10 +110,11 @@ export function openNightLight(child: string, from: string): void {
   el.className = 'sp-night';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-label', 'Night light');
-  el.innerHTML = `<div class="sp-night-glow">${SLEEPING_MO}<b></b><span></span></div><button class="sp-btn">Close the night light</button>`;
+  el.innerHTML = `${starField()}<div class="sp-night-glow">${SLEEPING_MO}<b></b><span></span></div><button class="sp-btn">Close the night light</button>`;
   el.querySelector('b')!.textContent = child ? `Goodnight, ${child}.` : 'Goodnight.';
   el.querySelector('span')!.textContent = from && from !== 'them' ? `Sweet dreams. Love, ${from}` : 'Sweet dreams.';
   const glow = el.querySelector<HTMLDivElement>('.sp-night-glow')!;
+  const stars = el.querySelector<HTMLDivElement>('.sp-night-stars')!;
   document.body.appendChild(el);
 
   // A tap shows Close for a moment; only that button ends the night light.
@@ -135,6 +166,7 @@ export function openNightLight(child: string, from: string): void {
     const t = Math.min(1, (performance.now() - start) / DURATION_MS);
     const light = 1 - (1 - DIMMEST) * t;
     glow.style.filter = `brightness(${light.toFixed(3)})`;
+    stars.style.opacity = light.toFixed(3);
     nightLightRuntime.light = Math.round(light * 100) / 100;
     music(t < MUSIC_FADE_FROM ? MUSIC_LEVEL : MUSIC_LEVEL * Math.max(0, (1 - t) / (1 - MUSIC_FADE_FROM)));
     if (t >= 1) {
