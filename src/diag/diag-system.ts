@@ -25,6 +25,7 @@ import { DropoutWatch } from '../tracking-watch.js';
 import { pairRuntime } from '../shape-match.js';
 import { audioState, soundLock, soundRuntime } from '../sfx.js';
 import { recordingRuntime } from '../performance/recorder.js';
+import { playbackVoiceRuntime } from '../performance/player.js';
 
 /** Snapshot to the server every SNAPSHOT_MS; events within EVENT_FLUSH_MS. */
 const SNAPSHOT_MS = 5000;
@@ -91,7 +92,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '', rec: '' };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '', rec: '', playVoice: '' };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -285,6 +286,19 @@ export class DiagSystem extends createSystem({
           ...(what.endsWith('failed') ? { message: r.error } : {}),
         });
       }
+    }
+    // A replay's recorded voice (the family viewer, Nov 17: on an iPad it went silent after the child's shape):
+    // paused or playing, through Web Audio or not, muted or heard, refused plays, Join in, full screen.
+    const pv = playbackVoiceRuntime;
+    const level = pv.gain === 0 ? 'muted' : pv.gain >= 0.99 ? 'heard' : 'fading';
+    const full = typeof document !== 'undefined' && !!(document.fullscreenElement ?? (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement);
+    const pvKey = `${pv.paused}|${pv.routed}|${level === 'fading' ? '' : level}|${pv.refused}|${pv.error}|${pv.joinIn}|${full}`;
+    if (pv.pos > 0 && pvKey !== this.last.playVoice) {
+      this.last.playVoice = pvKey;
+      this.event({
+        e: 'playvoice', paused: pv.paused, routed: pv.routed, level, refused: pv.refused, why: pv.refusedWhy, error: pv.error,
+        joinIn: pv.joinIn, full, at: Math.round(pv.at * 10) / 10, pos: Math.round(pv.pos * 10) / 10, ctx: audioState(),
+      });
     }
     // Sound effects: whether Web Audio runs (narration plays without it), and how many creature voices played.
     const audio = audioState();
