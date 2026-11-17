@@ -38,6 +38,8 @@ export interface Performance {
   /** A goodnight's gifts (child-gifts.ts): Mo's colours (a palette id) and a drawn creature. */
   mo?: string;
   drawing?: string;
+  /** ...and the story the child asks for next (story-checks.ts checkAsk): their words, and/or a place and creatures. */
+  ask?: { words?: string; theme?: string; shapes?: string[] };
   /** Bundled example (first launch), so someone alone can see what families share. */
   sample?: boolean;
   createdAt: number;

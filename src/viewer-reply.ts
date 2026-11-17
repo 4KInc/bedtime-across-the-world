@@ -148,6 +148,7 @@ export class ReplySheet {
     this.gifts = new GiftPicker(this.sheet.querySelector<HTMLElement>('[data-gifts]')!, this.to);
     this.on('send', () => void this.send());
     this.on('again', () => {
+      this.gifts?.stop();
       void deleteRecording(this.recordedId);
       this.showStart();
     });
@@ -186,6 +187,7 @@ export class ReplySheet {
     if (this.closeTimer) clearTimeout(this.closeTimer);
     this.timer = this.tick = this.closeTimer = null;
     this.stopWaiting();
+    this.gifts?.stop();
     if (this.recording) {
       const rec = this.recording;
       rec.setValue(PerformanceRecorder, 'recording', false);

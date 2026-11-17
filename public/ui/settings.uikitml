@@ -228,6 +228,24 @@
   </div>
 
   <div id="dream-section" class="section">
+    <div id="dream-ask-row" class="row">
+      <span id="dream-ask-text" class="story-blurb">Mia asked: a story about Mo at the carnival</span>
+    </div>
+    <div id="dream-ask-buttons" class="row">
+      <button id="dream-ask-go" class="family">
+        <span id="dream-ask-go-label" class="toggle-text">Dream Mia's story</span>
+      </button>
+    </div>
+    <div id="dream-ideas-label" class="label">Mia might like</div>
+    <div id="dream-idea-row-1" class="row">
+      <button id="dream-idea-1" class="family"><span id="dream-idea-1-label" class="toggle-text">An idea</span></button>
+    </div>
+    <div id="dream-idea-row-2" class="row">
+      <button id="dream-idea-2" class="family"><span id="dream-idea-2-label" class="toggle-text">An idea</span></button>
+    </div>
+    <div id="dream-idea-row-3" class="row">
+      <button id="dream-idea-3" class="family"><span id="dream-idea-3-label" class="toggle-text">An idea</span></button>
+    </div>
     <div class="label">Tell Mo what story you would like, in your own words</div>
     <div class="row">
       <button id="dream-say" class="family">

@@ -1,10 +1,31 @@
 import { encodeDrawing, MO_PALETTES, MoPaletteId, Stroke } from './child-gifts.js';
+import { MAX_ASK_SHAPES, softenIdea, type StoryAsk } from './story-checks.js';
+import { canHearWishes, listenForWish, type WishListening } from './wish-listener.js';
+
+/** Places and creatures to ask for in pictures (for a child who cannot say it yet). */
+const ASK_PLACES: readonly [string, string, string][] = [
+  ['sea', '🌊', 'Sea'], ['forest', '🌲', 'Forest'], ['meadow', '🌼', 'Meadow'], ['river', '🏞️', 'River'], ['rain', '🌧️', 'Rain'],
+  ['sky', '☁️', 'Sky'], ['space', '🪐', 'Space'], ['road', '🛣️', 'Road'], ['dinosaurs', '🦕', 'Dinosaurs'],
+];
+const ASK_CREATURES: readonly [string, string, string][] = [
+  ['rabbit', '🐰', 'Rabbit'], ['dog', '🐶', 'Dog'], ['fish', '🐟', 'Fish'], ['bird', '🐦', 'Bird'], ['swan', '🦢', 'Swan'],
+  ['deer', '🦌', 'Deer'], ['snail', '🐌', 'Snail'], ['crocodile', '🐊', 'Crocodile'], ['whale', '🐳', 'Whale'], ['shark', '🦈', 'Shark'],
+  ['octopus', '🐙', 'Octopus'], ['rocket', '🚀', 'Rocket'], ['alien', '👽', 'Alien'], ['car', '🚗', 'Car'], ['plane', '✈️', 'Aeroplane'],
+  ['trex', '🦖', 'T. rex'],
+];
 
 const STYLE = `
 .sp-gifts { margin: 10px 0 4px; display: grid; gap: 10px; }
 .sp-gifts .sp-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
 .sp-swatch { width: 56px; height: 56px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; padding: 0; }
 .sp-swatch[aria-pressed="true"] { border-color: #f6e3bd; box-shadow: 0 0 0 3px #e0a24a; }
+.sp-ask { display: grid; gap: 8px; }
+.sp-ask .sp-pics { display: flex; gap: 6px; flex-wrap: wrap; }
+.sp-pic { min-width: 52px; height: 52px; border-radius: 12px; border: 2px solid #e0a24a; background: #2a2433; color: #f6e3bd;
+  font-size: 26px; cursor: pointer; padding: 0 6px; }
+.sp-pic[aria-pressed="true"] { background: #e0a24a; }
+.sp-idea { width: 100%; box-sizing: border-box; font: inherit; font-size: 17px; padding: 10px; border-radius: 10px; border: 2px solid #e0a24a;
+  background: #f6e3bd; color: #1b1822; }
 .sp-pad { width: min(260px, 70vw); aspect-ratio: 1; touch-action: none; border-radius: 16px;
   background: #f1dfbd; border: 2px solid #e0a24a; cursor: crosshair; display: block; }
 `;
@@ -21,6 +42,11 @@ export class GiftPicker {
   private strokes: Stroke[] = [];
   private current: Stroke | null = null;
   private pad: HTMLCanvasElement;
+  /** Tomorrow's story, asked for: the child's words (softened as they are typed or heard), a place, creatures. */
+  private askTheme = '';
+  private askShapes: string[] = [];
+  private ideaInput: HTMLInputElement;
+  private listening: WishListening | null = null;
 
   constructor(host: HTMLElement, to: string) {
     if (!styled) {
@@ -39,7 +65,66 @@ export class GiftPicker {
       <div>Draw a creature for ${escape(to)}'s next story:</div>
       <canvas class="sp-pad" width="256" height="256" aria-label="Drawing pad"></canvas>
       <div class="sp-row"><button class="sp-btn" data-act="clear-drawing">Clear drawing</button></div>
+      <div class="sp-ask" role="group" aria-label="Ask for tomorrow's story">
+        <div>Ask ${escape(to)} for tomorrow's story (if you like):</div>
+        <div class="sp-row"><button class="sp-btn" data-act="say-idea" hidden>Say it</button></div>
+        <input class="sp-idea" data-idea maxlength="200" placeholder="A story about..." aria-label="The story you would like">
+        <div class="sp-note" data-idea-note aria-live="polite"></div>
+        <div>Or pick a place:</div>
+        <div class="sp-pics" role="group" aria-label="Places">${ASK_PLACES.map(([id, pic, name]) => `<button class="sp-pic" data-place="${id}" aria-pressed="false" aria-label="${name}" title="${name}">${pic}</button>`).join('')}</div>
+        <div>And up to ${MAX_ASK_SHAPES} creatures:</div>
+        <div class="sp-pics" role="group" aria-label="Creatures">${ASK_CREATURES.map(([id, pic, name]) => `<button class="sp-pic" data-creature="${id}" aria-pressed="false" aria-label="${name}" title="${name}">${pic}</button>`).join('')}</div>
+        <div class="sp-note">For grown-ups: the words are sent to ${escape(to)} with this goodnight. Mo only uses them if ${escape(to)} dreams the story.</div>
+      </div>
     </div>`;
+    this.ideaInput = host.querySelector<HTMLInputElement>('[data-idea]')!;
+    const note = host.querySelector<HTMLElement>('[data-idea-note]')!;
+    // Softened as it is typed: what will be sent, and why anything was left out.
+    const soften = () => {
+      const { words, dropped } = softenIdea(this.ideaInput.value);
+      note.textContent = dropped.length
+        ? `Mo will leave out "${dropped.join('", "')}": she makes up her own gentle characters. ${to} will see: ${words || '(nothing)'}`
+        : '';
+      return words;
+    };
+    this.ideaInput.addEventListener('input', soften);
+    for (const b of host.querySelectorAll<HTMLButtonElement>('[data-place]')) {
+      b.addEventListener('click', () => {
+        this.askTheme = this.askTheme === b.dataset.place ? '' : b.dataset.place!;
+        for (const o of host.querySelectorAll<HTMLButtonElement>('[data-place]')) o.setAttribute('aria-pressed', String(o.dataset.place === this.askTheme));
+      });
+    }
+    for (const b of host.querySelectorAll<HTMLButtonElement>('[data-creature]')) {
+      b.addEventListener('click', () => {
+        const id = b.dataset.creature!;
+        if (this.askShapes.includes(id)) this.askShapes = this.askShapes.filter((c) => c !== id);
+        else if (this.askShapes.length < MAX_ASK_SHAPES) this.askShapes = [...this.askShapes, id];
+        for (const o of host.querySelectorAll<HTMLButtonElement>('[data-creature]')) o.setAttribute('aria-pressed', String(this.askShapes.includes(o.dataset.creature!)));
+      });
+    }
+    // "Say it": the microphone only from this press until the idea is said (wish-listener.ts).
+    const say = host.querySelector<HTMLButtonElement>('[data-act="say-idea"]')!;
+    void canHearWishes().then((ok) => (say.hidden = !ok));
+    say.addEventListener('click', () => {
+      if (this.listening) return this.listening.finish();
+      const listening = listenForWish();
+      this.listening = listening;
+      say.textContent = 'Done';
+      say.classList.add('on');
+      note.textContent = 'Listening... say the story you would like.';
+      listening.words
+        .then((words) => {
+          if (words) this.ideaInput.value = words;
+          note.textContent = words ? '' : 'Mo did not hear that. Try again, or pick pictures.';
+          if (words) soften();
+        })
+        .catch(() => (note.textContent = 'The microphone is needed to say it. You can type it or pick pictures.'))
+        .finally(() => {
+          this.listening = null;
+          say.textContent = 'Say it';
+          say.classList.remove('on');
+        });
+    });
     for (const b of host.querySelectorAll<HTMLButtonElement>('[data-mo]')) {
       b.addEventListener('click', () => {
         const id = b.dataset.mo as MoPaletteId;
@@ -72,11 +157,24 @@ export class GiftPicker {
   }
 
   /** What to send with the goodnight (nothing chosen, nothing sent). */
-  get(): { mo?: string; drawing?: string } {
-    const out: { mo?: string; drawing?: string } = {};
+  get(): { mo?: string; drawing?: string; ask?: StoryAsk } {
+    const out: { mo?: string; drawing?: string; ask?: StoryAsk } = {};
     if (this.mo) out.mo = this.mo;
     if (this.strokes.length) out.drawing = encodeDrawing(this.strokes);
+    const words = softenIdea(this.ideaInput.value).words;
+    const ask: StoryAsk = {
+      ...(words ? { words } : {}),
+      ...(this.askTheme ? { theme: this.askTheme } : {}),
+      ...(this.askShapes.length ? { shapes: [...this.askShapes] } : {}),
+    };
+    if (Object.keys(ask).length) out.ask = ask;
     return out;
+  }
+
+  /** The sheet is going: the microphone too, if it is still listening. */
+  stop(): void {
+    this.listening?.cancel();
+    this.listening = null;
   }
 
   private point(e: PointerEvent): [number, number] {

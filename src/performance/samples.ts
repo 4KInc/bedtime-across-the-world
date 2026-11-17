@@ -12,6 +12,8 @@ const SAMPLES = {
   viewer: 'story-from-dad',
   headset: 'goodnight-from-mia',
 } as const;
+/** Mia's goodnight also asks for tomorrow's story, so someone alone can try Dream Mia's story. */
+const SAMPLE_ASK = { words: 'Dad, tell me a story about Mo at the carnival' };
 
 const ready = new Map<string, Promise<void>>();
 
@@ -27,7 +29,7 @@ export function seedSamples(role: keyof typeof SAMPLES): Promise<void> {
         if (!response.ok) return;
         const perf = await fromWire(await response.json());
         if (!(await loadRecording(perf.id))) {
-          await saveRecording({ ...perf, sample: true, ...(perf.replyTo ? { watched: false } : {}) });
+          await saveRecording({ ...perf, sample: true, ...(perf.replyTo ? { watched: false, ask: perf.ask ?? SAMPLE_ASK } : {}) });
         }
         await saveSampleSeeded(name);
       } catch {

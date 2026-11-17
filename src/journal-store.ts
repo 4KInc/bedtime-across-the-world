@@ -215,3 +215,12 @@ export async function listRecordings<T>(): Promise<T[]> {
 export async function deleteRecording(id: string): Promise<void> {
   await run(RECORDINGS, 'readwrite', (s) => s.delete(id));
 }
+
+/** Story requests from the family and each child's taste (story-requests.ts), kept on this headset only. */
+export async function loadRequests<T>(): Promise<T | null> {
+  return run<T>(PROGRESS, 'readonly', (s) => s.get('requests') as IDBRequest<T>);
+}
+
+export async function saveRequests<T>(requests: T): Promise<void> {
+  await run(PROGRESS, 'readwrite', (s) => s.put(requests, 'requests'));
+}

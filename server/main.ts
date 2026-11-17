@@ -9,8 +9,8 @@ import { checkPerformance, clientIp, decodeSafe, RateLimiter } from './guard.ts'
 import { attachLive, liveRoomCount } from './live.ts';
 import { DiskStore, GcsStore, type StoryStore } from './storage.ts';
 import { checkCoach, Coach } from './coach.ts';
-import { checkSharedStory } from '../src/story-checks.ts';
-import { checkDream, Dreamer } from './dream.ts';
+import { checkAsk, checkSharedStory } from '../src/story-checks.ts';
+import { checkDream, checkTaste, Dreamer, planByWords, suggestByTaste } from './dream.ts';
 import { DEFAULTS, Llm } from './llm.ts';
 import { MAX_CLIP_BYTES, SpeechToText, type ClipPurpose } from './voice.ts';
 import { speakable, speechKey, TextToSpeech } from './speak.ts';
@@ -33,6 +33,8 @@ import { speakable, speechKey, TextToSpeech } from './speak.ts';
  *   GET  /api/speak?text=    one story line, spoken (audio/mpeg; dreamed stories; cached in the bucket)
  *   GET  /api/dream          { available }: whether new stories can be dreamed up here
  *   POST /api/dream          { theme, shapes } or { wish } (a spoken idea, plain words) -> a new story script (words by the AI_PROVIDER model, built and checked here)
+ *   POST /api/dream/plan     { wish, theme?, shapes? } -> { theme, shapes, setting?, by }: what a story from an idea would be (the closest place, its shapes), before it is dreamed
+ *   POST /api/dream/suggest  { places, creatures, ideas } (a child's taste, no names) -> { ideas: [{ title, idea, theme, shapes, why }], by }
  *   POST /api/diag           device diagnostics from pages opened with ?diag (numbers and ids only)
  *   GET  /api/health (and /healthz locally: Cloud Run reserves paths ending in 'z')
  *   WS   /live                live rooms (see live.ts)
@@ -88,6 +90,8 @@ const limits = {
   speak: new RateLimiter(60_000, 90),
   // Mo's tips: a few per minute at most (one per stuck shape request, every 12 s).
   coach: new RateLimiter(60_000, 12),
+  // Planning a child's idea and suggesting stories: a few presses in the journal.
+  plan: new RateLimiter(60_000, 20),
   // New stories: a handful an evening.
   dream: new RateLimiter(3600_000, 8),
 };
@@ -127,7 +131,7 @@ async function readBody(req: IncomingMessage, limit: number): Promise<string | n
 /** Keep only the fields the app records (never store or hand back anything extra). */
 const STORY_FIELDS = [
   'version', 'id', 'title', 'performer', 'child', 'createdAt', 'durationMs', 'script', 'frameHz',
-  'hands', 'frameCount', 'events', 'audio', 'audioType', 'story', 'mo', 'drawing',
+  'hands', 'frameCount', 'events', 'audio', 'audioType', 'story', 'mo', 'drawing', 'ask',
 ] as const;
 
 function pick(perf: Record<string, unknown>): Record<string, unknown> {
@@ -135,6 +139,8 @@ function pick(perf: Record<string, unknown>): Record<string, unknown> {
   for (const k of STORY_FIELDS) if (perf[k] !== undefined) out[k] = perf[k];
   // A dreamed story's words: stored as the checked, rebuilt copy (never extra fields).
   if (out.story !== undefined) out.story = checkSharedStory(out.story);
+  // A child's story request: likewise the checked copy.
+  if (out.ask !== undefined) out.ask = checkAsk(out.ask);
   return out;
 }
 
@@ -339,6 +345,43 @@ async function postDream(req: IncomingMessage, res: ServerResponse): Promise<voi
   }
 }
 
+/** Reads a small JSON body, or answers the error itself and gives back undefined. */
+async function smallJson(req: IncomingMessage, res: ServerResponse, max: number, what: string): Promise<unknown> {
+  const body = await readBody(req, max);
+  if (body === null) {
+    json(res, 413, { error: 'Too large.' });
+    return undefined;
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    json(res, 400, { error: what });
+    return undefined;
+  }
+}
+
+/** A child's idea (or a place and creatures picked in pictures), planned: the closest place, its shapes, and where in it the idea happens. */
+async function postPlan(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (!allowed('plan', req)) return json(res, 429, { error: 'Too many plans.' });
+  const parsed = await smallJson(req, res, 1024, 'Not a story idea.');
+  if (parsed === undefined) return;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return json(res, 400, { error: 'Not a story idea.' });
+  const request = checkDream({ wish: '', ...parsed });
+  if (!request) return json(res, 400, { error: 'Not a story idea.' });
+  const { request: plan, by } = dreamer ? await dreamer.plan(request) : { request: planByWords(request), by: 'words' as const };
+  return json(res, 200, { theme: plan.theme, shapes: plan.shapes, ...(plan.setting ? { setting: plan.setting } : {}), by });
+}
+
+/** Stories a child would like, from their taste (kept on the storyteller's headset; nothing stored here). */
+async function postSuggest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (!allowed('plan', req)) return json(res, 429, { error: 'Too many suggestions.' });
+  const parsed = await smallJson(req, res, 4096, 'Not a taste.');
+  if (parsed === undefined) return;
+  const taste = checkTaste(parsed);
+  if (!taste) return json(res, 400, { error: 'Not a taste.' });
+  return json(res, 200, dreamer ? await dreamer.suggest(taste) : { ideas: suggestByTaste(taste), by: 'taste' });
+}
+
 async function postDiag(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!allowed('diag', req)) return json(res, 429, { error: 'Too many diagnostics.' });
   const body = await readBody(req, MAX_DIAG_BYTES);
@@ -418,6 +461,8 @@ const server = createServer((req, res) => {
     if (path === '/api/diag' && req.method === 'POST') return postDiag(req, res);
     if (path === '/api/dream' && req.method === 'GET') return json(res, 200, { available: dreamer !== null, ...(llm ? { by: llm.label } : {}) });
     if (path === '/api/dream' && req.method === 'POST') return postDream(req, res);
+    if (path === '/api/dream/plan' && req.method === 'POST') return postPlan(req, res);
+    if (path === '/api/dream/suggest' && req.method === 'POST') return postSuggest(req, res);
     if (path === '/api/coach' && req.method === 'GET') return json(res, 200, { available: coach !== null, ...(llm ? { by: llm.label } : {}) });
     if (path === '/api/coach' && req.method === 'POST') return postCoach(req, res);
     if (path === '/api/speak' && req.method === 'GET') return getSpeak(req, res, url.searchParams.get('text'));

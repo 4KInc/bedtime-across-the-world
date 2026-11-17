@@ -124,3 +124,65 @@ export function checkSharedStory(input: unknown): { version: 'shadowplay.story.v
   if (beats[beats.length - 1]?.type !== 'end') return null;
   return { version: 'shadowplay.story.v1', title: s.title as string, dreamed: true, beats };
 }
+
+// ------------------------------------------------------------------ a child's story request
+
+/** Places a child can ask for a story in (server/dream.ts THEMES). */
+export const ASK_THEMES: readonly string[] = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky', 'space', 'road', 'dinosaurs'];
+/** Most creatures a child picks in pictures. */
+export const MAX_ASK_SHAPES = 3;
+/** A child's idea is a sentence or two, as speech-to-text writes it. */
+const MAX_IDEA_WORDS = 30;
+/** Words a bedtime story leaves out, whoever asks (server/dream.ts NEVER, for a child's words). */
+const SCARY = /\b(kill|killed|kills|die|dies|died|dead|death|blood|bloody|hate|stupid|dumb|ugly|monster|monsters|gun|guns|knife|knives|scream|screams|nightmare|nightmares|zombie|zombies|ghost|ghosts|http|www)\b/gi;
+
+/**
+ * A child's spoken or typed idea ("Dad, tell me a story about Mo at the
+ * carnival"), made fit for a bedtime story without throwing it away: a
+ * character from a show or a scary word is dropped (and named, so the grown-up
+ * can be told why), the rest is kept. Plain words only, at most 30.
+ */
+export function softenIdea(text: string): { words: string; dropped: string[] } {
+  const dropped: string[] = [];
+  const take = (m: string) => {
+    dropped.push(m.toLowerCase());
+    return ' ';
+  };
+  let t = text.replace(/[^A-Za-z0-9 ,.!?'’-]+/g, ' ');
+  t = t.replace(new RegExp(BRANDS.source, 'gi'), take).replace(SCARY, take);
+  // Punctuation left hanging by a dropped word, and spaces.
+  const words = t.replace(/\s+([,.!?])/g, '$1').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).slice(0, MAX_IDEA_WORDS);
+  // "an Elsa story" without Elsa: "a story".
+  const out = words.join(' ').replace(/^[,.!?'’-]+/, '').replace(/\b(a|A)n (?=[b-df-hj-np-tv-z])/g, '$1 ').trim();
+  return { words: /[A-Za-z]{2}/.test(out) ? out : '', dropped: [...new Set(dropped)] };
+}
+
+/** A story request riding on a goodnight: the child's words (softened), and/or a place and creatures picked in pictures. */
+export interface StoryAsk {
+  words?: string;
+  theme?: string;
+  shapes?: string[];
+}
+
+/** A story request from another device, checked and rebuilt from known fields, or null. Words must already be softened. */
+export function checkAsk(input: unknown): StoryAsk | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const a = input as Record<string, unknown>;
+  const out: StoryAsk = {};
+  if (a.words !== undefined) {
+    if (typeof a.words !== 'string' || a.words.length > 240) return null;
+    const soft = softenIdea(a.words);
+    if (!soft.words || soft.words !== a.words) return null;
+    out.words = a.words;
+  }
+  if (a.theme !== undefined) {
+    if (typeof a.theme !== 'string' || !ASK_THEMES.includes(a.theme)) return null;
+    out.theme = a.theme;
+  }
+  if (a.shapes !== undefined) {
+    if (!Array.isArray(a.shapes) || a.shapes.length < 1 || a.shapes.length > MAX_ASK_SHAPES) return null;
+    if (new Set(a.shapes).size !== a.shapes.length || !a.shapes.every((s) => typeof s === 'string' && SHAPES.has(s))) return null;
+    out.shapes = [...(a.shapes as string[])];
+  }
+  return out.words || out.theme || out.shapes ? out : null;
+}
