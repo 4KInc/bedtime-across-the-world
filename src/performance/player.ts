@@ -169,7 +169,7 @@ export class PerformancePlayerSystem extends createSystem({
     if (!player.getValue(PerformancePlayer, 'playing') || player.getValue(PerformancePlayer, 'recordingId') !== id) return;
     this.perf = perf;
     this.frames = frames;
-    this.events = [...perf.events].sort((a, b) => a.t - b.t);
+    this.events = staleStartDropped([...perf.events].sort((a, b) => a.t - b.t));
     this.beats = beats;
     this.rejoinAt = -1;
     // The recorded hands drive the stage; the camera only takes over for join-in moments.
@@ -254,7 +254,9 @@ export class PerformancePlayerSystem extends createSystem({
       return;
     }
     // The viewer's scene is done: pick the recording up at the matching beat.
-    const at = this.events.findIndex((e) => e.type === 'beat' && Number(e.data.index) >= this.rejoinAt);
+    // From where the recording is now, never before it (Nov 17: a recording's first event, the story played just
+    // before, matched first, and the story started again from 0:00 after the child's turn).
+    const at = this.events.findIndex((e, i) => i >= this.next && e.type === 'beat' && Number(e.data.index) >= this.rejoinAt);
     this.rejoinAt = -1;
     story?.setValue(StoryState, 'joinIn', false);
     handOverride.cameraAllowed = false;
@@ -385,4 +387,16 @@ function lineOf(beat: StoryBeat | undefined): string {
 function first<T>(set: Iterable<T>): T | undefined {
   for (const v of set) return v;
   return undefined;
+}
+
+/**
+ * A recording started before its story did (Record, then a story picked) begins
+ * with the beat the stage was on then: the end of the story before, a beat the
+ * new story does not have. Beats before the story's own first beat are dropped,
+ * so playback neither shows that ending first nor finds it again.
+ */
+export function staleStartDropped<E extends { type: string; data: Record<string, unknown> }>(events: E[]): E[] {
+  const start = events.findIndex((e) => e.type === 'beat' && Number(e.data.index) === 0);
+  if (start <= 0) return events;
+  return events.filter((e, i) => i >= start || e.type !== 'beat');
 }
