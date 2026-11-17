@@ -39,7 +39,11 @@ export function contentProblems(line: string, shape?: string): string[] {
 const PLAIN = /^[A-Za-z0-9 ,.!?'’;:-]{1,200}$/;
 const BEAT_ID = /^[a-z0-9-]{1,40}$/;
 /** ...and it can only be made of what Mo's dreams are made of (server/dream.ts). */
-const SHAPES = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile']);
+const SHAPES = new Set([
+  ...['rabbit', 'fish', 'dog', 'bird', 'cup', 'snail', 'swan', 'deer', 'crocodile'],
+  // The story worlds' creatures (world-creatures.ts).
+  ...['rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl'],
+]);
 /** Easier poses a request may also accept (its alt), besides the shapes: two fingers up for the rabbit, an open hand for the bird. */
 const EASIER = new Set(['ears', 'open']);
 const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);

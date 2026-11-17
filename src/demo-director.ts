@@ -32,6 +32,9 @@ const restReach = () => reachAt(NATURAL_HAND);
 const GROW_AHEAD = { fish: 0.2, dog: 0.17 } as const;
 /** Where the light pool must go (m along stage right) to find the hidden hollow; the hand sweeps there. */
 const SEARCH_U = -0.385;
+/** Free Stage: the shapes the demo player makes in turn (s each, with a rest at the end). */
+const FREE_SHOW = ['rabbit', 'rocket', 'snail', 'whale', 'snail', 'fist'] as const;
+const FREE_STEP = 4;
 /** Seconds to ease between hand targets. */
 const EASE = 1.6;
 const SEED = 37;
@@ -240,7 +243,18 @@ export class DemoDirectorSystem extends createSystem({
         this.held = null;
         t.fixture = null;
         return;
-      case 'freestage':
+      case 'freestage': {
+        // Play: one shape after another, resting the hand between them (a world creature
+        // comes once met; the snail's pose twice: the snail, then the car, once it is met).
+        const step = this.beatTime / FREE_STEP;
+        const shape = FREE_SHOW[Math.floor(step) % FREE_SHOW.length];
+        this.held = null;
+        t.fixture = step % 1 < 0.7 ? this.fixture(shape) : null;
+        t.reach = restReach();
+        t.u = 0;
+        t.v = 0;
+        return;
+      }
       case 'end':
         this.held = null;
         t.fixture = null;

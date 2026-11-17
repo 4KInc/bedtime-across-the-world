@@ -22,7 +22,8 @@ import { soundLock } from './sfx.js';
 import { accessRuntime, handRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
 import { DropoutWatch } from './tracking-watch.js';
 import { viewerMode } from './viewer-mode.js';
-import { addWorldPuppet } from './world-puppets.js';
+import { addWorldPuppet, WORLD_CREATURE_IDS } from './world-puppets.js';
+import { creatureName } from './creatures.js';
 
 const CHAPTER_SECONDS = 3.2;
 const LAMP_SECONDS = 1.8;
@@ -562,7 +563,7 @@ export class StorySystem extends createSystem({
         break;
       case 'journal': {
         const creature = beat.creature === '$last' ? this.lastAliveShape : beat.creature;
-        const text = beat.text.replace('$name', creature.charAt(0).toUpperCase() + creature.slice(1));
+        const text = beat.text.replace('$name', creatureName(creature));
         this.setCaption(story, text);
         for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'pendingAdd', creature);
         break;
@@ -587,6 +588,8 @@ export class StorySystem extends createSystem({
         this.setTargets(stage, ShapeIds.None, ShapeIds.None, ShapeIds.None, ShapeIds.None);
         stage.setValue(ShapeRecognizer, 'freeMode', true);
         story.setValue(StoryState, 'freeStage', true);
+        // The world creatures met in their stories may come too (shape-match.ts): their puppets are made now.
+        for (const shape of WORLD_CREATURE_IDS) if (!this.puppetFor(shape)) addWorldPuppet(this.world, shape);
         for (const m of this.queries.moths.entities) {
           m.setValue(Moth, 'glow', 1);
           if (m.getValue(Moth, 'mode') === 'hidden') m.setValue(Moth, 'mode', 'hovering');
@@ -800,6 +803,13 @@ export class StorySystem extends createSystem({
     if (alive === undefined || t <= 0.3) return null;
     this.firstWoken = true;
     this.lastAliveShape = alive;
+    // A world creature joins the Shadow Journal the first time a child wakes it (the
+    // first creatures join through The Moth's journal pages, and in Free Stage).
+    if (WORLD_CREATURE_IDS.has(alive) && !story.getValue(StoryState, 'followMode')) {
+      for (const j of this.queries.journals.entities) {
+        if (!(j.getValue(ShadowJournal, 'discovered') ?? '').split(',').includes(alive)) j.setValue(ShadowJournal, 'pendingAdd', alive);
+      }
+    }
     return alive;
   }
 

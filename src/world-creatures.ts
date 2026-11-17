@@ -29,6 +29,17 @@ export function poseOf(shape: string): string {
   return BORROWED[shape] ?? shape;
 }
 
+/**
+ * In Free Stage, a first creature and the world creature that borrows its pose
+ * take turns (once the child has met the world one): snail, car, snail...
+ */
+export const TWINS: Readonly<Record<string, string>> = {
+  snail: 'car',
+  swan: 'digger',
+  crocodile: 'trex',
+  bird: 'pterodactyl',
+};
+
 /** Poses the recognizer considers only while a story asks for them. */
 export const WORLD_POSES: ReadonlySet<string> = new Set(['rocket', 'alien', 'shark', 'octopus', 'whale', 'plane']);
 

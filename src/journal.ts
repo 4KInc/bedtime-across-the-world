@@ -60,8 +60,8 @@ export class JournalSystem extends createSystem({
       if (!c.rig) return;
       const rig = buildPuppetRig(c.rig, this.ink, this.eye);
       const { x, y } = slotCenter(i);
-      rig.root.position.set(x / PAGE_W - 0.5, (0.5 - y / PAGE_H) * (PAGE_H / PAGE_W), 0.002);
-      rig.root.scale.setScalar(0.16);
+      rig.root.position.set(x / PAGE_W - 0.5, (0.5 - (y - 8) / PAGE_H) * (PAGE_H / PAGE_W), 0.002);
+      rig.root.scale.setScalar(0.085);
       rig.root.traverse((o) => (o.renderOrder = 31));
       rig.root.visible = false;
       this.overlay.add(rig.root);
