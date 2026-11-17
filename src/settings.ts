@@ -1,9 +1,11 @@
 import { createSystem, Entity, Quaternion, UIKit, UIKitMLAsset, Vector3 } from '@iwsdk/core';
 import { loadSettings, saveDreamed, saveSettings } from './journal-store.js';
-import { isDreamed } from './story-script.js';
+import { isDreamed, storyRuntime } from './story-script.js';
 import {
   HintModes,
   Settings,
+  LiveSession,
+  PerformanceRecorder,
   ShadowJournal,
   ShapeRecognizer,
   Stage,
@@ -145,6 +147,8 @@ export class SettingsSystem extends createSystem({
   stories: { required: [StoryState] },
   journals: { required: [ShadowJournal] },
   stages: { required: [Stage] },
+  recorders: { required: [PerformanceRecorder] },
+  lives: { required: [LiveSession] },
 }) {
   private panel: UIKitMLAsset | undefined;
   private buttons = new Map<string, UIKit.Container>();
@@ -565,12 +569,16 @@ export class SettingsSystem extends createSystem({
         dreamRuntime.ms = Math.round(performance.now() - t0);
         dreamRuntime.title = script.title ?? '';
         dreamRuntime.ok++;
-        for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
+        // The story waits on its title, the Journal open (it pauses the story), until the parent chooses
+        // Tell it or Record and tell it (Nov 17: it began at once, so there was no moment to press Record).
+        for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', true);
+        storyRuntime.keepJournalOpen = true;
+        this.showDreamReady(script.title ?? '');
         // A new path each time, so the story system loads the new one (only the latest is kept).
         const current = story.getValue(StoryState, 'script') ?? '';
         this.dreams = Math.max(this.dreams, isDreamed(current) ? Number(current.slice(8)) : 0) + 1;
         story.setValue(StoryState, 'script', `dreamed:${this.dreams}`);
-        this.status?.setProperties({ text: `Mo dreamed "${script.title}"...` });
+        this.status?.setProperties({ text: `Mo dreamed "${script.title}". Tell it, or Record and tell it.` });
         // A child's request, answered: it leaves the journal, and the story counts toward their taste.
         if (askId) void answerAsk(askId, body.theme ?? '', body.shapes);
       })
@@ -582,6 +590,31 @@ export class SettingsSystem extends createSystem({
         this.dreaming = false;
         accessRuntime.dreaming = false;
       });
+  }
+
+  /** A dream is ready: the chooser makes way for "Mo dreamed ..." with Tell it and Record and tell it. */
+  private showDreamReady(title: string): void {
+    this.closeDreamChooser();
+    dreamRuntime.ready = title || 'a story';
+    this.panel?.getElementById('dream-ready')?.setProperties({ display: 'flex' });
+    this.panel
+      ?.getElementById<UIKit.Text>('dream-ready-text')
+      ?.setProperties({ text: `Mo dreamed "${dreamRuntime.ready}". Tell it now, or record it as you tell it.` });
+  }
+
+  private hideDreamReady(): void {
+    dreamRuntime.ready = '';
+    this.panel?.getElementById('dream-ready')?.setProperties({ display: 'none' });
+  }
+
+  /** Tell it (or Record and tell it): the Journal closes and the story begins at its title. */
+  private tellDream(record: boolean): void {
+    if (!dreamRuntime.ready) return;
+    const rec = first(this.queries.recorders.entities);
+    const live = first(this.queries.lives.entities)?.getValue(LiveSession, 'role') ?? 'off';
+    if (record && rec && live === 'off' && !rec.getValue(PerformanceRecorder, 'recording')) rec.setValue(PerformanceRecorder, 'recording', true);
+    this.hideDreamReady();
+    for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
   }
 
   /**
@@ -718,12 +751,15 @@ export class SettingsSystem extends createSystem({
     on('dream-go', () => this.dreamChosen());
     on('dream-cancel', () => this.closeDreamChooser());
     on('dream-say', () => this.sayWish());
+    on('dream-tell', () => this.tellDream(false));
+    on('dream-record', () => this.tellDream(true));
     on('dream-ask-go', () => this.takeAsk());
     IDEA_BUTTONS.forEach((id, i) => on(id, () => this.takeIdea(i)));
     void loadStoryRequests();
     this.sayLabel = panel.getElementById<UIKit.Text>('dream-say-label') ?? undefined;
     this.dreamLabel = panel.getElementById<UIKit.Text>('story-dream-label') ?? undefined;
     panel.getElementById('dream-section')?.setProperties({ display: 'none' });
+    panel.getElementById('dream-ready')?.setProperties({ display: 'none' });
     this.choosing = false;
     fetch('/api/dream')
       .then((r) => (r.ok ? (r.json() as Promise<{ available?: boolean }>) : { available: false }))
@@ -809,6 +845,8 @@ export class SettingsSystem extends createSystem({
     const obj = settings.object3D;
     if (!obj) return;
     const open = Boolean(first(this.queries.journals.entities)?.getValue(ShadowJournal, 'open'));
+    // The Journal closed another way (pinching the book, "close the journal"): the dreamed story is told.
+    if (!open && dreamRuntime.ready) this.hideDreamReady();
     const show = open && stageRuntime.ready;
     obj.visible = show;
     if (!show) {
@@ -842,6 +880,8 @@ export const dreamRuntime = {
   wish: { state: '' as '' | 'listening' | 'understanding', label: 'Say your idea', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
   chooser: { open: false, theme: '', shapes: [] as string[], row: [] as string[] },
+  /** A dreamed story waiting on its title for Tell it or Record and tell it: its title, else ''. */
+  ready: '',
   /** A child's request and Mo's suggestions as shown on the panel, and the status line about them. */
   shown: { status: '', ask: '', askButton: '', ideasLabel: '', ideas: [] as string[], clock: '' },
   title: '',

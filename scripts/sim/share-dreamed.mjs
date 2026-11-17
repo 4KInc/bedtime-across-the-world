@@ -60,7 +60,10 @@ for (const id of ['story-dream', 'dream-go']) {
   await hs.evaluate(() => IWER_DEVICE.remote.dispatch('set_select_value', { device: 'hand-right', value: 0 }));
   await sleep(600);
 }
-await hs.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 20000 });
+// A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+await hs.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ready, null, { timeout: 20000 });
+await hs.evaluate(() => __sp.set('ShadowJournal', 'open', false));
+await hs.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 20000 });
 const title = await hs.evaluate(() => __sp.view().dream.title);
 await hs.evaluate(() => {
   __sp.set('PerformanceRecorder', 'withVoice', false);

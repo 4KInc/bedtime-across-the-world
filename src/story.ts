@@ -474,7 +474,9 @@ export class StorySystem extends createSystem({
     for (const e of this.queries.scenery.entities) e.setValue(Scenery, 'set', 'none');
     for (const a of this.queries.actors.entities) a.setValue(StageActor, 'state', 'hidden');
     for (const p of this.queries.props.entities) p.setValue(HiddenProp, 'active', false);
-    for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
+    // A dreamed story waits on its title with the Journal open, for Tell it or Record and tell it (settings.ts).
+    if (storyRuntime.keepJournalOpen) storyRuntime.keepJournalOpen = false;
+    else for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
     void saveProgress({ beatIndex: 0, chapter: 'Prologue', branch: '', savedAt: Date.now(), script: this.scriptPath });
   }
 

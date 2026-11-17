@@ -61,6 +61,8 @@ export const storyRuntime = {
   order: [] as string[],
   /** For tests: times Record, pressed before the first shape, started the story again from its title (story.ts). */
   restartedForRecording: 0,
+  /** Set before switching to a dreamed story: its restart keeps the Journal open (Tell it / Record and tell it). */
+  keepJournalOpen: false,
 };
 
 /** Comfortable caption reading time: ~3 words per second plus a pause. */

@@ -61,7 +61,10 @@ try {
   await sleep(2000);
   await pinch(page, 'story-dream');
   await pinch(page, 'dream-go');
-  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 20000 });
+  // A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ready, null, { timeout: 20000 });
+  await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
+  await page.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 20000 });
   const shapes = await page.evaluate(() => __sp.view().dream?.shapes ?? []);
   await page.evaluate(() => {
     __sp.set('ShadowJournal', 'open', false);

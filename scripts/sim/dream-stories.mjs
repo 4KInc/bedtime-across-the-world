@@ -1,6 +1,7 @@
 // "Dream a new one": pinching the button (hand ray), then Dream it, asks the server for a new
 // story (answered here by the server's own story builder, server/dream.ts, from
-// a canned reply in place of the model's words); it is told at once, played to
+// a canned reply in place of the model's words); it waits on its title, the Journal
+// open at "Mo dreamed ...", until Tell it (or Record and tell it); then it is played to
 // the end by the demo player, still tonight's story after a reload, and
 // recordable (sending it: share-dreamed.mjs). Saying "dream a new story" asks for
 // another. Where the server has no AI, the button says so and nothing changes.
@@ -92,11 +93,18 @@ async function pinch(page, id) {
     await sleep(300);
   }
   check('while Mo dreams the line holds and only its dots move', frames.every((f) => f.startsWith('Mo is dreaming up your story')) && new Set(frames).size >= 2, { frames });
-  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 15000 });
-  const d = await page.evaluate(() => ({ script: __sp.get('StoryState', 'script'), dream: __sp.view().dream, open: __sp.get('ShadowJournal', 'open') }));
+  // A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ready, null, { timeout: 15000 });
+  // It waits (Nov 17: it began at once, with no moment to press Record): five seconds on, still not begun.
+  await sleep(5000);
+  const held = await page.evaluate(() => ({ open: __sp.get('ShadowJournal', 'open'), ready: __sp.view().dream.ready, index: __sp.get('StoryState', 'beatIndex'), recording: __sp.get('PerformanceRecorder', 'recording') }));
+  check('the dreamed story waits on its title, the Journal open at "Mo dreamed ...", until Tell it', held.open === true && held.ready === 'The Lantern Tide' && held.index <= 0 && held.recording === false, held);
+  await pinch(page, 'dream-tell');
+  await page.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 15000 });
+  const d = await page.evaluate(() => ({ script: __sp.get('StoryState', 'script'), dream: __sp.view().dream, open: __sp.get('ShadowJournal', 'open'), recording: __sp.get('PerformanceRecorder', 'recording') }));
   const after = await page.evaluate(() => ({ dreaming: __sp.view().dreaming, underStage: __sp.view().underStage }));
   check('while Mo dreams: "Mo is dreaming up your story" under the stage, its dots moving; gone once the story starts', waiting.dreaming === true && /^Mo is dreaming up your story\.{1,3}$/.test(waiting.underStage) && after.dreaming === false && !after.underStage.startsWith('Mo is dreaming'), { waiting, after });
-  check('pinching "Dream a new one": a new story, told at once', asked.length === 1 && asked[0].shapes.length >= 2 && d.script === 'dreamed:1' && d.dream.title === 'The Lantern Tide' && d.open === false, { asked: asked[0], ...d });
+  check('Tell it: the Journal closes and the new story begins, not recording', asked.length === 1 && asked[0].shapes.length >= 2 && d.script === 'dreamed:1' && d.dream.title === 'The Lantern Tide' && d.open === false && d.dream.ready === '' && d.recording === false, { asked: asked[0], ...d });
 
   // Played by the demo player; reload after the first creature: the next launch carries on in it.
   await page.evaluate(() => {
