@@ -158,9 +158,8 @@
     {
       "id": "rex-snail-carry",
       "type": "carry",
-      "toU": 0.3,
-      "text": "Slowly, slowly, around the bubbling mud.",
-      "minV": 0.12
+      "toU": 0.22,
+      "text": "Slowly, slowly, around the bubbling mud."
     },
     {
       "id": "rex-snail-land",

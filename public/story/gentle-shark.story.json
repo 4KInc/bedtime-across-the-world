@@ -157,9 +157,8 @@
     {
       "id": "shark-whale-carry",
       "type": "carry",
-      "toU": 0.3,
-      "text": "Big and slow, the whale carries Mo toward the lighthouse.",
-      "minV": 0.12
+      "toU": 0.22,
+      "text": "Big and slow, the whale carries Mo toward the lighthouse."
     },
     {
       "id": "shark-whale-land",
