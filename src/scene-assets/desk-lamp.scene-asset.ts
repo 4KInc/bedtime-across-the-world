@@ -14,7 +14,7 @@ import {
 } from '@iwsdk/core';
 
 /**
- * Desk lamp for Shadowplay. Origin: base-bottom center (desk contact), +Y up.
+ * Desk lamp for Bedtime Across the World. Origin: base-bottom center (desk contact), +Y up.
  * The shade opening faces -Z (toward the stage wall), tilted slightly upward.
  * Size envelope ~0.14 m wide x 0.32 m tall x 0.2 m deep.
  * Anchors: `lamp-bulb-anchor` (bulb center, local -Z = light axis) and

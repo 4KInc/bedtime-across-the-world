@@ -1,5 +1,5 @@
 /**
- * Third-party work and services Shadowplay uses, with their terms: shown from a Credits
+ * Third-party work and services Bedtime Across the World uses, with their terms: shown from a Credits
  * button on the first screen and in the family viewer (also in the README).
  * Everything else, the stories, characters, models and sounds, is original.
  */
@@ -47,7 +47,7 @@ export function openCredits(): void {
   const title = document.createElement('h2');
   title.textContent = 'Credits';
   const intro = document.createElement('p');
-  intro.textContent = 'Rated 10+: gentle bedtime stories, made for a grown-up and a child together. The stories, characters, shadows, lamp and sounds are original to Shadowplay. It is built with:';
+  intro.textContent = 'Rated 10+: gentle bedtime stories, made for a grown-up and a child together. The stories, characters, shadows, lamp and sounds are original to Bedtime Across the World. It is built with:';
   const list = document.createElement('ul');
   for (const c of CREDITS) {
     const li = document.createElement('li');

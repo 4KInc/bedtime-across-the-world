@@ -1,12 +1,12 @@
 # Known issues
 
-Shadowplay as submitted to the Meta VR Start Developer Competition 2026. These
+Bedtime Across the World as submitted to the Meta VR Start Developer Competition 2026. These
 are the limits we know of, stated plainly. Items found on a headset are added
 with the session that showed them.
 
 ## What the headsets have shown
 
-Shadowplay has been played on a Meta Quest 3 and a Meta Quest 3S with `?diag`
+Bedtime Across the World has been played on a Meta Quest 3 and a Meta Quest 3S with `?diag`
 on; the sessions and what each one covered are in `docs/DEVICE-RESULTS.md`,
 with their raw data in `docs/diag/`. In short: 72 Hz granted and held (no
 5-second window under 60 fps outside the headset's own sleep, wake and menu
@@ -18,7 +18,7 @@ items below.
 
 ## Design limits
 
-- **Hand tracking needs light.** Shadowplay dims the room in the headset, but
+- **Hand tracking needs light.** Bedtime Across the World dims the room in the headset, but
   the room itself should stay lit. If hands keep dropping out during a shape,
   the story shows the ghost hand and suggests turning a light on.
 - **Recognition is joint-angle based.** Each shape is matched from the tracked

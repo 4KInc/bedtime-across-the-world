@@ -16,7 +16,7 @@ import { MAX_CLIP_BYTES, SpeechToText, type ClipPurpose } from './voice.ts';
 import { speakable, speechKey, TextToSpeech } from './speak.ts';
 
 /**
- * Shadowplay server: serves the app and a tiny private sharing API for
+ * Bedtime Across the World server: serves the app and a tiny private sharing API for
  * bedtime stories. No accounts and no listing: a story is reachable only by
  * its family code, and expires after STORY_TTL_DAYS.
  *
@@ -498,4 +498,4 @@ void sweep();
 attachLive(server);
 // Compress the app's text files in the background so the first visitor gets them ready.
 void warm(STATIC_DIR).then((n) => console.log(`[server] compressed ${n} app files`));
-server.listen(PORT, () => console.log(`[server] Shadowplay on :${PORT} (stories in ${BUCKET ? `gs://${BUCKET}` : DATA_DIR})`));
+server.listen(PORT, () => console.log(`[server] Bedtime Across the World on :${PORT} (stories in ${BUCKET ? `gs://${BUCKET}` : DATA_DIR})`));

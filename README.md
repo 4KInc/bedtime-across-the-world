@@ -1,4 +1,4 @@
-# Shadowplay: Bedtime Across the World
+# Bedtime Across the World
 
 **Bedtime stories told with your hands, for a child who is far away.**
 
@@ -21,15 +21,15 @@ Competition 2026 (Entertainment track, New Experience division).
 
 ## Built on real Quest hardware, not just the emulator
 
-Shadowplay was played and tuned on a **Meta Quest 3** and a **Meta Quest 3S**,
+Bedtime Across the World was played and tuned on a **Meta Quest 3** and a **Meta Quest 3S**,
 in a real room, with hand tracking only. Every headset session ran with
 privacy-safe diagnostics (`?diag`), so each problem was found in the numbers,
 fixed, and checked again on the headset.
 
 | On Meta Quest 3 or Quest 3S (Quest Browser) | |
 | --- | --- |
-| Play it | https://shadowplay-1031148889398.us-central1.run.app |
-| Play it with live diagnostics on screen | https://shadowplay-1031148889398.us-central1.run.app/?diag |
+| Play it | https://bedtime-across-the-world-1031148889398.us-central1.run.app |
+| Play it with live diagnostics on screen | https://bedtime-across-the-world-1031148889398.us-central1.run.app/?diag |
 
 **Meets the 60 fps minimum on both headsets.** Every session held the requested
 72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.7 to 15.5 ms (under
@@ -106,8 +106,8 @@ were in the light, whether sound was running.
 
 | | |
 | --- | --- |
-| In a Meta Quest browser | https://shadowplay-1031148889398.us-central1.run.app (press **Enter XR**, or install it as an app from the browser menu: it then opens straight into the headset view) |
-| Family viewer (phone, tablet, desktop) | https://shadowplay-1031148889398.us-central1.run.app/?viewer |
+| In a Meta Quest browser | https://bedtime-across-the-world-1031148889398.us-central1.run.app (press **Enter XR**, or install it as an app from the browser menu: it then opens straight into the headset view) |
+| Family viewer (phone, tablet, desktop) | https://bedtime-across-the-world-1031148889398.us-central1.run.app/?viewer |
 
 On first launch both sides come with a labelled sample family, so you can try
 everything alone: the viewer has a story *from Dad* to watch and join in, and the
@@ -118,7 +118,7 @@ then **Goodnights**).
 
 1. Open the link in the Quest Browser, press **Enter XR** and allow room access
    (it finds your wall and your desk).
-2. **Keep the room lights on.** Shadowplay dims the room for you, and hand
+2. **Keep the room lights on.** Bedtime Across the World dims the room for you, and hand
    tracking needs light.
 3. Put the controllers down. The lamp stands behind you, as in shadow theatre:
    hold a hand up in front of you, where it is comfortable, and Mo the moth
@@ -264,7 +264,7 @@ hand held still in front of you will do.
   creatures in pictures. A character from a show or a scary word is left out,
   and the grown-up sees what will be sent and why.
 
-## How Shadowplay uses AI
+## How Bedtime Across the World uses AI
 
 AI helps the storyteller; it never replaces them, never sees the child, and
 never puts a word on the wall that the app has not checked.
@@ -418,7 +418,7 @@ flowchart LR
 ## Credits and licences
 
 The stories, characters, shadow puppets, lamp, scenery, music and sound effects
-are original to Shadowplay (the sound is synthesised from simple waves, with no
+are original to Bedtime Across the World (the sound is synthesised from simple waves, with no
 recordings; the models are built in code). It uses:
 
 | Work | Used for | Licence |

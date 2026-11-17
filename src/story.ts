@@ -48,11 +48,11 @@ const SOUND_CAPTION = 'Pinch your thumb and finger together once to turn on the 
 /** How long the story waits for that pinch before going on with captions only (s). */
 const SOUND_WAIT_SECONDS = 10;
 const TITLE_CAPTION =
-  'Shadowplay. A lamp behind you, a story on your wall. Put on your headset and press Enter XR to begin.';
+  'Bedtime Across the World. A lamp behind you, a story on your wall. Put on your headset and press Enter XR to begin.';
 const OUTSIDE_XR_CAPTION = 'Paused. Press Enter XR to return to the story.';
 /** Family viewer (phone / tablet): no headset needed. */
 const VIEWER_CAPTION = 'A bedtime story is waiting. Pick one below to watch.';
-const HANDS_CAPTION = 'Shadowplay is played with your hands. Put your controllers down and let the headset see your hands.';
+const HANDS_CAPTION = 'This story is told with your hands. Put your controllers down and let the headset see your hands.';
 /** Grace period before the hands-first guard pauses (controllers being set down). */
 const CONTROLLER_GRACE_SECONDS = 1;
 /** The first story; progress saved before the library existed belongs to it. */

@@ -2,7 +2,7 @@ import { loadRecording, loadSampleSeeded, saveRecording, saveSampleSeeded } from
 import { fromWire } from './sharing.js';
 
 /**
- * First launch: a bundled example for whoever is trying Shadowplay alone, by
+ * First launch: a bundled example for whoever is trying Bedtime Across the World alone, by
  * role. The family viewer gets a story "from Dad" (2.8 MB); the storyteller's
  * headset gets a goodnight "from Mia" waiting in Goodnights (0.2 MB). Each is
  * labelled as a sample, added once per device, and downloaded only where it

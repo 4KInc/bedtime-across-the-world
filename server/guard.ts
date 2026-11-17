@@ -106,7 +106,7 @@ function shortString(v: unknown, max: number): boolean {
 export function checkPerformance(p: unknown, maxAudioChars: number): string | null {
   if (!p || typeof p !== 'object' || Array.isArray(p)) return 'Not a story.';
   const o = p as Record<string, unknown>;
-  if (o.version !== PERFORMANCE_VERSION) return 'Not a Shadowplay story.';
+  if (o.version !== PERFORMANCE_VERSION) return 'Not a Bedtime Across the World story.';
   const durationMs = o.durationMs;
   const frameCount = o.frameCount;
   if (typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs < 0 || durationMs > MAX_MINUTES * 60_000) {

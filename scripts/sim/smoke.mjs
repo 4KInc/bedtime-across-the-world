@@ -1,4 +1,4 @@
-// Smoke test a deployed Shadowplay: app, assets, samples, narration, sharing, replies,
+// Smoke test a deployed Bedtime Across the World: app, assets, samples, narration, sharing, replies,
 // security checks and live rooms, plus two pages in a headless browser: the family viewer
 // (?viewer) and device diagnostics (?diag), whose beacons the server must accept.
 // Cleans nothing up itself: test stories expire with the bucket rule.
