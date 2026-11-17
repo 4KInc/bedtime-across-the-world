@@ -41,7 +41,7 @@ import { giftsRuntime } from './gifts-received.js';
 import { lampBehindRuntime } from './lamp-behind.js';
 import { GiftPicker } from './viewer-gifts.js';
 import { dreamRuntime } from './settings.js';
-import { accessRuntime, handOverride, handRuntime, readerRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
+import { accessRuntime, handOverride, handRuntime, pickerRuntime, readerRuntime, secondHands, stageRuntime, trackingRuntime, uiPresses } from './stage-runtime.js';
 import type { RoomPlane } from './wall-choice.js';
 
 const COMPONENTS = {
@@ -295,6 +295,7 @@ export class AutomationSystem extends createSystem({
           lanterns: { onDesk: [...lanternRuntime.onDesk], hopping: lanternRuntime.hopping, deskY: lanternRuntime.deskY, gap: lanternRuntime.gap, last: lanternRuntime.last.toArray().map((n) => Math.round(n * 1000) / 1000) },
           recordings: { ...recordingsRuntime, made: { ...recordingRuntime } },
           reader: { ...readerRuntime },
+          picker: { ...pickerRuntime },
           shelf: { on: shelfRuntime.on, centre: shelfRuntime.centre.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
           sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel, hum: soundRuntime.hum, creatureByBuffer: soundRuntime.creatureByBuffer, creatureSkipped: soundRuntime.creatureSkipped },

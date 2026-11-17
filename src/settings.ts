@@ -268,6 +268,13 @@ export class SettingsSystem extends createSystem({
     if (script !== this.tonight) {
       this.tonight = script;
       pickerRuntime.browsed = false;
+      // The picker opens on tonight's story, whenever that becomes known or changes (Quest 3, Nov 17: with
+      // ?film the Journal opened on the default story; the library had loaded before tonight's was read).
+      const at = this.library.findIndex((s) => s.script === script);
+      if (at >= 0) {
+        this.browsing = at;
+        this.browsingWorld = Math.max(0, this.worlds.findIndex((w) => w.id === worldOf(this.library[at])));
+      }
     }
     pickerRuntime.script = this.library[this.browsing]?.script ?? '';
     const key = `${script}|${this.browsingWorld}|${this.browsing}|${this.library.length}`;
@@ -307,6 +314,8 @@ export class SettingsSystem extends createSystem({
       .then((r) => (r.ok ? (r.json() as Promise<{ worlds?: StoryWorld[]; stories: LibraryStory[] }>) : null))
       .then((lib) => {
         this.library = lib?.stories ?? [];
+        // Line the picker up with tonight's story on the next refresh, now there is a library to find it in.
+        this.tonight = '';
         const worlds = lib?.worlds?.length ? lib.worlds : [{ id: DEFAULT_WORLD, title: 'Wonder and Nature', blurb: '' }];
         this.worlds = worlds.filter((w) => this.library.some((s) => worldOf(s) === w.id));
         // Start browsing at tonight's story, in its world.
@@ -758,7 +767,12 @@ export class SettingsSystem extends createSystem({
       const story = first(this.queries.stories.entities);
       const chosen = this.library[this.browsing];
       if (!story || !chosen || story.getValue(StoryState, 'followMode')) return;
-      if (story.getValue(StoryState, 'script') === chosen.script) return;
+      // Already tonight's story ("Telling this story tonight"): the Journal closes and it is told
+      // (Nov 17: with ?film the Journal held it, and pressing this did nothing).
+      if (story.getValue(StoryState, 'script') === chosen.script) {
+        for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
+        return;
+      }
       for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
       story.setValue(StoryState, 'script', chosen.script);
       this.status?.setProperties({ text: `Starting "${chosen.title}"...` });
