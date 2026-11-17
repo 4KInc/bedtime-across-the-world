@@ -7,6 +7,7 @@
  */
 import { BIRD_MAX_CURL, BIRD_WRIST_GAP } from './recognition-rules.js';
 import { TEMPLATES } from './hand-features.js';
+import { poseOf } from './world-creatures.js';
 
 export { COACHED_SHAPES, FACTS, localLine } from './coach-vocab.js';
 
@@ -59,6 +60,9 @@ const meanCurl = (f: Float32Array) => (f[1] + f[2] + f[3] + f[4]) / 4;
 export function coachFacts(shape: string, left: CoachHand, right: CoachHand, oneHand = false): string[] {
   const hands = [left, right].filter((h) => h.tracked);
   if (!hands.length) return ['no-hands'];
+  // A world creature is made with its pose: a car is the snail's, a pterodactyl the bird's (world-creatures.ts).
+  // Measured against the creature's own name, the car and the digger had no facts (Quest 3, Nov 17).
+  shape = poseOf(shape);
   if (shape === 'bird' && !oneHand) {
     if (hands.length < 2) return ['one-hand-seen'];
     const dx = left.joints[0] - right.joints[0];
