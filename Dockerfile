@@ -1,4 +1,4 @@
-# Shadowplay: one container serves the app, the story-sharing API and Live rooms.
+# Bedtime Across the World: one container serves the app, the story-sharing API and Live rooms.
 
 # --- build the web app
 FROM node:24-slim AS build

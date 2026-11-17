@@ -22,7 +22,7 @@ AMBER = (242, 196, 122)
 MUTED = (150, 135, 112)
 FONT = '/System/Library/Fonts/Supplemental/Georgia.ttf'
 ITALIC = '/System/Library/Fonts/Supplemental/Georgia Italic.ttf'
-URL = 'shadowplay-1031148889398.us-central1.run.app'
+URL = 'bedtime-across-the-world-1031148889398.us-central1.run.app'
 
 T = json.loads((D / 'timing.json').read_text())
 FRAMES = {k: ([f['t'] for f in v], [f['file'] for f in v]) for k, v in T['frames'].items()}
@@ -166,7 +166,7 @@ mia_start = T['miaStart']
 hook = [
     (4.0, lambda t: fade(card([('Every night, millions of parents say goodnight from far away.', 64, True, CREAM)]), t, 4.0), None),
     (3.6, lambda t: fade(card([('On deployment. Working abroad. Across an ocean.', 64, True, CREAM)]), t, 3.6), None),
-    (4.0, lambda t: fade(card([('Shadowplay', 120, False, AMBER), ('Bedtime Across the World', 58, True, CREAM)]), t, 4.0), None),
+    (4.0, lambda t: fade(card([('Bedtime Across', 120, False, AMBER), ('the World', 120, False, AMBER)]), t, 4.0), None),
 ]
 segments = hook + [
     (29.0, lambda t: split(t, 'Dad tells the story with his hands. Mia watches it, in his voice.' if t < 13 else ''), (DAD_AUDIO, 0, 55.0)),
@@ -179,7 +179,7 @@ segments = hook + [
     (4.2, lambda t: fade(card([('Watch and join in', 60, False, AMBER), ('at each shape, the story waits for your hands.', 48, True, CREAM)]), t, 4.2), None),
     (4.2, lambda t: fade(card([('Go live', 60, False, AMBER), ('talk, and take turns making the creatures.', 48, True, CREAM)]), t, 4.2), None),
     (4.2, lambda t: fade(card([('Safe by design', 60, False, AMBER), ('No accounts. Camera video never leaves the device.', 48, True, CREAM)]), t, 4.2), None),
-    (7.5, lambda t: fade(card([('Shadowplay', 110, False, AMBER), ('A bedtime story, wherever you are.', 54, True, CREAM), (URL, 34, False, CREAM)],
+    (7.5, lambda t: fade(card([('Bedtime Across the World', 90, False, AMBER), ('A bedtime story, wherever you are.', 54, True, CREAM), (URL, 34, False, CREAM)],
                               small='Built with IWSDK  ·  Footage from the headset emulator  ·  Sample voices generated (Kokoro)'), t, 7.5), None),
 ]
 

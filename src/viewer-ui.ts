@@ -403,7 +403,7 @@ export class ViewerUISystem extends createSystem({
     sheet.innerHTML = `
       <div class="sp-panel">
         <p class="sp-title">For grown-ups: allow the camera?</p>
-        <p>To play along, Shadowplay uses this device's camera to see your child's hands and turn them into shadows.
+        <p>To play along, Bedtime Across the World uses this device's camera to see your child's hands and turn them into shadows.
         The video never leaves this device; only the positions of the hands are used.</p>
         <div class="sp-row">
           <button class="sp-btn on" data-act="yes">Allow camera</button>

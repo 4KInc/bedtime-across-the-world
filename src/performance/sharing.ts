@@ -2,7 +2,7 @@ import { saveRecording } from '../journal-store.js';
 import { Performance, PERFORMANCE_VERSION } from './format.js';
 
 /**
- * Sharing bedtime stories through the Shadowplay server: a performance is
+ * Sharing bedtime stories through the Bedtime Across the World server: a performance is
  * uploaded with its voice embedded and comes back as a private family code;
  * the family viewer fetches it by that code and keeps a local copy.
  */
@@ -26,7 +26,7 @@ export async function toWire(perf: Performance): Promise<Wire> {
 }
 
 export async function fromWire(wire: Wire): Promise<Performance> {
-  if (wire.version !== PERFORMANCE_VERSION) throw new Error('This story needs a newer Shadowplay.');
+  if (wire.version !== PERFORMANCE_VERSION) throw new Error('This story needs a newer Bedtime Across the World.');
   return { ...wire, audio: wire.audio ? await dataUrlToBlob(wire.audio) : null };
 }
 

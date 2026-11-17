@@ -15,11 +15,11 @@ const data = mkdtempSync(join(tmpdir(), 'shadowplay-api-'));
 const app = join(data, 'app');
 const APP_JS = 'const story = "' + 'once upon a time '.repeat(400) + '";\n';
 mkdirSync(join(app, 'assets'), { recursive: true });
-writeFileSync(join(app, 'index.html'), '<!doctype html><title>Shadowplay</title><script type="module" src="./assets/index-abc123.js"></script>');
+writeFileSync(join(app, 'index.html'), '<!doctype html><title>Bedtime Across the World</title><script type="module" src="./assets/index-abc123.js"></script>');
 writeFileSync(join(app, 'assets', 'index-abc123.js'), APP_JS);
 mkdirSync(join(app, 'story'));
 writeFileSync(join(app, 'story', 'library.json'), JSON.stringify({ stories: [] }));
-writeFileSync(join(app, 'manifest.webmanifest'), JSON.stringify({ name: 'Shadowplay', start_url: './' }));
+writeFileSync(join(app, 'manifest.webmanifest'), JSON.stringify({ name: 'Bedtime Across the World', start_url: './' }));
 let server: ChildProcess;
 
 /** A stand-in for Cloud Speech-to-Text: records what it was sent, answers "the bird". */
@@ -485,7 +485,7 @@ test('static files: compressed, cached by kind, and HEAD works', async () => {
   assert.ok(raw.length < APP_JS.length / 10, `gzip ${raw.length} bytes`);
   const index = await fetch(`${BASE}/`, { headers: { 'Accept-Encoding': 'gzip' } });
   assert.equal(index.headers.get('cache-control'), 'no-cache');
-  assert.match(await index.text(), /Shadowplay/);
+  assert.match(await index.text(), /Bedtime Across the World/);
   const plain = await fetch(`${BASE}/story/library.json`, { headers: { 'Accept-Encoding': 'identity' } });
   assert.equal(plain.headers.get('content-encoding'), null);
   assert.equal(plain.headers.get('cache-control'), 'no-cache');
@@ -493,7 +493,7 @@ test('static files: compressed, cached by kind, and HEAD works', async () => {
   const manifest = await fetch(`${BASE}/manifest.webmanifest`);
   assert.equal(manifest.status, 200);
   assert.match(manifest.headers.get('content-type') ?? '', /^application\/manifest\+json/);
-  assert.equal((await manifest.json()).name, 'Shadowplay');
+  assert.equal((await manifest.json()).name, 'Bedtime Across the World');
   const head = await fetch(`${BASE}/assets/index-abc123.js`, { method: 'HEAD', headers: { 'Accept-Encoding': 'br' } });
   assert.equal(head.status, 200);
   assert.ok(Number(head.headers.get('content-length')) > 0);
