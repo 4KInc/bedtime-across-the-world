@@ -32,27 +32,30 @@ Time in XR is counted from the 5-second frame windows recorded while immersive.
 | [`9f89mnu4ye`](diag/2026-11-16/9f89mnu4ye.jsonl) | Quest 3S | Nov 16, 17:13 | 15.7 min | 71.6 (70.2) | 14.9 ms | 0 / 188 | q0 | wall 4.04 m wide at 1.63 m; desk surface | A dreamed story, Moon Buggy, Little Lost Spaceship, Sleepy Little Dinosaur; voice commands |
 | [`v7sw83fr98`](diag/2026-11-16/v7sw83fr98.jsonl) | Quest 3S | Nov 16, 18:44 | 11.2 min | 71.8 (70.4) | 14.9 ms | 0 / 134 | q0 | wall, back on last time's spot; desk surface | Moon Buggy, The Moth (to The End), a dreamed story; voice commands |
 | [`4zp7d8t7yg`](diag/2026-11-17/4zp7d8t7yg.jsonl) | Quest 3 | Nov 17, 00:34 | 19.3 min | 71.6 (70.6) | 15.0 ms | 0 / 231 | q0 | wall, back on last time's spot; desk surface | Six story-world stories and a dream: every world creature woke; two recordings with voice saved and sent |
+| [`ufckcgf798`](diag/2026-11-17/ufckcgf798.jsonl) | Quest 3 | Nov 17, 06:31 | 16.6 min | 71.6 (70.8) | 14.9 ms | 0 / 199 | q0 | wall 3.99 m wide at 1.73 m; desk surface | A first launch (Counting Stars), The Shy Little Shark, The Sleepy T. rex, a dreamed story with four creatures, The Little Car's Long Way Home recorded with voice and sent |
 
 Windows under 60 fps exclude the headset's own transitions (sleep, wake, the
-system menu), which the summary reports separately (31 in all); the lowest of
+system menu), which the summary reports separately (37 in all); the lowest of
 those was 46.9 fps, in `cdj3st58rm`, waking after three hours asleep.
 
 ## What the sessions show
 
 - **Frame rate.** 72 Hz was requested and granted wherever the request was
-  recorded (Quest 3 and 3S). Across 14 sessions (1,555 five-second windows,
-  about 130 minutes in XR): median 71.5 to 72 fps, frame-time 95th percentile
+  recorded (Quest 3 and 3S). Across 15 sessions (1,754 five-second windows,
+  about 146 minutes in XR): median 71.5 to 72 fps, frame-time 95th percentile
   14.7 to 15.5 ms. One window was under 60 fps: the first five seconds of
   `8b2ca94jd3` (46.9 fps), as it entered XR and the room loaded, before the
   story began; every window after it held 70 to 72. The quality level never
   stepped down from q0.
 - **No errors.** Every session reports `errors: 0`.
-- **Recognition with real hands.** 123 creatures woke across the sessions, and
+- **Recognition with real hands.** 142 creatures woke across the sessions, and
   every one of them was the shape the story had asked for (no false wakes):
-  cup 22, bird 21, dog 20, fish 16, rabbit 13, crocodile 6, snail 5, swan 4,
-  whale 4, octopus 2, deer 1, and on Nov 17 (`4zp7d8t7yg`) every story-world
-  creature: rocket, alien, asteroid, shark, octopus, whale, car, aeroplane,
-  digger, T. rex and pterodactyl. With one-hand mode on, birds and cups woke
+  cup 26, bird 23, dog 21, fish 17, rabbit 14, crocodile 6, snail 6, whale 5,
+  swan 4, octopus 3, T. rex 3, car 2, digger 2, aeroplane 2, shark 2,
+  pterodactyl 2, deer 1, asteroid 1, rocket 1 and alien 1: on Nov 17
+  (`4zp7d8t7yg`) every story-world creature. In `ufckcgf798` every shape of
+  The Shy Little Shark woke 2 to 7 s after it was asked; the digger took 31 s
+  (read as cupped hands: a scooped hand counts for it since). With one-hand mode on, birds and cups woke
   with one hand (`9f89mnu4ye`, `v7sw83fr98`).
 - **Stories to The End.** The Moth (`fpxa7ky672`, `v7sw83fr98`), Goodnight
   Across the Sea (`g3bb9hvnvt`), Moon Buggy, Sleepy Little Dinosaur and Little
@@ -62,8 +65,9 @@ those was 46.9 fps, in `cdj3st58rm`, waking after three hours asleep.
   `afthmamdpn`), 35 s (rabbit, `9f89mnu4ye`), 39 s (dog, `v7sw83fr98`), 46 s
   (swan, `g3bb9hvnvt`), 52 s (dog, `m3zdndu6vq`), 53 s (fish, `8b2ca94jd3`),
   56 s (fish, `xhz96jhkv9`), 65 s (asteroid, `4zp7d8t7yg`, the first
-  world-creature story); target under 60 s. None of these was a first launch
-  (Counting Stars).
+  world-creature story); target under 60 s. The one first launch, `ufckcgf798`
+  (the first visit to the app's new address), opened Counting Stars: the bird
+  32 s after Enter XR. First launches open The Shy Little Shark since.
 - **Room understanding.** Room Setup planes arrive with semantic labels
   (`v wall 10, v door 2, h shelf 8, h table 2, h couch 1, h floor 1,
   h ceiling 1` in one room, 27 planes with 11 walls and 5 doors in another),

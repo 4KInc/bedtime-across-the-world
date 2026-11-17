@@ -55,3 +55,5 @@ video-clips/
 # Deployment runbook: kept on the maintainer's machine, not in the repo
 # (the public URLs are in the README).
 docs/DEPLOY.md
+# The idea brief (PDF): kept on this machine only, never committed.
+docs/shadowplay-idea-brief.pdf
