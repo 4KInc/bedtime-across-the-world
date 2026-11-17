@@ -46,7 +46,7 @@ const SHAPES = new Set([
 ]);
 /** Easier poses a request may also accept (its alt), besides the shapes: two fingers up for the rabbit, an open hand for the bird. */
 const EASIER = new Set(['ears', 'open']);
-const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'dino-valley', 'star-port']);
+const SCENERY = new Set(['none', 'field', 'river', 'forest', 'storm', 'sea', 'moon-road', 'country-road', 'dino-valley', 'star-port']);
 const MOTH = new Set(['hidden', 'arriving', 'hovering', 'following', 'riding', 'resting']);
 const MAX_BEATS = 80;
 

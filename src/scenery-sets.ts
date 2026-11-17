@@ -291,7 +291,77 @@ function headlightShape(): Shape {
   return s;
 }
 
-/** A set with a character that follows Mo along the stage (the buggy, the little dinosaur, Pip's spaceship). */
+// ---------------------------------------------------------------- country road (Cars & Adventure)
+
+/** Gentle green hills across the bottom of the stage: the road runs along their top. */
+function countryGround(): Shape {
+  const s = new Shape();
+  s.moveTo(-0.62, 0);
+  for (let x = -0.62; x <= 0.62 + 1e-6; x += 0.02) s.lineTo(x, 0.06 + Math.sin(x * 3.6 + 0.4) * 0.018 + Math.sin(x * 9.5) * 0.005);
+  s.lineTo(0.62, 0);
+  s.closePath();
+  return s;
+}
+
+/** A few round trees on the hills, clear of the house at the road's end. */
+function countryTrees(): Shape[] {
+  const out: Shape[] = [];
+  for (const [x, h, r] of [[-0.5, 0.11, 0.045], [-0.28, 0.09, 0.035], [0.02, 0.1, 0.04], [0.22, 0.085, 0.03]] as const) {
+    const trunk = new Shape();
+    trunk.moveTo(x - 0.006, 0.05);
+    trunk.lineTo(x - 0.006, 0.05 + h);
+    trunk.lineTo(x + 0.006, 0.05 + h);
+    trunk.lineTo(x + 0.006, 0.05);
+    trunk.closePath();
+    const crown = new Shape();
+    crown.absarc(x, 0.05 + h + r * 0.6, r, 0, Math.PI * 2, false);
+    out.push(trunk, crown);
+  }
+  return out;
+}
+
+/** The little house at the end of the road: walls, a pointed roof and a chimney; its garage is on the left. */
+function houseShape(): Shape[] {
+  const walls = new Shape();
+  walls.moveTo(0.34, 0.05);
+  walls.lineTo(0.34, 0.17);
+  walls.lineTo(0.58, 0.17);
+  walls.lineTo(0.58, 0.05);
+  walls.closePath();
+  const roof = new Shape();
+  roof.moveTo(0.32, 0.165);
+  roof.lineTo(0.46, 0.26);
+  roof.lineTo(0.6, 0.165);
+  roof.closePath();
+  const chimney = new Shape();
+  chimney.moveTo(0.52, 0.2);
+  chimney.lineTo(0.52, 0.27);
+  chimney.lineTo(0.545, 0.27);
+  chimney.lineTo(0.545, 0.18);
+  chimney.closePath();
+  return [walls, roof, chimney];
+}
+
+/** A little car in profile, facing right: a body, a rounded cab, two wheels. */
+function carShape(): Shape[] {
+  const body = new Shape();
+  body.moveTo(-0.075, 0.022);
+  body.lineTo(-0.078, 0.052);
+  body.lineTo(-0.04, 0.056);
+  body.quadraticCurveTo(-0.025, 0.09, 0.012, 0.09); // the cab's round roof
+  body.quadraticCurveTo(0.035, 0.088, 0.045, 0.058);
+  body.lineTo(0.076, 0.052);
+  body.lineTo(0.08, 0.024);
+  body.closePath();
+  const wheels = [-0.045, 0.048].map((x) => {
+    const w = new Shape();
+    w.absarc(x, 0.02, 0.02, 0, Math.PI * 2, false);
+    return w;
+  });
+  return [body, ...wheels];
+}
+
+/** A set with a character that follows Mo along the stage (the buggy, the little car, the little dinosaur, Pip's spaceship). */
 export interface FollowerSet extends ScenerySet {
   /** Mo's position along the stage (stage widths, centre 0); the set's character goes after her. */
   follow(u: number): void;
@@ -305,59 +375,80 @@ export type MoonRoadSet = FollowerSet;
  * go softly out.
  */
 export function buildMoonRoad(ink: MeshBasicMaterial): MoonRoadSet {
+  return buildRoad(ink, 'moon');
+}
+
+/**
+ * Cars & Adventure on Earth (The Little Car's Long Way Home): green hills and
+ * round trees, a winding road, a little house with a garage at its end, and the
+ * little car, its headlights fading. It follows Mo along the road; at the finale
+ * it rolls into the garage, the windows glow and the headlights go softly out
+ * (Nov 17: the story told of a road, a car and a garage over the meadow).
+ */
+export function buildCountryRoad(ink: MeshBasicMaterial): FollowerSet {
+  return buildRoad(ink, 'country');
+}
+
+/** A road with a vehicle that follows Mo and goes home at the finale: on the moon or in the country. */
+function buildRoad(ink: MeshBasicMaterial, look: 'moon' | 'country'): FollowerSet {
+  const moon = look === 'moon';
+  const name = moon ? 'scenery-moon-road' : 'scenery-country-road';
+  const vehicle = moon ? 'buggy' : 'car';
   const group = new Group();
-  group.name = 'scenery-moon-road';
-  const groundGeo = new ShapeGeometry(moonGround(), 1);
+  group.name = name;
+  const groundGeo = new ShapeGeometry(moon ? moonGround() : [countryGround(), ...countryTrees()], moon ? 1 : 12);
   const ground = new Mesh(groundGeo, ink);
-  ground.name = 'scenery-moon-road-ground';
+  ground.name = `${name}-ground`;
   ground.renderOrder = 4;
-  const garageGeo = new ShapeGeometry(garageShape(), 16);
-  const garage = new Mesh(garageGeo, ink);
-  garage.name = 'scenery-moon-road-garage';
-  garage.renderOrder = 3;
+  const homeGeo = new ShapeGeometry(moon ? garageShape() : houseShape(), 16);
+  const home = new Mesh(homeGeo, ink);
+  home.name = moon ? `${name}-garage` : `${name}-house`;
+  home.renderOrder = 3;
 
   const windowMat = glow(0xffc46a);
-  const windowGeo = new PlaneGeometry(0.06, 0.07);
-  const garageWindow = new Mesh(windowGeo, windowMat);
-  garageWindow.name = 'scenery-moon-road-garage-window';
-  garageWindow.position.set(0.45, 0.16, 0.001);
-  garageWindow.renderOrder = 5;
+  const windowGeo = moon ? new PlaneGeometry(0.06, 0.07) : new PlaneGeometry(0.045, 0.045);
+  const homeWindow = new Mesh(windowGeo, windowMat);
+  homeWindow.name = moon ? `${name}-garage-window` : `${name}-house-window`;
+  homeWindow.position.set(moon ? 0.45 : 0.52, moon ? 0.16 : 0.12, 0.001);
+  homeWindow.renderOrder = 5;
 
-  const buggy = new Group();
-  buggy.name = 'scenery-moon-road-buggy';
-  const bodyGeo = new ShapeGeometry([buggyShape(), ...buggyParts()], 8);
+  const car = new Group();
+  car.name = `${name}-${vehicle}`;
+  const bodyGeo = new ShapeGeometry(moon ? [buggyShape(), ...buggyParts()] : carShape(), 8);
   const body = new Mesh(bodyGeo, ink);
-  body.name = 'scenery-moon-road-buggy-body';
+  body.name = `${name}-${vehicle}-body`;
   body.renderOrder = 5;
   const lightMat = glow(0xfff0b0);
   const lightGeo = new ShapeGeometry(headlightShape(), 1);
   const headlight = new Mesh(lightGeo, lightMat);
-  headlight.name = 'scenery-moon-road-buggy-headlight';
-  headlight.position.set(0.078, 0.048, -0.0005);
+  headlight.name = `${name}-${vehicle}-headlight`;
+  headlight.position.set(moon ? 0.078 : 0.076, moon ? 0.048 : 0.04, -0.0005);
   headlight.renderOrder = 2;
-  buggy.add(headlight, body);
-  buggy.position.set(-0.36, 0.06, 0.0008);
+  car.add(headlight, body);
+  car.position.set(-0.36, 0.06, 0.0008);
 
-  group.add(garage, ground, garageWindow, buggy);
+  group.add(home, ground, homeWindow, car);
+  // Where it goes home: the moon garage's door, or the house's garage on the left of it.
+  const homeX = moon ? 0.45 : 0.4;
   let target = -0.36;
   let lastTime = -1;
   return {
     group,
     follow(u) {
       // A little behind Mo, and never past the garage door.
-      target = Math.min(0.3, Math.max(-0.48, u - 0.12));
+      target = Math.min(homeX - 0.15, Math.max(-0.48, u - 0.12));
     },
     update(time, level, finale) {
       const dt = lastTime < 0 ? 0 : Math.min(0.1, time - lastTime);
       lastTime = time;
       // Home at the finale: into the garage.
-      const goal = finale > 0.01 ? 0.45 : target;
-      const before = buggy.position.x;
-      buggy.position.x += (goal - before) * Math.min(1, dt * 0.8);
+      const goal = finale > 0.01 ? homeX : target;
+      const before = car.position.x;
+      car.position.x += (goal - before) * Math.min(1, dt * 0.8);
       // A gentle bounce while it drives over the bumps.
-      const moving = Math.min(1, Math.abs(buggy.position.x - before) / Math.max(dt, 1e-3) / 0.05);
-      buggy.position.y = 0.06 + Math.sin(time * 9) * 0.004 * moving;
-      buggy.visible = finale < 0.98;
+      const moving = Math.min(1, Math.abs(car.position.x - before) / Math.max(dt, 1e-3) / 0.05);
+      car.position.y = 0.06 + Math.sin(time * 9) * 0.004 * moving;
+      car.visible = finale < 0.98;
       // Fading headlights: a weak flicker until the finale, then bright, then softly out.
       const flicker = 0.55 + 0.25 * Math.sin(time * 2.3) * Math.sin(time * 5.1);
       const lights = finale > 0.01 ? Math.sin(Math.min(1, finale) * Math.PI) : flicker * 0.5;
@@ -367,7 +458,7 @@ export function buildMoonRoad(ink: MeshBasicMaterial): MoonRoadSet {
     },
     dispose() {
       groundGeo.dispose();
-      garageGeo.dispose();
+      homeGeo.dispose();
       windowGeo.dispose();
       windowMat.dispose();
       bodyGeo.dispose();

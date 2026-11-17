@@ -10,7 +10,7 @@ import {
   Vector3,
 } from '@iwsdk/core';
 import { buildFinaleLights, FinaleLights } from './finale-lights.js';
-import { buildDinoValley, buildMoonRoad, buildSea, buildStarPort, buildStorm, FollowerSet, ScenerySet } from './scenery-sets.js';
+import { buildCountryRoad, buildDinoValley, buildMoonRoad, buildSea, buildStarPort, buildStorm, FollowerSet, ScenerySet } from './scenery-sets.js';
 import { Scenery, ScenerySets, Stage } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
 
@@ -201,6 +201,7 @@ export class ScenerySystem extends createSystem({
     const sea = buildSea(material);
     const followers = [
       { set: ScenerySets.MoonRoad as string, scene: buildMoonRoad(material), level: 0 },
+      { set: ScenerySets.CountryRoad as string, scene: buildCountryRoad(material), level: 0 },
       { set: ScenerySets.DinoValley as string, scene: buildDinoValley(material), level: 0 },
       { set: ScenerySets.StarPort as string, scene: buildStarPort(material), level: 0 },
     ];
