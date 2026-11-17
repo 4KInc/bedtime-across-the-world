@@ -4,7 +4,7 @@ import { loadDreamed, loadRecording, saveRecording } from '../journal-store.js';
 import { isDreamed, isStoryScript } from '../story-script.js';
 import { uploadStory, watchLink } from './sharing.js';
 import { PerformanceRecorder, StoryState } from '../shadowplay-components.js';
-import { handRuntime, stageRuntime } from '../stage-runtime.js';
+import { handRuntime, readerRuntime, stageRuntime } from '../stage-runtime.js';
 import {
   encodeHands,
   FRAME_HZ,
@@ -43,6 +43,12 @@ export const recordingRuntime = {
   sendBytes: 0,
 };
 
+/** Speech, as a microphone level (RMS): at least this, and this many times the room's floor. */
+const SPEECH_MIN = 0.012;
+/** Where the room's level starts (a quiet room with noise suppression), before it is learnt. */
+const QUIET_ROOM = 0.003;
+const SPEECH_OVER_FLOOR = 2.5;
+
 /** The recorded voice: speech quality, as the wish listener uses (the browser default was about 4x bigger to send). */
 const VOICE_BITS_PER_SECOND = 48000;
 
@@ -66,6 +72,10 @@ export class PerformanceRecorderSystem extends createSystem({
   private events: PerformanceEvent[] = [];
   private media: MediaRecorder | null = null;
   private mic: MediaStream | null = null;
+  /** The microphone's level while recording with a voice (readerRuntime), measured each frame. */
+  private micCtx: AudioContext | null = null;
+  private analyser: AnalyserNode | null = null;
+  private levels = new Float32Array(1024);
   private chunks: Blob[] = [];
   private startedAt = 0;
   private sharing = false;
@@ -87,6 +97,7 @@ export class PerformanceRecorderSystem extends createSystem({
     if (want && !this.active) this.beginRecording(rec);
     if (!want && this.active) void this.finishRecording(rec, story);
     if (rec.getValue(PerformanceRecorder, 'shareRequested') && !this.sharing) void this.share(rec);
+    if (this.active) this.listen();
     if (!this.active || !stageRuntime.ready) return;
 
     this.elapsed += delta;
@@ -131,14 +142,52 @@ export class PerformanceRecorderSystem extends createSystem({
       });
       this.media.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
       this.media.start(1000);
+      this.listenToReader(this.mic);
     } catch (error) {
       rec.setValue(PerformanceRecorder, 'status', `Recording without voice (${(error as Error).message})`);
     }
   }
 
+  /**
+   * While the parent records with their voice they read the lines themselves:
+   * the story waits for them to finish each one (Quest 3, Nov 17: the next caption
+   * came mid-sentence, and the recording kept the cut). Their level only, never words.
+   */
+  private listenToReader(mic: MediaStream): void {
+    try {
+      this.micCtx = new AudioContext();
+      void this.micCtx.resume().catch(() => undefined);
+      this.analyser = this.micCtx.createAnalyser();
+      this.analyser.fftSize = this.levels.length;
+      this.micCtx.createMediaStreamSource(mic).connect(this.analyser);
+      Object.assign(readerRuntime, { listening: true, lastSpokeAt: 0, level: 0, floor: QUIET_ROOM });
+    } catch {
+      // No level to listen to: the story paces by reading time, as before.
+      this.analyser = null;
+    }
+  }
+
+  /** The microphone's loudness this frame: speech is well above the room's own (slowly learnt) floor. */
+  private listen(): void {
+    if (!this.analyser) return;
+    this.analyser.getFloatTimeDomainData(this.levels);
+    let sum = 0;
+    for (let i = 0; i < this.levels.length; i++) sum += this.levels[i] * this.levels[i];
+    const rms = Math.sqrt(sum / this.levels.length);
+    // The room's own level: it falls quickly to quiet and rises only slowly, so a voice is never taken for the room.
+    const floor = readerRuntime.floor;
+    readerRuntime.floor = Math.max(QUIET_ROOM / 4, rms < floor ? floor * 0.9 + rms * 0.1 : floor + (rms - floor) * 0.002);
+    readerRuntime.level = rms;
+    if (rms > Math.max(SPEECH_MIN, readerRuntime.floor * SPEECH_OVER_FLOOR)) readerRuntime.lastSpokeAt = performance.now();
+  }
+
   private releaseMic(): void {
     if (this.media && this.media.state !== 'inactive') this.media.stop();
     this.media = null;
+    this.analyser = null;
+    void this.micCtx?.close().catch(() => undefined);
+    this.micCtx = null;
+    readerRuntime.listening = false;
     this.mic?.getTracks().forEach((t) => t.stop());
     this.mic = null;
   }
