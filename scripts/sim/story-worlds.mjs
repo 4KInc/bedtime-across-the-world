@@ -75,8 +75,9 @@ await sleep(1200);
 await remote('set_input_mode', { mode: 'hand' });
 await sleep(800);
 await pinch('world-next');
-// Cars and Adventure has three stories: the arrows go round them and stay in the world.
-for (let i = 0; i < 3; i++) await pinch('story-next');
+// Cars and Adventure has three stories, The Little Car's Long Way Home first (its own creatures lead,
+// Nov 17): the arrows go round them and stay in the world; one past the round is the Moon Buggy.
+for (let i = 0; i < 4; i++) await pinch('story-next');
 await pinch('story-start');
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId')?.startsWith('buggy-'), null, { timeout: 30000 }).catch(() => undefined);
 const presses = await page.evaluate(() => __sp.presses());

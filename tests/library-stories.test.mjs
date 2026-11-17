@@ -95,3 +95,14 @@ test('no library line has a word the narrator would spell out letter by letter',
     }
   }
 });
+
+test('each story world opens with a story of its own creatures (the shark, the car, the T. rex, the rocket)', () => {
+  // Nov 17: a world's first story should show what that world is about.
+  const leads = { ocean: 'shark', adventure: 'car', dinosaurs: 'trex', space: 'rocket' };
+  for (const [world, creature] of Object.entries(leads)) {
+    const first = library.find((s) => s.world === world);
+    const asks = read(first.script).beats.filter((b) => b.type === 'request').map((b) => b.shape);
+    assert.ok(asks.includes(creature), `${world} opens with ${first.id}, which asks for ${asks.join(', ')}`);
+    assert.ok(asks.some((s) => WORLD_CREATURES[world]?.includes(s)), `${world}: ${first.id}`);
+  }
+});
