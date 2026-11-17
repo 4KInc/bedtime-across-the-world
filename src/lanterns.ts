@@ -64,6 +64,9 @@ interface Lantern {
   phase: number;
 }
 
+/** How far out a lantern's soft glow is still seen, as a share of its radius (the texture fades to nothing at the edge). */
+const GLOW_EDGE = 0.8;
+
 /** A soft round glow drawn in colour (it is added as light: see fireflies.ts). */
 function glowTexture(): CanvasTexture {
   const c = document.createElement('canvas');
@@ -158,7 +161,9 @@ export class LanternSystem extends createSystem({
           .addScaledVector(this.along.subVectors(this.lamp, this.book).setY(0).normalize(), slot.along)
           .addScaledVector(this.toWall, slot.toWall);
       }
-      this.target.y = deskY + size * 0.5;
+      // On the viewer's shelf the glow is all above the plank (Nov 17: the shelf cut its lower part off):
+      // the lantern floats a little, its glow's visible edge (GLOW_EDGE of its radius) just clear of the top.
+      this.target.y = deskY + (onShelf ? Math.max(size * 0.5, size * 2.4 * glow * 0.5 * GLOW_EDGE) : size * 0.5);
       const g = l.group;
       if (l.t < HOP) {
         hopping++;
