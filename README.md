@@ -26,24 +26,26 @@ in a real room, with hand tracking only. Every headset session ran with
 privacy-safe diagnostics (`?diag`), so each problem was found in the numbers,
 fixed, and checked again on the headset.
 
+**Tested on** Meta Quest 3 · Meta Quest 3S · iPad (Safari and Chrome) · a computer · an iPhone.
+
 | On Meta Quest 3 or Quest 3S (Quest Browser) | |
 | --- | --- |
 | Play it | https://bedtime-across-the-world-1031148889398.us-central1.run.app |
 | Play it with live diagnostics on screen | https://bedtime-across-the-world-1031148889398.us-central1.run.app/?diag |
 
-**Meets the 60 fps minimum on both headsets.** Every session held the requested
-72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.7 to 15.5 ms (under
-the 16.7 ms that 60 fps allows), across 15 sessions and 1,754 five-second
-windows of the app running. One window was under 60 fps: the first five seconds
-of one session (47 fps), as it entered XR and the room loaded, before the story
-began. The 37 windows while the headset itself slept, woke or showed its system
-menu are counted apart; the lowest of those (47 fps) was a Quest 3 waking after
-three hours asleep and finding the room again.
+**Meets the 60 fps minimum on both headsets: 72 Hz held in all 15 sessions.**
+Median 71.5 to 72 fps · frame time (95th percentile) 14.7 to 15.5 ms, where 60 fps
+allows 16.7 · **1 of 1,754** five-second windows under 60 fps: the first five
+seconds of one session, entering XR (47 fps). The 37 windows while the headset
+itself slept, woke or showed its menu are counted apart.
 
 **The device sessions (the evidence).** Each `?diag` session has an anonymous
 id; its raw data is in [`docs/diag/`](docs/diag) (frame times, hand tracking,
 room detection, story beats; never audio, video, names or codes). Check any
 number here with `node scripts/diag/summarize.mjs docs/diag`.
+
+<details>
+<summary><b>All 15 headset sessions</b>: what was played in each, its frame rate and its data</summary>
 
 | Session | Headset | Started (UTC) | In the headset | What was played | fps (median, lowest 5 s) | Frame p95 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -63,7 +65,23 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | [`4zp7d8t7yg`](docs/diag/2026-11-17/4zp7d8t7yg.jsonl) | Quest 3 | Nov 17, 00:34 | 19.3 min | Every story-world creature woken with real hands: rocket, alien, asteroid, shark, octopus, whale, car, aeroplane, digger, T. rex and pterodactyl, across six stories and a dream; two recordings saved and sent | 71.6, 66.8 | 15.0 ms |
 | [`ufckcgf798`](docs/diag/2026-11-17/ufckcgf798.jsonl) | Quest 3 | Nov 17, 06:31 | 16.6 min | A first launch on the new address (Counting Stars: the bird 32 s after Enter XR); The Shy Little Shark, every shape in 2 to 7 s and the whale carried to the lighthouse in under a second; The Sleepy T. rex; a dreamed story with four creatures; The Little Car's Long Way Home, recorded with the voice and sent | 71.6, 67.2 | 14.9 ms |
 
-**What real hands and real rooms taught us** (things an emulator cannot show):
+</details>
+
+**What real hands and real rooms taught us**: found on the headsets, fixed, tried again.
+
+| On a real Quest | Before | After |
+| --- | --- | --- |
+| The opening bird (people hook their thumbs and relax their fingers) | 15 min | **6 s** |
+| Natural hand positions that cast a shadow (modelled) | 2% | **80%**: the lamp moved behind you |
+| "Open your hands" (people open them flat) | 75 s | **any open hand counts** |
+| Carrying the whale to the lighthouse | up to 45 s | **0.8 s** |
+| A shape still missing after a minute | given up | **help at 15, 30 and 45 s** |
+| The stage in a room with ten walls | a paper screen | **on the real wall**, and back on the same spot next launch |
+| A parent reading the lines aloud | cut off by the next caption | **each line waits for the reader** |
+| The car, in the lamp's orange light | could not be seen | **red**, and every colour tested against the light |
+
+<details>
+<summary><b>Everything else the headsets taught us</b></summary>
 
 | On the headset | What changed |
 | --- | --- |
@@ -95,6 +113,8 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | A parent reading the lines aloud was cut off mid-sentence: the next caption came on reading time alone, and the recording kept the cut | Recording with your voice, each line waits until you pause |
 | A dreamed story began at once, with no moment to press Record | It waits on its title: **Tell it**, or **Record and tell it** |
 | On an iPad a creature's voice silenced the storyteller's recorded voice, and full screen while joining in turned the camera off | Creature voices on the family viewer no longer stop the recorded voice; the camera carries on through full screen |
+
+</details>
 
 The room side works on real Room Setup data: the stage finds a labelled wall
 (or falls back to a floating paper screen) and the desk props stand on the
@@ -146,6 +166,25 @@ the story helps: after 15 and 30 seconds it is more forgiving, and after 45 any
 hand held still in front of you will do.
 
 ## What it does
+
+```mermaid
+flowchart LR
+  A["Parent, in a Quest<br/>tells a story with their hands"] -->|"Record & Send<br/>(a family code)"| B["Child, on a phone or tablet<br/>watches it in the parent's voice<br/>and joins in with their hands"]
+  B -->|"a goodnight back<br/>and tomorrow's wish"| C["Back on the parent's wall<br/>their goodnight plays;<br/>Mo dreams the story they asked for"]
+  C -->|"the next night"| A
+```
+
+| In the headset: the storyteller | On a phone or tablet: the family |
+| --- | --- |
+| **Shadow puppets on your real wall**: make a shape, it comes alive | **Watch** the story in the storyteller's own voice |
+| **17 hand shapes, 20 creatures**, read as people really make them | **Join in**: the story waits for the child's hands (camera) |
+| **19 stories** in five worlds, and stories **Mo dreams** for you | **Send a goodnight back**: a shadow creature, a drawing, Mo's colours |
+| **Record & Send**: a private family code, no accounts | **Ask for tomorrow's story**: say it, type it, or pick pictures |
+| **Go live**: tell it together, in real time, taking turns | **Night light**: Mo asleep under the stars as they drift off |
+| **Hands only**, seated; Look to press and Voice commands for no hands | Phone, tablet or computer, in the browser: nothing to install |
+
+<details>
+<summary><b>Every feature, in detail</b></summary>
 
 **In the headset (the storyteller)**
 - A stage on your real wall, found from the room's detected planes (a floating
@@ -292,6 +331,8 @@ hand held still in front of you will do.
   fade, then the screen goes dark and the phone may sleep (it is kept awake
   until then). A tap only shows a Close button, so a sleepy hand does not end
   it.
+
+</details>
 
 ## How Bedtime Across the World uses AI
 
@@ -481,11 +522,25 @@ npm test           # typecheck, unit tests (every story: content checks, scenery
 `iwsdk.config.json` is the project authority (scene, assets, XR features);
 systems are registered in `src/index.ts`. See `AGENTS.md` for IWSDK conventions.
 
-### Simulations (no headset, no second person)
+### Device testing
 
-Everything family-facing was tested without a Quest or a second person, using
-headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
-(files, never real devices). With the dev server running:
+Open the app with `?diag` for an overlay under the stage (frame times, quality
+level, hands and recognition, room detection) and diagnostics sent to the
+server: numbers and short identifiers only, never audio, video or names. Without
+`?diag` none of it loads. The browser cannot tell a Quest 3 from a 3S, so test
+links add `&device=q3` or `&device=q3s`. Each session records the settings, every
+pause and why, what voice commands heard (counts only) and, for each wall in
+the room, why the stage did or did not use it. After a session,
+`scripts/diag/pull.sh` fetches and summarizes it. Builds for headset sessions
+deploy beside the public one with
+their own URL; the checklist is [docs/DEVICE-TEST.md](docs/DEVICE-TEST.md).
+
+### Automated checks
+
+<details>
+<summary><b>72 browser simulations</b> (no headset, no second person)</summary>
+
+Alongside the device testing, 72 browser simulations check each fix without a headset or a second person: headless browsers, the IWSDK emulator, and Chrome's fake camera and microphone (files, never real devices). Most fixes since Nov 16 came with one, checked to fail on the code before the fix. With the dev server running:
 
 | Script | What it proves |
 | --- | --- |
@@ -526,27 +581,17 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 Peak load measured through a whole story at full quality: about 95 draw calls
 and 38k triangles, with a budget enforced by the playtest. On the headsets, every
 `?diag` session on Quest 3 and Quest 3S held the requested 72 Hz (median 71.5 to
-72 fps; one 5-second window in 1,555 under 60 fps, the first of a session as it
+72 fps; one 5-second window in 1,754 under 60 fps, the first of a session as it
 entered XR).
 
-### Device testing
-
-Open the app with `?diag` for an overlay under the stage (frame times, quality
-level, hands and recognition, room detection) and diagnostics sent to the
-server: numbers and short identifiers only, never audio, video or names. Without
-`?diag` none of it loads. The browser cannot tell a Quest 3 from a 3S, so test
-links add `&device=q3` or `&device=q3s`. Each session records the settings, every
-pause and why, what voice commands heard (counts only) and, for each wall in
-the room, why the stage did or did not use it. After a session,
-`scripts/diag/pull.sh` fetches and summarizes it. Builds for headset sessions
-deploy beside the public one with
-their own URL; the checklist is [docs/DEVICE-TEST.md](docs/DEVICE-TEST.md).
+</details>
 
 ## Status
 
 Complete and deployed, and hardened for the competition: diagnostics,
 performance, cold start (about 560 KB to first render), recognition, untested
 rooms, the first five minutes, and compliance with the rules. Tested in the IWSDK
-Quest emulator, in simulation, and on Meta Quest 3 and Quest 3S (14 `?diag`
-sessions, November 14 to 17, 2026), with recognition, the lamp, the stage on the
+Quest emulator, in simulation, on Meta Quest 3 and Quest 3S (15 `?diag`
+sessions, November 14 to 17, 2026), and for the family side on an iPad, a
+computer and an iPhone, with recognition, the lamp, the stage on the
 wall, narration, sound and voice tuned from those sessions.
