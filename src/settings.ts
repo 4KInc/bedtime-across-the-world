@@ -90,11 +90,24 @@ const MOTH_SCRIPT = 'story/the-moth.story.json';
 /** "Dream a new one": what the app asks Mo for (server/dream.ts accepts exactly these). */
 const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky', 'space', 'road', 'dinosaurs'] as const;
 /** The story worlds' creatures the chooser offers in their own places (a second row of shapes; server/dream.ts). */
-const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
+const WORLD_PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
   sea: ['shark', 'octopus', 'whale'],
   space: ['rocket', 'alien', 'asteroid'],
   road: ['car', 'plane', 'digger'],
   dinosaurs: ['trex', 'pterodactyl'],
+};
+/**
+ * Every place has a second row: the other places show the creatures that live
+ * there (Quest 3, Nov 17: the chooser opens on a random place, and five of the
+ * nine had no second row, so the new creatures seemed missing).
+ */
+const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
+  ...WORLD_PLACE_CREATURES,
+  forest: ['deer', 'snail'],
+  meadow: ['snail', 'deer'],
+  river: ['swan', 'crocodile'],
+  rain: ['snail', 'swan'],
+  sky: ['swan'],
 };
 const WORLD_BUTTONS = ['dream-world-1', 'dream-world-2', 'dream-world-3'] as const;
 /** Mo's suggestions for the child, one per row. */
@@ -113,7 +126,7 @@ const shapeList = (shapes: readonly string[]): string => {
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail', ...Object.values(PLACE_CREATURES).flat()]);
 /** Shapes to start from, or top up with, in a place: its own creatures where it has them (and the cup). */
-const startingShapes = (theme: string): readonly string[] => (PLACE_CREATURES[theme] ? [...PLACE_CREATURES[theme], 'cup'] : DREAM_SHAPES);
+const startingShapes = (theme: string): readonly string[] => (WORLD_PLACE_CREATURES[theme] ? [...WORLD_PLACE_CREATURES[theme], 'cup'] : DREAM_SHAPES);
 
 /** Buttons with their own look (the rest are options and toggles). */
 const REPLAY_BUTTONS = new Set(['replay-button']);
@@ -463,7 +476,7 @@ export class SettingsSystem extends createSystem({
   }
 
   private refreshDreamChooser(): void {
-    dreamRuntime.chooser = { open: this.choosing, theme: this.dreamTheme, shapes: [...this.dreamShapes] };
+    dreamRuntime.chooser = { open: this.choosing, theme: this.dreamTheme, shapes: [...this.dreamShapes], row: [...(PLACE_CREATURES[this.dreamTheme] ?? [])] };
     const p = palette();
     for (const t of DREAM_THEMES) this.buttons.get(`dream-theme-${t}`)?.setProperties(t === this.dreamTheme ? p.selected : p.unselected);
     for (const sh of DREAM_SHAPES) this.buttons.get(`dream-shape-${sh}`)?.setProperties(this.dreamShapes.includes(sh) ? p.selected : p.unselected);
@@ -669,7 +682,8 @@ export class SettingsSystem extends createSystem({
       on(`dream-theme-${t}`, () => {
         // Another place's own creatures are not on show here any more: they come off.
         const others = Object.entries(PLACE_CREATURES).filter(([place]) => place !== t).flatMap(([, shapes]) => shapes);
-        this.dreamShapes = this.dreamShapes.filter((sh) => !others.includes(sh));
+        const here = PLACE_CREATURES[t] ?? [];
+        this.dreamShapes = this.dreamShapes.filter((sh) => here.includes(sh) || !others.includes(sh));
         this.dreamTheme = t;
         this.refreshDreamChooser();
       });
@@ -807,7 +821,7 @@ export const dreamRuntime = {
   /** "Say your idea": 'listening' while the microphone is on, 'understanding' while the words are worked out, else ''; and the last words heard. */
   wish: { state: '' as '' | 'listening' | 'understanding', label: 'Say your idea', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
-  chooser: { open: false, theme: '', shapes: [] as string[] },
+  chooser: { open: false, theme: '', shapes: [] as string[], row: [] as string[] },
   /** A child's request and Mo's suggestions as shown on the panel, and the status line about them. */
   shown: { status: '', ask: '', askButton: '', ideasLabel: '', ideas: [] as string[] },
   title: '',
