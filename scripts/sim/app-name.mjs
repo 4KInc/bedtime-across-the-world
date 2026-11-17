@@ -1,5 +1,5 @@
-// The app is called Bedtime Across the World (Nov 17: another entry in the
-// competition is also called Shadowplay). Everywhere a person reads the name:
+// The app is called Bedtime Across the World (renamed Nov 17). Everywhere a
+// person reads the name:
 //   1. the tab title, the loading screen and the first caption on the start page;
 //   2. the install name and the short name under the icon;
 //   3. the family viewer, including the camera note a grown-up reads before Join in;
