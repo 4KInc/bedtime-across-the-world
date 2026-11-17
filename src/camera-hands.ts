@@ -34,9 +34,55 @@ export class CameraHandsSystem extends createSystem({
   private joints = { left: new Float32Array(JOINT_COUNT * 3), right: new Float32Array(JOINT_COUNT * 3) };
   private anchor = new Vector3();
   private wrist = new Vector3();
+  private reopening = false;
 
   init(): void {
     this.cleanupFuncs.push(() => this.shutdown());
+    // The camera keeps going through full screen and back (Nov 17: on an iPad the Full screen button
+    // stopped it): its preview is played again if the browser paused it, and the camera is opened
+    // again if the browser ended it.
+    const keep = () => this.keepCameraGoing();
+    for (const type of ['fullscreenchange', 'webkitfullscreenchange', 'visibilitychange'] as const) document.addEventListener(type, keep);
+    this.cleanupFuncs.push(() => {
+      for (const type of ['fullscreenchange', 'webkitfullscreenchange', 'visibilitychange'] as const) document.removeEventListener(type, keep);
+    });
+  }
+
+  private keepCameraGoing(): void {
+    const video = this.video;
+    if (!video || !this.stream || document.visibilityState === 'hidden') return;
+    const live = this.stream.getVideoTracks().some((t) => t.readyState === 'live');
+    if (!live) {
+      void this.reopenCamera();
+      return;
+    }
+    if (video.paused) void video.play().catch(() => undefined);
+  }
+
+  /** The browser ended the camera: open it again (already allowed) into the same preview, the hand model kept. */
+  private async reopenCamera(): Promise<void> {
+    if (this.reopening || !this.video) return;
+    this.reopening = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+      if (!this.video) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      this.stream?.getTracks().forEach((t) => t.stop());
+      this.stream = stream;
+      this.watchTracks(stream);
+      this.video.srcObject = stream;
+      await this.video.play().catch(() => undefined);
+    } catch {
+      // Not allowed any more: the camera stays off, as before.
+    } finally {
+      this.reopening = false;
+    }
+  }
+
+  private watchTracks(stream: MediaStream): void {
+    for (const track of stream.getVideoTracks()) track.addEventListener('ended', () => this.keepCameraGoing());
   }
 
   update(): void {
@@ -122,7 +168,12 @@ export class CameraHandsSystem extends createSystem({
         transform: 'scaleX(-1)', borderRadius: '12px', border: '3px solid #e0a24a',
       });
       document.body.appendChild(video);
-      await video.play();
+      // Paused by the browser (entering full screen on an iPad): played again.
+      video.addEventListener('pause', () => window.setTimeout(() => this.keepCameraGoing(), 150));
+      this.watchTracks(this.stream);
+      // Interrupted (paused while starting: full screen pressed at once, on an iPad) is not a failure:
+      // it was taken for one, and the camera turned off for good. It is played again above.
+      await video.play().catch(() => undefined);
       // The model's first reading sets up its GPU work and can hold the page for
       // seconds: do it now, as the camera comes on, not mid-story at the child's first shape.
       try {
