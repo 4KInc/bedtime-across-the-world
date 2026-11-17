@@ -49,12 +49,12 @@ const lampY = await page.evaluate(() => __sp.view().deskY);
 const fromBook = Math.hypot(landed.last[0] - book[0], landed.last[2] - book[2]);
 check('a creature let go hops off the wall and lands on the desk beside the Journal', hopped && landed.onDesk.length === 1 && Math.abs(landed.last[1] - (lampY + 0.07)) < 0.02 && fromBook < 0.4, { mid, landed, lampY, fromBook: +fromBook.toFixed(3) });
 
-// The rest of the story: they stay, never more than three.
+// The rest of the story: they stay, never more than four.
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId') === 'stars-end', null, { timeout: 360000, polling: 250 });
 await page.evaluate(() => __sp.set('DemoDirector', 'playing', false));
 await sleep(2500);
 const end = await lan();
-check('they stay on the desk to the end (at most three)', end.onDesk.length >= 1 && end.onDesk.length <= 3 && new Set(end.onDesk).size === end.onDesk.length, end);
+check('they stay on the desk to the end (at most four)', end.onDesk.length >= 1 && end.onDesk.length <= 4 && new Set(end.onDesk).size === end.onDesk.length, end);
 // Side by side, never touching (Quest 3, Nov 15: they overlapped).
 check('lanterns on the desk never touch (centres at least 15 cm apart)', end.onDesk.length >= 2 && end.gap >= 0.15, { gap: end.gap, onDesk: end.onDesk });
 

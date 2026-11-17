@@ -29,12 +29,15 @@ const CREATURES = new Set(['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'sw
  * Places on the desk: a gentle arc in front of the Shadow Journal and the lamp's
  * switch, side by side (m from their midpoint, along the desk) and toward the
  * wall (m), far enough apart that lanterns never touch (Quest 3, Nov 15: three
- * places 8 cm apart for 14 cm lanterns overlapped).
+ * places 8 cm apart for 14 cm lanterns overlapped). Four, one for every creature
+ * a story can have (Quest 3, Nov 17: a dreamed story's fourth creature pushed the
+ * first off a three-place desk). The family viewer's shelf has as many (shelf.ts).
  */
 const SLOTS = [
-  { along: -0.19, toWall: 0.17 },
-  { along: 0, toWall: 0.22 },
-  { along: 0.19, toWall: 0.17 },
+  { along: -0.24, toWall: 0.17 },
+  { along: -0.08, toWall: 0.22 },
+  { along: 0.08, toWall: 0.22 },
+  { along: 0.24, toWall: 0.17 },
 ] as const;
 /** A lantern creature's size on the desk (metres, like the wall puppets' scale). */
 const SIZE = 0.12;

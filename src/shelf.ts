@@ -16,8 +16,9 @@ const GAP = 0.015;
  */
 export const SHELF = {
   jar: -0.52,
-  lanterns: [-0.31, -0.1, 0.11],
-  mo: 0.3,
+  /** One place for each place on the desk (lanterns.ts SLOTS: four). */
+  lanterns: [-0.33, -0.15, 0.03, 0.21],
+  mo: 0.36,
   /** A lantern creature's size on the shelf (m), as on a real desk. */
   size: 0.12,
   /** Glows on the shelf are smaller than in a room, so neighbours do not run together. */
