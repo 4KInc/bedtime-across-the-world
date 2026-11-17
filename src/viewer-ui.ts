@@ -2,6 +2,7 @@ import { createSystem, Entity } from '@iwsdk/core';
 import { openCredits } from './credits.js';
 import { listRecordings, loadRecording } from './journal-store.js';
 import type { Performance } from './performance/format.js';
+import { recordingName, storyNames } from './story-names.js';
 import { fetchStory } from './performance/sharing.js';
 import { LiveSession, PerformancePlayer, PerformanceRecorder, ShapeRecognizer, WebcamHands } from './shadowplay-components.js';
 import { ReplySheet } from './viewer-reply.js';
@@ -283,7 +284,8 @@ export class ViewerUISystem extends createSystem({
     try {
       const perf = await fetchStory(code);
       this.highlight = perf.id;
-      if (this.note) this.note.textContent = `"${perf.title}" is here. Tap it to watch.`;
+      // Called by the story told, not the recording's own title (usually "A bedtime story", Nov 17).
+      if (this.note) this.note.textContent = `"${recordingName(perf, await storyNames())}" is here. Tap it to watch.`;
       await this.refreshList();
     } catch (error) {
       if (this.note) this.note.textContent = (error as Error).message;
@@ -297,6 +299,7 @@ export class ViewerUISystem extends createSystem({
     const recordings = (await listRecordings<Performance>()).filter((r) => !r.replyTo).sort(
       (a, b) => Number(b.id === this.highlight) - Number(a.id === this.highlight) || b.createdAt - a.createdAt,
     );
+    const names = await storyNames();
     this.list.replaceChildren();
     if (recordings.length === 0) {
       const empty = document.createElement('p');
@@ -310,12 +313,13 @@ export class ViewerUISystem extends createSystem({
       card.className = 'sp-card';
       const minutes = Math.max(1, Math.round(r.durationMs / 60000));
       card.innerHTML = `<b></b><span></span><br><small></small>`;
-      card.querySelector('b')!.textContent = r.title;
+      const title = recordingName(r, names);
+      card.querySelector('b')!.textContent = title;
       card.querySelector('span')!.textContent = r.performer ? `from ${r.performer}` : '';
       card.querySelector('small')!.textContent = r.sample
         ? `${minutes} min · Sample story`
         : `${minutes} min · ${new Date(r.createdAt).toLocaleDateString()}`;
-      card.setAttribute('aria-label', `Watch ${r.title}${r.performer ? ` from ${r.performer}` : ''}`);
+      card.setAttribute('aria-label', `Watch ${title}${r.performer ? ` from ${r.performer}` : ''}`);
       if (r.id === this.highlight) card.classList.add('new');
       card.addEventListener('click', () => this.watch(r.id));
       this.list.appendChild(card);
