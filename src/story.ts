@@ -20,7 +20,7 @@ import {
 } from './shadowplay-components.js';
 import { loadStoryScript, readingSeconds, StoryBeat, StoryScript, storyRuntime } from './story-script.js';
 import { soundLock } from './sfx.js';
-import { accessRuntime, handRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
+import { accessRuntime, handRuntime, readerRuntime, stageRuntime, trackingRuntime } from './stage-runtime.js';
 import { DropoutWatch } from './tracking-watch.js';
 import { viewerMode } from './viewer-mode.js';
 import { addWorldPuppet, WORLD_CREATURE_IDS } from './world-puppets.js';
@@ -56,6 +56,8 @@ const VIEWER_CAPTION = 'A bedtime story is waiting. Pick one below to watch.';
 const HANDS_CAPTION = 'This story is told with your hands. Put your controllers down and let the headset see your hands.';
 /** Grace period before the hands-first guard pauses (controllers being set down). */
 const CONTROLLER_GRACE_SECONDS = 1;
+/** A parent reading aloud has finished a line once they have been quiet this long (ms). */
+const READER_PAUSE_MS = 800;
 /** The first story; progress saved before the library existed belongs to it. */
 const DEFAULT_SCRIPT = 'story/the-moth.story.json';
 /**
@@ -749,6 +751,12 @@ export class StorySystem extends createSystem({
   private lineFinished(story: Entity, beatId: string, t: number, minSeconds: number): boolean {
     if (t < minSeconds) return false;
     if (t >= minSeconds * 3 + 5) return true;
+    // Recording with their voice, the parent reads the line: it ends once they pause, not mid-sentence (Nov 17).
+    if (readerRuntime.listening) {
+      const reading = performance.now() - readerRuntime.lastSpokeAt < READER_PAUSE_MS;
+      if (reading) readerRuntime.waits++;
+      return !reading;
+    }
     if (story.getValue(StoryState, 'voiceBeat') !== beatId) return t > minSeconds + 0.25;
     return Boolean(story.getValue(StoryState, 'voiceDone'));
   }

@@ -74,6 +74,13 @@ export const stageRuntime = {
 export const trackingRuntime = { lightHint: false };
 
 /** Accessibility modes that several systems draw differently (written by SettingsSystem). */
+/**
+ * The parent reading the story aloud while recording with their voice
+ * (performance/recorder.ts listens to the microphone's level): when they last
+ * spoke, so a spoken line waits for them to finish (story.ts lineFinished).
+ */
+export const readerRuntime = { listening: false, lastSpokeAt: 0, level: 0, floor: 0, waits: 0 };
+
 export const accessRuntime = {
   highContrast: false,
   /** Look to press: head-gaze dwell presses buttons and stands in for shapes. */
