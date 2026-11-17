@@ -36,10 +36,18 @@ export const recordingRuntime = {
   voice: false,
   script: '',
   error: '',
+  /** An upload is running: Send is ignored until it ends (Nov 17: a second press sent the story twice, with two codes). */
+  sending: false,
+  /** How long the last send took, from the press to the family code, in ms; and how big it was. */
+  sendMs: 0,
+  sendBytes: 0,
 };
 
+/** The recorded voice: speech quality, as the wish listener uses (the browser default was about 4x bigger to send). */
+const VOICE_BITS_PER_SECOND = 48000;
+
 /** For tests: the Journal's recordings row (family-controls.ts): how many, which is chosen, and what it shows. */
-export const recordingsRuntime = { count: 0, index: -1, chosen: '', title: '', info: '', playing: '' };
+export const recordingsRuntime = { count: 0, index: -1, chosen: '', title: '', info: '', playing: '', send: '' };
 /**
  * Records a performance on this stage: both hands at 30 Hz in stage-relative
  * coordinates, the story tap's events (beats, creatures waking and
@@ -116,7 +124,11 @@ export class PerformanceRecorderSystem extends createSystem({
         return;
       }
       this.chunks = [];
-      this.media = new MediaRecorder(this.mic);
+      const type = 'audio/webm;codecs=opus';
+      this.media = new MediaRecorder(this.mic, {
+        ...(MediaRecorder.isTypeSupported?.(type) ? { mimeType: type } : {}),
+        audioBitsPerSecond: VOICE_BITS_PER_SECOND,
+      });
       this.media.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
       this.media.start(1000);
     } catch (error) {
@@ -194,12 +206,18 @@ export class PerformanceRecorderSystem extends createSystem({
   /** Send the chosen recording (the last one made, or one picked in the Journal) to the family: upload it and show the family code. */
   private async share(rec: Entity): Promise<void> {
     this.sharing = true;
+    recordingRuntime.sending = true;
+    const began = performance.now();
     rec.setValue(PerformanceRecorder, 'shareRequested', false);
     try {
       const perf = await loadRecording<Performance>(rec.getValue(PerformanceRecorder, 'lastId') ?? '');
       if (!perf) throw new Error('Record a story first.');
-      rec.setValue(PerformanceRecorder, 'status', 'Sending your story...');
-      const { code } = await uploadStory(perf);
+      // A long story is a few megabytes with a voice: say so, so the wait does not look stuck.
+      const long = perf.durationMs > 60000;
+      rec.setValue(PerformanceRecorder, 'status', long ? 'Sending your story... a long one can take a minute.' : 'Sending your story...');
+      const { code, bytes } = await uploadStory(perf);
+      recordingRuntime.sendMs = Math.round(performance.now() - began);
+      recordingRuntime.sendBytes = bytes;
       // Remember the code: goodnights sent back are found through it.
       await saveRecording({ ...perf, shareCode: code });
       rec.setValue(PerformanceRecorder, 'shareCode', code);
@@ -212,6 +230,9 @@ export class PerformanceRecorderSystem extends createSystem({
       rec.setValue(PerformanceRecorder, 'status', `Could not send: ${(error as Error).message}`);
     } finally {
       this.sharing = false;
+      recordingRuntime.sending = false;
+      // A press while it was sending does not send it again.
+      rec.setValue(PerformanceRecorder, 'shareRequested', false);
     }
   }
 

@@ -281,6 +281,7 @@ export class DiagSystem extends createSystem({
         this.event({
           e: 'rec', what, started: r.started, saved: r.saved, sent: r.sent, failed: r.saveFailed + r.sendFailed,
           ...(what === 'saved' ? { seconds: r.seconds, frames: r.frames, events: r.events, voice: r.voice, script: r.script } : {}),
+          ...(what === 'sent' ? { ms: r.sendMs, kb: Math.round(r.sendBytes / 1024) } : {}),
           ...(what.endsWith('failed') ? { message: r.error } : {}),
         });
       }
