@@ -3,6 +3,7 @@ import { naturalHandPoint } from './lamp-behind.js';
 import type { HandLandmarker } from '@mediapipe/tasks-vision';
 import { WebcamHands } from './shadowplay-components.js';
 import { handOverride, JOINT_COUNT, secondHands, stageRuntime } from './stage-runtime.js';
+import { reach } from './camera-reach.js';
 import { Landmark, landmarksToJoints } from './webcam-landmarks.js';
 
 /** Model and runtime are served from our own origin (no third-party CDN at runtime). */
@@ -85,8 +86,8 @@ export class CameraHandsSystem extends createSystem({
     const depth = Math.max(-0.15, Math.min(0.15, -(size - NEUTRAL_SIZE) * 0.8));
     this.wrist
       .copy(this.anchor)
-      .addScaledVector(r, -(image[0].x - 0.5) * 0.35)
-      .addScaledVector(u, -(image[0].y - 0.5) * 0.35)
+      .addScaledVector(r, -reach(image[0].x))
+      .addScaledVector(u, -reach(image[0].y))
       .addScaledVector(n, depth);
     landmarksToJoints(world, this.wrist, r, u, n, this.joints[side]);
   }
@@ -122,6 +123,13 @@ export class CameraHandsSystem extends createSystem({
       });
       document.body.appendChild(video);
       await video.play();
+      // The model's first reading sets up its GPU work and can hold the page for
+      // seconds: do it now, as the camera comes on, not mid-story at the child's first shape.
+      try {
+        this.landmarker.detectForVideo(video, performance.now());
+      } catch {
+        // A first frame not ready yet: the first real reading does the setup instead.
+      }
       this.video = video;
       cam.setValue(WebcamHands, 'status', 'Camera hands on.');
     } catch (error) {

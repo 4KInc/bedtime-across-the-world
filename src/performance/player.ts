@@ -2,7 +2,7 @@ import { createSystem, Entity } from '@iwsdk/core';
 import { family } from '../family.js';
 import { loadRecording } from '../journal-store.js';
 import { checkSharedStory } from '../story-checks.js';
-import { isStoryScript, loadStoryScript, shareScript, StoryBeat, StoryScript, storyRuntime } from '../story-script.js';
+import { isStoryScript, loadStoryScript, readingSeconds, shareScript, StoryBeat, StoryScript, storyRuntime } from '../story-script.js';
 import {
   DeskLamp,
   HiddenProp,
@@ -21,6 +21,10 @@ import { decodeHands, FRAME_STRIDE, Performance, PerformanceEvent, readFrame } f
 
 /** Re-sync the voice when it drifts this far (s) from the performance clock. */
 const AUDIO_DRIFT = 0.25;
+/** Seconds the performer's voice takes to fade in or out around a join-in moment (never a hard cut). */
+const VOICE_FADE = 0.35;
+/** A little air after a line before its voice fades. */
+const LINE_TAIL_MS = 400;
 
 /**
  * Replays a recorded performance on this stage, in or out of XR: the hands
@@ -56,6 +60,19 @@ export class PerformancePlayerSystem extends createSystem({
   private beats: StoryBeat[] = [];
   /** Live join-in segment: the story beat index at which the recording takes over again. */
   private rejoinAt = -1;
+  /**
+   * Join-in voice: the performer's recorded voice is played line by line while
+   * the viewer's hands tell the story, each line fading out where it ends
+   * (audio time, seconds; -1: no end, the voice plays on).
+   */
+  private voiceEndsAt = -1;
+  /** The voice's level now and where it is heading (0 or 1). */
+  private gain = 1;
+  private gainTarget = 1;
+  /** Real time (ms) of the last fade step: fades run on the clock, not on frames (a slow device must not stretch them). */
+  private fadeAt = 0;
+  /** The live story beat whose line was last voiced during join-in. */
+  private voicedBeat = -1;
 
   init(): void {
     this.targets = applyTargets(this.queries, this.world);
@@ -70,6 +87,7 @@ export class PerformancePlayerSystem extends createSystem({
     if (!playing && this.perf) this.finish(player, 'Stopped.');
     if (!this.perf || !this.frames || !stageRuntime.ready) return;
 
+    this.updateVoice();
     if (this.rejoinAt >= 0) {
       this.updateJoinIn(player);
       return;
@@ -128,6 +146,8 @@ export class PerformancePlayerSystem extends createSystem({
       frames = decodeHands(perf.hands);
       if (frames.length < perf.frameCount * FRAME_STRIDE) throw new Error('This recording is damaged.');
       beats = perf.script ? (await loadStoryScript(perf.script).catch(() => null))?.beats ?? [] : [];
+      // A story this site does not have (an older version): the story stage would wait for it forever.
+      if (perf.script && !beats.length) perf = { ...perf, script: '' };
     } catch (error) {
       player.setValue(PerformancePlayer, 'playing', false);
       player.setValue(PerformancePlayer, 'status', (error as Error).message);
@@ -155,6 +175,7 @@ export class PerformancePlayerSystem extends createSystem({
     // Tell the story in the recording's script (it may be another story from the library).
     // A goodnight is not a story: it plays on whatever stage is here, every creature free to wake.
     if (perf.script && !perf.replyTo) story?.setValue(StoryState, 'script', perf.script);
+    if (!perf.script && !perf.replyTo) story?.setValue(StoryState, 'caption', perf.title || 'A bedtime story');
     if (perf.replyTo) {
       for (const r of this.queries.recognizers.entities) r.setValue(ShapeRecognizer, 'freeMode', true);
       story?.setValue(StoryState, 'caption', perf.title || 'A goodnight for you');
@@ -171,13 +192,14 @@ export class PerformancePlayerSystem extends createSystem({
       applyEvent(e, this.targets);
       return;
     }
-    if (this.perf?.replyTo) return;
+    // A goodnight, or a story this site does not have: no story steps (they would land in another story).
+    if (this.perf?.replyTo || !this.perf?.script) return;
     const index = Number(e.data.index);
     first(this.queries.stories.entities)?.setValue(StoryState, 'enterBeat', index);
     const type = this.beats[index]?.type;
     const player = first(this.queries.players.entities);
     if (player?.getValue(PerformancePlayer, 'joinIn') && (type === 'request' || type === 'choice')) {
-      this.startJoinIn(player, index);
+      this.startJoinIn(player, index, e.t);
     }
   }
 
@@ -187,7 +209,7 @@ export class PerformancePlayerSystem extends createSystem({
    * (camera) until it reaches the next release beat, where the recording's
    * creature bowed out; then the recording carries on from there.
    */
-  private startJoinIn(player: Entity, requestIndex: number): void {
+  private startJoinIn(player: Entity, requestIndex: number, requestMs: number): void {
     let rejoin = -1;
     for (let i = requestIndex + 1; i < this.beats.length; i++) {
       if (this.beats[i].type === 'release') {
@@ -197,7 +219,9 @@ export class PerformancePlayerSystem extends createSystem({
     }
     if (rejoin < 0) return;
     this.rejoinAt = rejoin;
-    this.audio?.pause();
+    // The performer finishes saying what to make (it is the child's instruction), then the voice fades.
+    this.voicedBeat = requestIndex;
+    this.voiceEndsAt = this.lineEnd(requestMs, requestIndex);
     handOverride.cameraAllowed = true;
     if (handOverride.source === 'playback') handOverride.left = handOverride.right = null;
     first(this.queries.stories.entities)?.setValue(StoryState, 'joinIn', true);
@@ -208,7 +232,14 @@ export class PerformancePlayerSystem extends createSystem({
   private updateJoinIn(player: Entity): void {
     const story = first(this.queries.stories.entities);
     const index = story?.getValue(StoryState, 'beatIndex') ?? -1;
-    if (index < this.rejoinAt) return;
+    if (index < this.rejoinAt) {
+      // Each line on the way (the creature wakes, flies...) in the performer's own voice.
+      if (index > this.voicedBeat) {
+        this.voicedBeat = index;
+        this.voiceLine(index);
+      }
+      return;
+    }
     // The viewer's scene is done: pick the recording up at the matching beat.
     const at = this.events.findIndex((e) => e.type === 'beat' && Number(e.data.index) >= this.rejoinAt);
     this.rejoinAt = -1;
@@ -224,9 +255,71 @@ export class PerformancePlayerSystem extends createSystem({
     this.next = at + 1;
     if (this.audio) {
       this.audio.currentTime = this.clock;
-      void this.audio.play().catch(() => undefined);
+      this.voiceEndsAt = -1;
+      this.fadeIn();
     }
     player.setValue(PerformancePlayer, 'status', 'Back to the story...');
+  }
+
+  /** Where the performer's line for a beat ends in the recording (audio seconds): its reading time, or the next beat if sooner. */
+  private lineEnd(startMs: number, index: number): number {
+    const text = lineOf(this.beats[index]);
+    let end = text ? startMs + readingSeconds(text) * 1000 + LINE_TAIL_MS : startMs;
+    for (const e of this.events) {
+      if (e.type === 'beat' && e.t > startMs) {
+        end = Math.min(end, e.t);
+        break;
+      }
+    }
+    return end / 1000;
+  }
+
+  /** Play the performer's recorded line for this story beat (none when the beat has no words). */
+  private voiceLine(index: number): void {
+    if (!this.audio || !lineOf(this.beats[index])) return;
+    let at = -1;
+    for (const e of this.events) {
+      if (e.type === 'beat' && Number(e.data.index) === index) {
+        at = e.t;
+        break;
+      }
+    }
+    if (at < 0) return;
+    this.audio.currentTime = at / 1000;
+    this.voiceEndsAt = this.lineEnd(at, index);
+    this.fadeIn();
+  }
+
+  private fadeIn(): void {
+    if (!this.audio) return;
+    this.gain = 0;
+    this.gainTarget = 1;
+    this.fadeAt = performance.now();
+    this.audio.volume = 0;
+    void this.audio.play().catch(() => undefined);
+  }
+
+  /** Fade the voice toward its target; at a line's end, fade out and stop. */
+  private updateVoice(): void {
+    const audio = this.audio;
+    if (!audio) return;
+    const now = performance.now();
+    const step = (now - this.fadeAt) / 1000 / VOICE_FADE;
+    this.fadeAt = now;
+    if (this.voiceEndsAt >= 0 && !audio.paused && audio.currentTime >= this.voiceEndsAt - VOICE_FADE) this.gainTarget = 0;
+    // Well past the line's end (a long frame): stop now rather than run into the next line.
+    if (this.gainTarget === 0 && this.voiceEndsAt >= 0 && audio.currentTime >= this.voiceEndsAt + VOICE_FADE) this.gain = 0;
+    if (this.gain === this.gainTarget) {
+      if (this.gain === 0 && !audio.paused) audio.pause();
+      return;
+    }
+    this.gain = this.gainTarget > this.gain ? Math.min(this.gainTarget, this.gain + step) : Math.max(this.gainTarget, this.gain - step);
+    // (iOS ignores volume: there the line simply stops at its end.)
+    audio.volume = this.gain;
+    if (this.gain === 0) {
+      audio.pause();
+      this.voiceEndsAt = -1;
+    }
   }
 
   private finish(player: Entity, status: string): void {
@@ -248,12 +341,20 @@ export class PerformancePlayerSystem extends createSystem({
     this.perf = null;
     this.frames = null;
     this.rejoinAt = -1;
+    this.voiceEndsAt = -1;
+    this.gain = this.gainTarget = 1;
+    this.voicedBeat = -1;
     handOverride.cameraAllowed = true;
     if (handOverride.source === 'playback') {
       handOverride.active = false;
       handOverride.left = handOverride.right = null;
     }
   }
+}
+
+/** A beat's spoken line ('' for beats without words). */
+function lineOf(beat: StoryBeat | undefined): string {
+  return beat && 'text' in beat && typeof beat.text === 'string' ? beat.text : '';
 }
 
 function first<T>(set: Iterable<T>): T | undefined {

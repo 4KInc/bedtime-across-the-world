@@ -1,7 +1,7 @@
 import { createSystem, Entity } from '@iwsdk/core';
 import { loadStoryScript, StoryBeat, storyRuntime } from '../story-script.js';
 import { listRecordings, loadRecording, saveRecording } from '../journal-store.js';
-import { FamilyInbox, LiveSession, PerformancePlayer, StoryState } from '../shadowplay-components.js';
+import { FamilyInbox, LiveSession, PerformancePlayer, ShadowJournal, StoryState } from '../shadowplay-components.js';
 import type { Performance } from './format.js';
 import { seedSamples } from './samples.js';
 import { fetchReplies } from './sharing.js';
@@ -22,6 +22,7 @@ export class FamilyInboxSystem extends createSystem({
   players: { required: [PerformancePlayer] },
   stories: { required: [StoryState] },
   sessions: { required: [LiveSession] },
+  journals: { required: [ShadowJournal] },
 }) {
   /** Beat types of the running story (for the waiting-goodnight cue). */
   private beatTypes = new Map<string, StoryBeat['type']>();
@@ -51,6 +52,8 @@ export class FamilyInboxSystem extends createSystem({
         player.setValue(PerformancePlayer, 'joinIn', false);
         player.setValue(PerformancePlayer, 'paused', false);
         player.setValue(PerformancePlayer, 'playing', true);
+        // The goodnight plays on the wall: the Journal steps aside, or its pages cover it (Quest, Nov 16).
+        for (const j of this.queries.journals.entities) j.setValue(ShadowJournal, 'open', false);
       }
     }
     this.cue(inbox);

@@ -62,6 +62,20 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   const drawn = [c[0] + cw * 0.08, c[1] + (c[3] - c[1]) * 0.25, c[2] - cw * 0.08, c[3] - (c[3] - c[1]) * 0.1];
   check(`${device}: the viewer's controls never cover the caption`, !overlap(drawn, layout.pill), { caption: drawn.map(Math.round), pill: layout.pill });
 
+  // The controls fade while the recording plays untouched (they sometimes covered the caption, Nov 16),
+  // and come back on a mouse move or a tap.
+  const pill = () => page.evaluate(() => {
+    const el = document.querySelector('.sp-viewer .sp-panel');
+    return { opacity: Number(getComputedStyle(el).opacity), clickable: getComputedStyle(el).pointerEvents !== 'none' };
+  });
+  await sleep(4500);
+  const faded = await pill();
+  await page.mouse.move(200, 200);
+  await page.mouse.move(260, 240);
+  await sleep(900);
+  const back = await pill();
+  check(`${device}: the controls fade while the story plays untouched, and come back on a touch`, faded.opacity < 0.05 && !faded.clickable && back.opacity > 0.95 && back.clickable, { faded, back });
+
   // 3: the first creature let go (the rabbit, about 42 s in) hops onto the shelf.
   const hopped = await page.waitForFunction(() => __sp.view().lanterns.onDesk.length > 0, null, { timeout: 90000, polling: 200 }).then(() => true, () => false);
   await sleep(600);
@@ -83,6 +97,16 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   check(`${device}: a story watched to the end leaves a star in the jar on the shelf`, ended && end.keepsakes.count === jarBefore + 1 && Math.abs(end.keepsakes.jar[1] - end.shelf.centre[1]) < 0.02 && end.jar && end.jar[3] <= layout.h, { before: jarBefore, after: end.keepsakes.count, jar: end.jar });
   check(`${device}: Mo comes down and sleeps on the shelf, and the lanterns are still there`, end.mo.phase === 'sleep' && end.moBox && mid(end.moBox)[1] < layout.h && !inside(mid(end.moBox), layout.pill) && end.lanterns.length >= 1, { mo: end.mo, moBox: end.moBox, lanterns: end.lanterns });
   await page.screenshot({ path: join(OUT, `${device}-end.png`) });
+  // The ending stays in view: no story list or goodnight over the shelf yet (Nov 16: they covered Mo and the jar
+  // at once); then, a few seconds later, the list of stories again.
+  const covered = () => page.evaluate(() => ({ list: !document.querySelector('.sp-list')?.hidden, goodnight: !!document.querySelector('.sp-goodnight') }));
+  // Measured from when the recording finishes playing (that is when they used to appear).
+  await page.waitForFunction(() => !__sp.get('PerformancePlayer', 'playing'), null, { timeout: 120000, polling: 100 });
+  await sleep(1500);
+  const atEnd = await covered();
+  await sleep(8000);
+  const later = await covered();
+  check(`${device}: the ending stays in view, then the stories come back`, !atEnd.list && !atEnd.goodnight && later.list, { atEnd, later });
   await page.context().close();
 }
 await browser.close();
