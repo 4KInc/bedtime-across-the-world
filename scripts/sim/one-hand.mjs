@@ -1,4 +1,4 @@
-// One-hand mode in a story: Counting Stars (the first-launch story) opens with a
+// One-hand mode in a story: Counting Stars (the first-launch story until Nov 17) opens with a
 // two-hand bird. A child holding up one open hand (the "slow" persona's first
 // 25 s) wakes it at once in one-hand mode; without one-hand mode it waits.
 //

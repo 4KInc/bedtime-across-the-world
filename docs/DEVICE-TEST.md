@@ -55,7 +55,7 @@ Run the core checks (A and B) in at least three rooms; the rest once per headset
 | A6 | Frame rate holds at 72 (panel line 1 stays cream, not red) | [x] | 72 Hz granted in all 14 sessions; median 71.5-72 fps, frame p95 14.7-15.5 ms; 1 of 1,555 windows under 60 fps (the first 5 s of 8b2ca94jd3, entering XR) |
 | A7 | Quality level after 2 minutes (`q0`..`q3`; anything above `q0` means the headset could not hold 72) | [x] | q0 throughout, all 14 sessions |
 | A7b | If the level stepped down: no visible pop or flicker when it changed, and shadows still look whole (edges not clipped) | [ ] | |
-| A9 | First launch only (it opens *Counting Stars*): time from Enter XR to the first creature (the two-hand bird) waking (summary: `first creature: N s`, target under 60 s). The ghost hand appears about 2 s after the bird is asked for | [ ] | not a first launch since the real-hands fixes; first creature 26-65 s in other sessions (see DEVICE-RESULTS.md). Emulator, first launch: bird asked at 23 s, first creature 23.5 s (quick child), 48.5 s (slow bot) |
+| A9 | First launch only (it opens *The Shy Little Shark* since Nov 17): time from Enter XR to the first creature (the shark, one flat hand) waking (summary: `first creature: N s`, target under 60 s). The ghost hand appears about 2 s after the shark is asked for | [ ] | with Counting Stars: 32 s to the bird in `ufckcgf798` (Nov 17, a first launch on the new address); the shark is still to time |
 | A10 | The first creature waking is unmistakable: chime, the lamp light swells, the bird flies Mo up ("Fly up, up, up.") | [ ] | |
 | A8 | Controllers in hand: story pauses and asks to put them down; resumes with hands | [ ] | |
 

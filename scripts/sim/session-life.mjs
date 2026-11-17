@@ -75,7 +75,7 @@ await page.evaluate(() => {
   __sp.set('DemoDirector', 'playing', true);
 });
 await page.getByRole('button', { name: /Enter XR/i }).click();
-// These checks follow The Moth (chapters to resume, the rabbit first); a first launch opens Counting Stars.
+// These checks follow The Moth (chapters to resume, the rabbit first); a first launch opens The Shy Little Shark.
 await page.waitForFunction(() => window.__sp.get('DemoDirector', 'status') !== undefined, null, { timeout: 30000 });
 await page.evaluate(() => __sp.set('StoryState', 'script', 'story/the-moth.story.json'));
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId') === 'hush', null, { timeout: 60000 });
