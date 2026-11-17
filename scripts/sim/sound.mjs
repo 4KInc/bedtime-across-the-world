@@ -49,6 +49,7 @@ const under = await sound();
 await sleep(3000);
 const later = await sound();
 check('the lullaby plays (notes keep coming), ducked under the narrator', later.lullabyNotes > under.lullabyNotes && under.lullabyNotes > 0 && under.lullabyLevel === 0.35, { under, later });
+check('in the headset, the lamp hums faintly', later.hum === true, { hum: later.hum });
 
 // The bird wakes: its voice.
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId') === 'stars-bird-carry', null, { timeout: 90000 });
