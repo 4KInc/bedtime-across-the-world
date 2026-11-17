@@ -1,3 +1,4 @@
+import { bedtimeLine, checkTz, localMinutes, usualBedtime } from './bedtime-clock.js';
 import { loadRequests, saveRequests } from './journal-store.js';
 import type { Performance } from './performance/format.js';
 import { checkAsk, type StoryAsk } from './story-checks.js';
@@ -9,7 +10,8 @@ import { checkAsk, type StoryAsk } from './story-checks.js';
  * they asked for and what they made with their hands, so Mo can suggest
  * stories this child would like (server/dream.ts suggest). All of it stays on
  * this headset; only the taste's counts and the child's own (softened) ideas
- * are sent, to ask for suggestions, never a name.
+ * are sent, to ask for suggestions, never a name. With the taste, the child's
+ * time zone and usual bedtime (bedtime-clock.ts), for the journal's clock.
  */
 
 /** A request waiting to be dreamed: who asked, and what. */
@@ -26,6 +28,9 @@ export interface ChildTaste {
   creatures: Record<string, number>;
   ideas: string[];
   updatedAt: number;
+  /** The child's offset from UTC (minutes), from their newest goodnight, and the local times (minutes after midnight) of their last goodnights. */
+  tz?: number;
+  goodnights?: number[];
 }
 
 /** A story Mo suggests for a child (server/dream.ts Suggestion). */
@@ -43,6 +48,8 @@ interface Stored {
 }
 
 const MAX_IDEAS = 5;
+/** Goodnight times kept per child, for their usual bedtime. */
+const MAX_GOODNIGHTS = 7;
 /** A request is answered within a month, or the story it came with has expired anyway. */
 const MAX_AGE_MS = 30 * 86_400_000;
 /** Shapes a goodnight shows that are not creatures a story can be about. */
@@ -126,6 +133,12 @@ export async function learnFromGoodnight(reply: Performance): Promise<void> {
     const shape = e.type === 'wake' ? e.data?.shape : undefined;
     if (typeof shape === 'string' && shape && !NOT_CREATURES.has(shape)) add(taste.creatures, shape);
   }
+  // The child's time zone, and when they say goodnight there (their usual bedtime).
+  const tz = checkTz(reply.tz);
+  if (tz !== null) {
+    taste.tz = tz;
+    taste.goodnights = [...(taste.goodnights ?? []), localMinutes(reply.createdAt || Date.now(), tz)].slice(-MAX_GOODNIGHTS);
+  }
   taste.updatedAt = Date.now();
   await save();
 }
@@ -184,6 +197,14 @@ export async function refreshSuggestions(): Promise<void> {
     requestsRuntime.thinking = false;
     requestsRuntime.version++;
   }
+}
+
+/** What time it is for the child whose goodnight is newest, and how near their bedtime ('' when no goodnight has said). */
+export function childClock(now = Date.now()): string {
+  const child = requestsRuntime.child;
+  const taste = stored.tastes[child];
+  if (!child || child === 'your family' || taste?.tz === undefined) return '';
+  return bedtimeLine(child, now, taste.tz, usualBedtime(taste.goodnights ?? []));
 }
 
 /** Whether a child has a taste to suggest from (the journal shows the suggestions' rows from the start). */

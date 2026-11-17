@@ -40,6 +40,8 @@ export interface Performance {
   drawing?: string;
   /** ...and the story the child asks for next (story-checks.ts checkAsk): their words, and/or a place and creatures. */
   ask?: { words?: string; theme?: string; shapes?: string[] };
+  /** ...and the phone's offset from UTC in minutes (bedtime-clock.ts), so the storyteller sees the child's time. Never a place. */
+  tz?: number;
   /** Bundled example (first launch), so someone alone can see what families share. */
   sample?: boolean;
   createdAt: number;

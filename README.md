@@ -211,6 +211,11 @@ hand held still in front of you will do.
   goodnights and were told, and their last few ideas) and suggests three new
   stories from it under "Mia might like": one close to what they love, one
   that mixes two of them, one gentle new thing.
+- **Mia's bedtime, across the world**: once a goodnight has come, the
+  journal's family section shows the child's time and how near their bedtime
+  is: "It's 7:10 pm for Mia. Bedtime in about 20 minutes", or "Mia is asleep.
+  Record one for tomorrow night." The usual bedtime is learned from when their
+  goodnights are sent (7:30 pm until then). Mia's sample is at UTC+1.
 - **Dream a new one** (Tonight's story): Mo dreams up a new short story for a
   place (sea, forest, meadow, river, rain, sky, or the worlds' space, road and
   dinosaur valley, with their own creatures) and two or three shapes the
@@ -263,6 +268,12 @@ hand held still in front of you will do.
   or, for a child who cannot say it yet, pick a place and up to three
   creatures in pictures. A character from a show or a scary word is left out,
   and the grown-up sees what will be sent and why.
+- **Night light**: at the end of a story (or once the goodnight is sent), the
+  phone becomes a night light: Mo asleep on the moon, "Goodnight, Mia. Love,
+  Dad", and the lullaby, softly. Over ten minutes the light and the music
+  fade, then the screen goes dark and the phone may sleep (it is kept awake
+  until then). A tap only shows a Close button, so a sleepy hand does not end
+  it.
 
 ## How Bedtime Across the World uses AI
 
@@ -332,6 +343,10 @@ are private to the family and deleted after 30 days.
   microphone only from the press until the idea is said, like Say your idea.
   The words reach the AI only if the storyteller presses Dream, to plan and
   write that story.
+- A goodnight also carries the phone's offset from UTC (for example UTC+1),
+  never a place or a time zone's name, so the storyteller sees the child's
+  time. The headset keeps it, and the local times of the last seven
+  goodnights, with the child's taste.
 - A child's taste (counts of places and creatures, their last five ideas) is
   kept on the storyteller's headset only. To suggest stories, the counts and
   ideas are sent, never a name; nothing is stored on the server.
@@ -475,7 +490,8 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
-| `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste |
+| `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste; across time zones (the viewer in India, the headset in Chicago), the journal shows the child's time |
+| `node scripts/sim/night-light.mjs` | The end of Dad's story on a phone: Night light, a tap shows only Close, the light and the lullaby fade, lights out, Close |
 | `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
 | `node scripts/sim/world-creatures.mjs`, `world-free-stage.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone; Free Stage wakes the creatures a child has met |
 | `node scripts/sim/playback-hands.mjs` | While a recording plays on the headset, your own pinches still pause it and open the Journal |

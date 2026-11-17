@@ -14,7 +14,7 @@ import { playClick } from './sfx.js';
 import { palette } from './panel-palette.js';
 import { creatureName } from './creatures.js';
 import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
-import { answerAsk, hasTaste, loadStoryRequests, planAsk, refreshSuggestions, requestsRuntime } from './story-requests.js';
+import { answerAsk, childClock, hasTaste, loadStoryRequests, planAsk, refreshSuggestions, requestsRuntime } from './story-requests.js';
 import { MAX_DREAM_SHAPES } from './voice-commands.js';
 import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
 
@@ -111,6 +111,8 @@ const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
 };
 const WORLD_BUTTONS = ['dream-world-1', 'dream-world-2', 'dream-world-3'] as const;
 /** Mo's suggestions for the child, one per row. */
+/** The child's clock is worked out again this often (it shows minutes). */
+const CLOCK_EVERY_MS = 15_000;
 const IDEA_BUTTONS = ['dream-idea-1', 'dream-idea-2', 'dream-idea-3'] as const;
 /** Where each place is, in a sentence. */
 const PLACE_WORDS: Readonly<Record<string, string>> = {
@@ -194,6 +196,9 @@ export class SettingsSystem extends createSystem({
   private pendingFor = '';
   private pendingTheme = '';
   private requestsShown = -1;
+  /** The child's clock: when it was last worked out (performance.now()), and the line shown ('\0' before the first). */
+  private clockAt = 0;
+  private clockShown = '\0';
   /** Last unlock list shown on the chapter buttons. */
   private shownUnlocks: string | null = null;
   private quat = new Quaternion();
@@ -207,6 +212,7 @@ export class SettingsSystem extends createSystem({
     if (!this.loaded) return;
     this.showDreaming();
     if (this.choosing && requestsRuntime.version !== this.requestsShown) this.refreshRequests();
+    if (performance.now() >= this.clockAt || requestsRuntime.version !== this.clockVersion) this.refreshClock();
 
     const tolerance = settings.getValue(Settings, 'tolerance') ?? ToleranceLevels.Normal;
     const hints = settings.getValue(Settings, 'hints') ?? HintModes.Delayed;
@@ -320,6 +326,20 @@ export class SettingsSystem extends createSystem({
   }
 
   /** The child's request and Mo's suggestions for them, shown at the top of the chooser when there are any. */
+  private clockVersion = -1;
+
+  /** "It's 7:10 pm for Mia. Bedtime in about 20 minutes." under For your family, once a goodnight has said her time zone. */
+  private refreshClock(): void {
+    this.clockAt = performance.now() + CLOCK_EVERY_MS;
+    this.clockVersion = requestsRuntime.version;
+    const line = childClock();
+    dreamRuntime.shown.clock = line;
+    if (line === this.clockShown || !this.panel) return;
+    this.clockShown = line;
+    this.panel?.getElementById('family-clock-row')?.setProperties({ display: line ? 'flex' : 'none' });
+    if (line) this.panel?.getElementById<UIKit.Text>('family-clock')?.setProperties({ text: line });
+  }
+
   private refreshRequests(): void {
     this.requestsShown = requestsRuntime.version;
     const p = palette();
@@ -823,7 +843,7 @@ export const dreamRuntime = {
   /** The chooser as shown (for tests and diagnostics). */
   chooser: { open: false, theme: '', shapes: [] as string[], row: [] as string[] },
   /** A child's request and Mo's suggestions as shown on the panel, and the status line about them. */
-  shown: { status: '', ask: '', askButton: '', ideasLabel: '', ideas: [] as string[] },
+  shown: { status: '', ask: '', askButton: '', ideasLabel: '', ideas: [] as string[], clock: '' },
   title: '',
   ms: 0,
   ok: 0,

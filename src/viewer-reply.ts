@@ -3,6 +3,8 @@ import { deleteRecording, loadRecording } from './journal-store.js';
 import type { Performance } from './performance/format.js';
 import { sendReply } from './performance/sharing.js';
 import { GiftPicker } from './viewer-gifts.js';
+import { deviceTz } from './bedtime-clock.js';
+import { openNightLight } from './night-light.js';
 import { PerformanceRecorder } from './shadowplay-components.js';
 
 /** A goodnight is short. */
@@ -164,12 +166,18 @@ export class ReplySheet {
     try {
       const perf = await loadRecording<Performance>(this.recordedId);
       if (!perf) throw new Error('The goodnight was not saved.');
-      // With the child's gifts, if any: Mo's colours and a drawn creature.
-      await sendReply(this.code, { ...perf, ...this.gifts?.get() });
+      // With the child's gifts, if any: Mo's colours and a drawn creature. And this
+      // phone's offset from UTC, so the storyteller sees the child's time (never a place).
+      await sendReply(this.code, { ...perf, ...this.gifts?.get(), tz: deviceTz() });
       // It was for them, not for this device's story list.
       await deleteRecording(this.recordedId);
-      this.render(`<p class="sp-title">Sent! ${escape(this.to)} will see it on their wall. Goodnight.</p>`);
-      this.closeTimer = setTimeout(() => this.close(), 3500);
+      this.render(`<p class="sp-title">Sent! ${escape(this.to)} will see it on their wall. Goodnight.</p>
+        <div class="sp-row"><button class="sp-btn on" data-act="night">Night light</button></div>`);
+      this.on('night', () => {
+        this.close();
+        openNightLight(this.from, this.to);
+      });
+      this.closeTimer = setTimeout(() => this.close(), 12000);
     } catch (error) {
       if (note) note.textContent = (error as Error).message;
     }
