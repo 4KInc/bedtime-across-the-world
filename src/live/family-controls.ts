@@ -1,7 +1,7 @@
 import { createSystem, Entity, UIKit, UIKitMLAsset } from '@iwsdk/core';
 import { listRecordings } from '../journal-store.js';
 import type { Performance } from '../performance/format.js';
-import { recordingsRuntime } from '../performance/recorder.js';
+import { recordingRuntime, recordingsRuntime } from '../performance/recorder.js';
 import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder, ShadowJournal } from '../shadowplay-components.js';
 import { playClick } from '../sfx.js';
 import { palette } from '../panel-palette.js';
@@ -156,6 +156,7 @@ export class FamilyControlsSystem extends createSystem({
       rec.setValue(PerformanceRecorder, 'recording', !rec.getValue(PerformanceRecorder, 'recording'));
     });
     on('send-button', 'send-label', () => {
+      if (recordingRuntime.sending) return;
       if (rec.getValue(PerformanceRecorder, 'lastId') && !rec.getValue(PerformanceRecorder, 'recording')) {
         rec.setValue(PerformanceRecorder, 'shareRequested', true);
       }
@@ -203,7 +204,8 @@ export class FamilyControlsSystem extends createSystem({
 
     const isLive = role !== 'off';
     this.set('record-button', recording ? `Stop recording ${clock(seconds)}` : 'Record a story', recording ? 'on' : isLive ? 'dim' : 'off');
-    this.set('send-button', 'Send to family', hasStory && !recording ? 'off' : 'dim');
+    recordingsRuntime.send = recordingRuntime.sending ? 'Sending...' : 'Send to family';
+    this.set('send-button', recordingsRuntime.send, hasStory && !recording && !recordingRuntime.sending ? 'off' : 'dim');
     this.set('inbox-button', unwatched ? `Goodnights (${unwatched})` : 'Goodnights', unwatched && !recording && !isLive ? 'on' : 'dim');
     this.showRecordings(recording || isLive);
     this.set('live-button', isLive ? 'End live story' : 'Go live', isLive ? 'on' : recording ? 'dim' : 'off');

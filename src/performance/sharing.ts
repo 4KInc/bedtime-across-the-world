@@ -35,15 +35,16 @@ export interface Shared {
   expiresAt: number;
 }
 
-export async function uploadStory(perf: Performance): Promise<Shared> {
+export async function uploadStory(perf: Performance): Promise<Shared & { bytes: number }> {
+  const wire = JSON.stringify(await toWire(perf));
   const res = await fetch(`${import.meta.env.BASE_URL}api/stories`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(await toWire(perf)),
+    body: wire,
   });
   const body = (await res.json()) as Shared & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `Upload failed (${res.status})`);
-  return { code: body.code, expiresAt: body.expiresAt };
+  return { code: body.code, expiresAt: body.expiresAt, bytes: wire.length };
 }
 
 /** Fetch a story by family code and keep it on this device. */
