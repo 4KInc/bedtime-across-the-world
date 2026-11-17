@@ -18,7 +18,7 @@ import {
 import { handOverride, JOINT_COUNT, stageRuntime } from '../stage-runtime.js';
 import { applyEvent, ApplyTargets, applyTargets } from './apply.js';
 import { decodeHands, FRAME_STRIDE, Performance, PerformanceEvent, readFrame } from './format.js';
-import { voiceGain } from '../sfx.js';
+import { audioRunning, voiceGain } from '../sfx.js';
 
 /** Re-sync the voice when it drifts this far (s) from the performance clock. */
 const AUDIO_DRIFT = 0.25;
@@ -99,6 +99,8 @@ export class PerformancePlayerSystem extends createSystem({
    * again without a tap (iPad, Nov 17: Join in lost the voice after the first shape).
    */
   private voiceNode: GainNode | null = null;
+  /** Routing the voice through Web Audio was tried (it is tried once: a media element can be routed only once). */
+  private routeTried = false;
   /** Real time (ms) of the last fade step: fades run on the clock, not on frames (a slow device must not stretch them). */
   private fadeAt = 0;
   /** The live story beat whose line was last voiced during join-in. */
@@ -214,6 +216,7 @@ export class PerformancePlayerSystem extends createSystem({
       this.audioUrl = URL.createObjectURL(perf.audio);
       this.audio = new Audio(this.audioUrl);
       this.voiceNode = voiceGain(this.audio);
+      this.routeTried = this.voiceNode !== null;
       this.audio.addEventListener('error', () => (playbackVoiceRuntime.error = `media ${this.audio?.error?.code ?? '?'}`));
       playVoice(this.audio);
     }
@@ -352,6 +355,13 @@ export class PerformancePlayerSystem extends createSystem({
   private updateVoice(): void {
     const audio = this.audio;
     if (!audio) return;
+    // Not routed at the start (the audio context was not running yet when the recording loaded): routed as soon
+    // as it runs, once (Nov 17, an iPad: which path a playback took depended on how soon the story was tapped).
+    if (!this.voiceNode && !this.routeTried && audioRunning()) {
+      this.routeTried = true;
+      this.voiceNode = voiceGain(audio);
+      if (this.voiceNode) this.voiceNode.gain.value = this.gain;
+    }
     playbackVoiceRuntime.gain = Math.round(this.gain * 100) / 100;
     playbackVoiceRuntime.paused = audio.paused;
     playbackVoiceRuntime.routed = this.voiceNode !== null;
@@ -367,17 +377,13 @@ export class PerformancePlayerSystem extends createSystem({
       this.gain = 0;
       this.setVoice(0);
     }
-    if (this.gain === this.gainTarget) {
-      // Muted between lines: with a gain node it keeps playing (silently), so no new play() is needed later.
-      if (this.gain === 0 && !audio.paused && !this.voiceNode) audio.pause();
-      return;
-    }
+    // Quiet between lines, the voice keeps playing, muted, routed or not: never paused, because iOS will not
+    // start a paused voice again without a tap (Nov 17, an iPad joining in: silent after the first shape when the
+    // voice was not routed, which used to pause it).
+    if (this.gain === this.gainTarget) return;
     this.gain = this.gainTarget > this.gain ? Math.min(this.gainTarget, this.gain + step) : Math.max(this.gainTarget, this.gain - step);
     this.setVoice(this.gain);
-    if (this.gain === 0) {
-      if (!this.voiceNode) audio.pause();
-      this.voiceEndsAt = -1;
-    }
+    if (this.gain === 0) this.voiceEndsAt = -1;
   }
 
   private finish(player: Entity, status: string): void {
