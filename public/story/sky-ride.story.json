@@ -90,6 +90,11 @@
       "level": 0.85
     },
     {
+      "id": "sky-river",
+      "type": "scenery",
+      "set": "river"
+    },
+    {
       "id": "sky-fish-before",
       "type": "narrate",
       "text": "Now there is a river, with stepping stones. Who can swim across?"
@@ -128,6 +133,11 @@
       "id": "sky-fish-bows",
       "type": "release",
       "text": "The fish swims off, and blows a sleepy bubble."
+    },
+    {
+      "id": "sky-valley-again",
+      "type": "scenery",
+      "set": "dino-valley"
     },
     {
       "id": "sky-dim2",
