@@ -62,14 +62,6 @@
       "world": "nature"
     },
     {
-      "id": "across-the-sea",
-      "title": "Goodnight Across the Sea",
-      "script": "story/across-the-sea.story.json",
-      "minutes": 5,
-      "blurb": "Mo carries a goodnight from far away.",
-      "world": "ocean"
-    },
-    {
       "id": "gentle-shark",
       "title": "The Shy Little Shark",
       "script": "story/gentle-shark.story.json",
@@ -77,6 +69,14 @@
       "blurb": "A shy shark has lost its way in the dark sea. An octopus and a whale help it home.",
       "world": "ocean",
       "narrator": "bm_george"
+    },
+    {
+      "id": "across-the-sea",
+      "title": "Goodnight Across the Sea",
+      "script": "story/across-the-sea.story.json",
+      "minutes": 5,
+      "blurb": "Mo carries a goodnight from far away.",
+      "world": "ocean"
     },
     {
       "id": "whale-song",
@@ -163,6 +163,15 @@
       ]
     },
     {
+      "id": "long-way-home",
+      "title": "The Little Car's Long Way Home",
+      "script": "story/long-way-home.story.json",
+      "minutes": 5,
+      "blurb": "Over the river and through the mud: help a little car home to bed.",
+      "world": "adventure",
+      "narrator": "bm_george"
+    },
+    {
       "id": "moon-buggy",
       "title": "Mo and the Midnight Moon Buggy",
       "script": "story/moon-buggy.story.json",
@@ -181,13 +190,13 @@
       "narrator": "am_michael"
     },
     {
-      "id": "long-way-home",
-      "title": "The Little Car's Long Way Home",
-      "script": "story/long-way-home.story.json",
+      "id": "gentle-trex",
+      "title": "The Sleepy T. rex",
+      "script": "story/gentle-trex.story.json",
       "minutes": 5,
-      "blurb": "Over the river and through the mud: help a little car home to bed.",
-      "world": "adventure",
-      "narrator": "bm_george"
+      "blurb": "Who is roaring in the valley? A pterodactyl flies Mo to find out.",
+      "world": "dinosaurs",
+      "narrator": "bf_emma"
     },
     {
       "id": "sleepy-dinosaur",
@@ -195,15 +204,6 @@
       "script": "story/sleepy-dinosaur.story.json",
       "minutes": 5,
       "blurb": "A little long-neck dinosaur has lost its cave. Help it home to bed.",
-      "world": "dinosaurs",
-      "narrator": "bf_emma"
-    },
-    {
-      "id": "gentle-trex",
-      "title": "The Sleepy T. rex",
-      "script": "story/gentle-trex.story.json",
-      "minutes": 5,
-      "blurb": "Who is roaring in the valley? A pterodactyl flies Mo to find out.",
       "world": "dinosaurs",
       "narrator": "bf_emma"
     },
@@ -217,20 +217,20 @@
       "narrator": "am_michael"
     },
     {
-      "id": "lost-spaceship",
-      "title": "Mo and the Little Lost Spaceship",
-      "script": "story/lost-spaceship.story.json",
-      "minutes": 5,
-      "blurb": "Pip the friendly visitor cannot find the way home. Fly with Mo through the stars.",
-      "world": "space",
-      "narrator": "af_bella"
-    },
-    {
       "id": "moon-rocks",
       "title": "Mo and the Sleepy Space Rocks",
       "script": "story/moon-rocks.story.json",
       "minutes": 5,
       "blurb": "A cloud of space rocks is in Pip's way. A rocket and an alien help Mo through.",
+      "world": "space",
+      "narrator": "af_bella"
+    },
+    {
+      "id": "lost-spaceship",
+      "title": "Mo and the Little Lost Spaceship",
+      "script": "story/lost-spaceship.story.json",
+      "minutes": 5,
+      "blurb": "Pip the friendly visitor cannot find the way home. Fly with Mo through the stars.",
       "world": "space",
       "narrator": "af_bella"
     },
