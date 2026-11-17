@@ -67,7 +67,9 @@ const FLIERS: ReadonlySet<string> = new Set(['bird', 'rocket', 'alien', 'plane',
  * fingers up for the rabbit, a rabbit for the dog, a dog for the fish. Dreamed
  * rabbits had none (Quest 3S, Nov 16: 25 s, against 2.4 s for The Moth's rabbit).
  */
-const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog' };
+// The digger also takes a scooped (cupped) hand: people make the scoop the story asks for with curled
+// fingers, and the swan's pose it borrows wants them flat, the thumb tucked (Quest 3, Nov 17: 31 s).
+const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog', digger: 'cup' };
 
 const LINE = /^[A-Za-z0-9 ,.!?'’;:-]{2,160}$/;
 const MAX_LINE_WORDS = 24;
