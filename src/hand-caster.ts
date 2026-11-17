@@ -10,7 +10,7 @@ import {
   Types,
   Vector3,
 } from '@iwsdk/core';
-import { handOverride, handRuntime, HandSample, JOINT_COUNT, secondHands, SILHOUETTE_LAYER, stageRuntime, xrSecond } from './stage-runtime.js';
+import { handOverride, handRuntime, HandSample, JOINT_COUNT, ownHands, secondHands, SILHOUETTE_LAYER, stageRuntime, xrSecond } from './stage-runtime.js';
 
 type Pair = readonly [number, number, number]; // joint a, joint b, fixed radius (0 = from joints)
 
@@ -30,6 +30,13 @@ const BONES: readonly Pair[] = [
 interface HandJointFrame {
   fillPoses?(spaces: XRSpace[], base: XRSpace, out: Float32Array): boolean;
   fillJointRadii?(spaces: XRJointSpace[], out: Float32Array): boolean;
+}
+
+/** What sampling a hand needs: where its joints go, and the XR hand's joint spaces. */
+interface HandSampler {
+  sample: HandSample;
+  xrHand: XRHand | null;
+  spaces: XRJointSpace[];
 }
 
 interface HandCaster {
@@ -68,6 +75,8 @@ export class HandCasterSystem extends createSystem(
   /** The second pair (the other person in a Live room): shadows only. */
   private second!: { left: HandCaster; right: HandCaster };
   private material!: MeshBasicMaterial;
+  /** The player's own hands while a recording's hands drive the stage (ownHands): sampled, never drawn. */
+  private own!: { left: HandSampler; right: HandSampler };
   private poses = new Float32Array(JOINT_COUNT * 16);
   private m = new Matrix4();
   private q = new Quaternion();
@@ -115,6 +124,7 @@ export class HandCasterSystem extends createSystem(
       features: new Float32Array(9),
     });
     this.second = { left: make(secondSample(), 'left', true), right: make(secondSample(), 'right', true) };
+    this.own = { left: { sample: secondSample(), xrHand: null, spaces: [] }, right: { sample: secondSample(), xrHand: null, spaces: [] } };
     this.world.createTransformEntity(root);
 
     this.cleanupFuncs.push(
@@ -140,11 +150,14 @@ export class HandCasterSystem extends createSystem(
       handRuntime.controllersOnly = false;
       this.finish(this.hands.left, seenLeft);
       this.finish(this.hands.right, seenRight);
+      this.sampleOwn(frame, refSpace, session);
       if (handOverride.xrToSecond) this.xrAsSecond(frame, refSpace, session);
       else this.updateSecond();
       return;
     }
     xrSecond.left = xrSecond.right = null;
+    ownHands.left = handRuntime.left;
+    ownHands.right = handRuntime.right;
     this.updateSecond();
     if (frame && refSpace && session) {
       for (const source of session.inputSources) {
@@ -163,7 +176,24 @@ export class HandCasterSystem extends createSystem(
     this.finish(this.hands.right, seenRight);
   }
 
-  private sampleHand(caster: HandCaster, hand: XRHand, frame: XRFrame, ref: XRReferenceSpace): boolean {
+  /**
+   * A recording's hands drive the stage (playback in the headset): the player's own
+   * hands are still read, apart, so they can pinch the lamp switch and the Journal.
+   */
+  private sampleOwn(frame: XRFrame | null | undefined, ref: XRReferenceSpace | null | undefined, session: XRSession | null | undefined): void {
+    const separate = handOverride.source === 'playback' && !!frame && !!ref && !!session;
+    ownHands.left = separate ? this.own.left.sample : handRuntime.left;
+    ownHands.right = separate ? this.own.right.sample : handRuntime.right;
+    if (!separate) return;
+    this.own.left.sample.tracked = this.own.right.sample.tracked = false;
+    for (const source of session!.inputSources) {
+      if (!source.hand || (source.handedness !== 'left' && source.handedness !== 'right')) continue;
+      const own = this.own[source.handedness];
+      own.sample.tracked = this.sampleHand(own, source.hand, frame!, ref!);
+    }
+  }
+
+  private sampleHand(caster: HandSampler, hand: XRHand, frame: XRFrame, ref: XRReferenceSpace): boolean {
     if (caster.xrHand !== hand) {
       caster.xrHand = hand;
       caster.spaces = Array.from(hand.values());

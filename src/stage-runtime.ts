@@ -168,6 +168,14 @@ export const handRuntime = {
  * `active`, the hand caster uses these world-space joints instead of WebXR
  * hand input; a side set to null counts as untracked. Works outside XR too.
  */
+/**
+ * The player's own hands, for pinching the lamp switch and the Journal: the
+ * same as handRuntime, except while a recording plays on the headset, when
+ * handRuntime carries the recording's hands (they drive its shadows) and these
+ * stay the player's (Nov 17: during a recording neither could be pinched).
+ */
+export const ownHands: { left: HandSample; right: HandSample } = { left: handRuntime.left, right: handRuntime.right };
+
 export const handOverride: {
   active: boolean;
   source: string;
