@@ -6,6 +6,7 @@ import { FamilyInbox, LiveSession, PerformancePlayer, PerformanceRecorder, Shado
 import { playClick } from '../sfx.js';
 import { palette } from '../panel-palette.js';
 import { accessRuntime, gazeTargets, uiPresses } from '../stage-runtime.js';
+import { recordingName, storyNames } from '../story-names.js';
 
 
 const PANEL_NODE = 'settings-panel';
@@ -78,7 +79,7 @@ export class FamilyControlsSystem extends createSystem({
     try {
       const [all, names] = await Promise.all([listRecordings<Performance>(), storyNames()]);
       // Named by the story told (their own titles are usually the same "A story for ..."), else by their title.
-      const name = (p: Performance) => names.get(p.script) ?? (p.story as { title?: string } | undefined)?.title ?? p.title;
+      const name = (p: Performance) => recordingName(p, names);
       this.recordings = all
         .filter((p) => !p.replyTo && !p.sample && p.version)
         .sort((a, b) => b.createdAt - a.createdAt)
@@ -247,16 +248,6 @@ export class FamilyControlsSystem extends createSystem({
     const style = state === 'on' ? p.selected : state === 'dim' ? p.locked : p.unselected;
     c.button.setProperties({ backgroundColor: style.backgroundColor, borderColor: style.borderColor });
     c.label?.setProperties({ text, color: state === 'on' ? p.ink : state === 'dim' ? p.muted : p.cream });
-  }
-}
-
-/** Library story titles by script path (public/story/library.json; the browser caches it). */
-async function storyNames(): Promise<Map<string, string>> {
-  try {
-    const lib = (await (await fetch(`${import.meta.env.BASE_URL}story/library.json`)).json()) as { stories?: { script: string; title: string }[] };
-    return new Map((lib.stories ?? []).map((s) => [s.script, s.title]));
-  } catch {
-    return new Map();
   }
 }
 
