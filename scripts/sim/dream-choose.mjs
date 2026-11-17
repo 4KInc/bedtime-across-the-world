@@ -4,7 +4,7 @@
 // the chosen order; Cancel closes it; and by voice, "dream a story about the
 // forest with a rabbit and a cup" dreams exactly that. The story worlds' places
 // (space, the road, the dinosaurs, and the sea) offer their own creatures in a
-// second row: a space story with a rocket and an alien, and by voice a dinosaur
+// second row, and so does every other place (the forest's deer and snail): a space story with a rocket and an alien, and by voice a dinosaur
 // story with a T. rex and a pterodactyl.
 //
 //   node scripts/sim/dream-choose.mjs [--gpu]
@@ -60,7 +60,10 @@ async function pinch(id) {
   await sleep(400);
 }
 /** A chooser shape's button: the five's own, or the place's creatures' row (dream-world-1..3). */
-const PLACE_CREATURES = { sea: ['shark', 'octopus', 'whale'], space: ['rocket', 'alien', 'asteroid'], road: ['car', 'plane', 'digger'], dinosaurs: ['trex', 'pterodactyl'] };
+const PLACE_CREATURES = {
+  sea: ['shark', 'octopus', 'whale'], space: ['rocket', 'alien', 'asteroid'], road: ['car', 'plane', 'digger'], dinosaurs: ['trex', 'pterodactyl'],
+  forest: ['deer', 'snail'], meadow: ['snail', 'deer'], river: ['swan', 'crocodile'], rain: ['snail', 'swan'], sky: ['swan'],
+};
 async function toggle(shape) {
   const theme = (await chooser()).theme;
   const i = (PLACE_CREATURES[theme] ?? []).indexOf(shape);
@@ -144,6 +147,26 @@ await page.evaluate(() => window.__say('Dream about the dinosaurs with a T. rex 
 await page.waitForFunction((n) => __sp.view().dream.ok > n, await page.evaluate(() => __sp.view().dream.ok), { timeout: 15000 }).catch(() => {});
 const dino = asked[asked.length - 1];
 check('by voice: "dream about the dinosaurs with a T. rex and a pterodactyl"', dino.theme === 'dinosaurs' && dino.shapes.join() === 'trex,pterodactyl', { asked: dino, voice: await page.evaluate(() => __sp.view().voice), dream: await page.evaluate(() => ({ ok: __sp.view().dream.ok, failed: __sp.view().dream.failed, script: __sp.get('StoryState', 'script') })) });
+
+// 8. Every place has a second row of its own creatures (Quest 3, Nov 17: the chooser opens on a random place,
+// and in five of the nine there was none, so the new creatures seemed missing). The forest: a deer and a snail, dreamed.
+await page.evaluate(() => __sp.set('ShadowJournal', 'open', true));
+await sleep(1000);
+await pinch('story-dream');
+const rows = {};
+for (const place of Object.keys(PLACE_CREATURES)) {
+  await pinch(`dream-theme-${place}`);
+  rows[place] = (await chooser()).row ?? [];
+}
+check('every place shows its own creatures in a second row', Object.entries(PLACE_CREATURES).every(([place, shapes]) => rows[place].join() === shapes.join()), rows);
+await pinch('dream-theme-forest');
+for (const s of (await chooser()).shapes) await toggle(s);
+for (const s of ['deer', 'snail']) await toggle(s);
+const forest = await chooser();
+await pinch('dream-go');
+await page.waitForFunction((n) => __sp.view().dream.ok > n, await page.evaluate(() => __sp.view().dream.ok), { timeout: 15000 }).catch(() => {});
+const forestAsked = asked[asked.length - 1];
+check('the forest: a deer and a snail, dreamed', forest.shapes.join() === 'deer,snail' && forestAsked?.theme === 'forest' && forestAsked.shapes.join() === 'deer,snail', { forest, asked: forestAsked });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);
