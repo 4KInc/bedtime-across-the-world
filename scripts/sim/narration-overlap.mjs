@@ -64,6 +64,9 @@ for (const id of ['story-dream', 'dream-go']) {
   await remote('set_select_value', { device: 'hand-right', value: 1 }); await sleep(250);
   await remote('set_select_value', { device: 'hand-right', value: 0 }); await sleep(400);
 }
+// A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+await page.waitForFunction(() => __sp.view().dream.ready, null, { timeout: 20000 });
+await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
 await page.evaluate(() => { __sp.set('DemoDirector', 'persona', 'perfect'); __sp.set('DemoDirector', 'playing', true); });
 for (let i = 0; i < 90; i++) { await sleep(1000); if (await page.evaluate(() => __sp.get('StoryState', 'beatId')) === 'dream-end') break; }
 const dreamed = await page.evaluate(() => ({ max: window.__maxPlaying, overlaps: window.__overlaps.length, beat: __sp.get('StoryState', 'beatId') }));

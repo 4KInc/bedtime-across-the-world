@@ -91,6 +91,8 @@ const PHRASES: readonly [string, VoiceCommand][] = [
   ['previous story', { kind: 'press', id: 'story-prev' }],
   ['tell this story', { kind: 'press', id: 'story-start' }],
   ['a new story', { kind: 'press', id: 'story-dream' }],
+  ['record and tell it', { kind: 'press', id: 'dream-record' }],
+  ['tell it', { kind: 'press', id: 'dream-tell' }],
   ['record a story', { kind: 'press', id: 'record-button' }],
   ['stop recording', { kind: 'press', id: 'record-button' }],
   ['send to family', { kind: 'press', id: 'send-button' }],

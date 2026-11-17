@@ -292,6 +292,20 @@
     </div>
   </div>
 
+  <div id="dream-ready" class="section">
+    <div class="row">
+      <span id="dream-ready-text" class="story-blurb">Mo dreamed a story. Tell it now, or record it as you tell it.</span>
+    </div>
+    <div class="row">
+      <button id="dream-tell" class="family">
+        <span id="dream-tell-label" class="toggle-text">Tell it</span>
+      </button>
+      <button id="dream-record" class="family">
+        <span id="dream-record-label" class="toggle-text">Record and tell it</span>
+      </button>
+    </div>
+  </div>
+
   <div class="label">Shape recognition</div>
   <div class="row">
     <button id="tol-strict" class="option">Strict</button>

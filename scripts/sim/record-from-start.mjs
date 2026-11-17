@@ -63,7 +63,10 @@ try {
   // 1. A dream, a few lines in, then Record.
   await pinch(page, 'story-dream');
   await pinch(page, 'dream-go');
-  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 20000 });
+  // A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ready, null, { timeout: 20000 });
+  await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
+  await page.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 20000 });
   await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
   await page.waitForFunction(() => (__sp.get('StoryState', 'beatIndex') ?? 0) >= 3, null, { timeout: 30000 });
   const before = await beat(page);
@@ -93,7 +96,10 @@ try {
   // 3. After the first shape has been asked for, Record does not start the story again.
   await pinch(page, 'story-dream');
   await pinch(page, 'dream-go');
-  await page.waitForFunction(() => __sp.get('StoryState', 'script') === 'dreamed:2' && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 20000 });
+  // A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+  await page.waitForFunction(() => __sp.get('StoryState', 'script') === 'dreamed:2' && __sp.view().dream.ready, null, { timeout: 20000 });
+  await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
+  await page.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 20000 });
   await page.evaluate(() => {
     __sp.set('ShadowJournal', 'open', false);
     __sp.set('DemoDirector', 'persona', 'perfect');

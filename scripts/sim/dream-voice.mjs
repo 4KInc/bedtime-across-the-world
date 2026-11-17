@@ -88,7 +88,10 @@ async function dream(page) {
     await pinch(page, 'dream-go');
     await sleep(1500);
   }
-  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.get('StoryState', 'beatId')?.startsWith('dream-'), null, { timeout: 15000 });
+  // A dreamed story waits on its title, the Journal open, for Tell it (closing the Journal tells it too).
+  await page.waitForFunction(() => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ready, null, { timeout: 15000 });
+  await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));
+  await page.waitForFunction(() => (__sp.get('StoryState', 'beatId') ?? '').startsWith('dream-'), null, { timeout: 15000 });
 }
 
 // A. With a narrator voice on the server.
