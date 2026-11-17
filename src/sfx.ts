@@ -180,6 +180,7 @@ export function startLampHum(): Hum | null {
     osc.connect(og).connect(amp);
     osc.start();
   }
+  soundRuntime.hum = true;
   return {
     setPosition(p) {
       const t = a.currentTime;
@@ -196,7 +197,7 @@ export function startLampHum(): Hum | null {
 // ------------------------------------------------------------------ creature voices
 
 /** For tests: creature voices played, by shape. */
-export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0 };
+export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0, hum: false };
 
 /** After the wake chime's first note, so the voice is not lost under it. */
 const AFTER_CHIME = 0.45;

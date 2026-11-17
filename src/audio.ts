@@ -2,6 +2,7 @@ import { createSystem, Vector3, VisibilityState } from '@iwsdk/core';
 import { audioRunning, Hum, Lullaby, preloadCreatureVoices, setListener, startLampHum, startLullaby, wakeAudio } from './sfx.js';
 import { LiveSession, PerformanceRecorder, Settings, Stage, StoryState, StoryStatuses } from './shadowplay-components.js';
 import { stageRuntime } from './stage-runtime.js';
+import { viewerMode } from './viewer-mode.js';
 
 /** Lullaby level under the narrator's (or a recorded storyteller's) voice, and while paused. */
 const UNDER_VOICE = 0.35;
@@ -52,7 +53,9 @@ export class AudioSystem extends createSystem({
     this.up.set(0, 1, 0).transformDirection(headObj.matrixWorld);
     setListener(this.head, this.forward, this.up);
 
-    this.hum ??= startLampHum();
+    // The lamp's hum belongs to the lamp behind the storyteller: on the family viewer's
+    // screen there is no lamp, and it was a constant buzz from the speakers (Nov 17).
+    if (!viewerMode.on) this.hum ??= startLampHum();
     const stage = this.queries.stages.entities.values().next().value;
     if (this.hum) {
       const on = stage?.getValue(Stage, 'lampOn') ?? false;
