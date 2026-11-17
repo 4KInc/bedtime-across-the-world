@@ -106,3 +106,16 @@ test('each story world opens with a story of its own creatures (the shark, the c
     assert.ok(asks.some((s) => WORLD_CREATURES[world]?.includes(s)), `${world}: ${first.id}`);
   }
 });
+
+test('a digger also takes a scooped hand: every digger request has the cup as its alt (Quest 3, Nov 17: 31 s)', async () => {
+  const asks = library.flatMap((s) => read(s.script).beats.filter((b) => b.type === 'request' && b.shape === 'digger').map((b) => ({ story: s.id, alt: b.alt })));
+  assert.ok(asks.length >= 2, 'the road stories ask for a digger');
+  assert.deepEqual(asks.filter((a) => a.alt !== 'cup'), []);
+  // A dreamed story with a digger asks the same way.
+  const { assembleStory, checkDream } = await import('../server/dream.ts');
+  const { cannedWords } = await import('./fixtures/dream-words.mjs');
+  const req = checkDream({ theme: 'road', shapes: ['car', 'digger'] });
+  const dreamed = assembleStory(req, cannedWords(req.shapes));
+  const digger = dreamed.beats.find((b) => b.type === 'request' && b.shape === 'digger');
+  assert.equal(digger?.alt, 'cup');
+});

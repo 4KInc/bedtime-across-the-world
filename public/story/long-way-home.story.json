@@ -143,6 +143,7 @@
       "id": "lane-want-digger",
       "type": "request",
       "shape": "digger",
+      "alt": "cup",
       "text": "Make a digger: a flat hand, bent down at the wrist, like a scoop."
     },
     {
