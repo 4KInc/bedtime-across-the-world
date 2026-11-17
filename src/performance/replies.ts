@@ -6,6 +6,7 @@ import type { Performance } from './format.js';
 import { seedSamples } from './samples.js';
 import { fetchReplies } from './sharing.js';
 import { receiveGifts } from '../gifts-received.js';
+import { learnFromGoodnight, requestsRuntime } from '../story-requests.js';
 
 /** Look for new goodnights this often (ms), only while the page is open. */
 const POLL_MS = 90_000;
@@ -72,7 +73,8 @@ export class FamilyInboxSystem extends createSystem({
    */
   private cue(inbox: Entity): void {
     const story = this.queries.stories.entities.values().next().value;
-    if (!story || !this.unwatched.length || story.getValue(StoryState, 'followMode')) return;
+    const ask = requestsRuntime.pending;
+    if (!story || (!this.unwatched.length && !ask) || story.getValue(StoryState, 'followMode')) return;
     if (this.queries.sessions.entities.values().next().value?.getValue(LiveSession, 'role') !== 'off') return;
     const script = storyRuntime.script;
     if (script && script !== this.typesFor) {
@@ -88,7 +90,9 @@ export class FamilyInboxSystem extends createSystem({
     this.cuedBeat = beat;
     const from = inbox.getValue(FamilyInbox, 'latestFrom') || 'your family';
     const caption = story.getValue(StoryState, 'caption') ?? '';
-    story.setValue(StoryState, 'caption', `${caption}  A goodnight from ${from} is waiting: pinch your Shadow Journal to watch it.`.trim());
+    const waiting = this.unwatched.length ? `A goodnight from ${from} is waiting: pinch your Shadow Journal to watch it.` : '';
+    const asked = ask ? `${ask.from || 'Your family'} asked for a story: pinch your Shadow Journal, then Dream a new one.` : '';
+    story.setValue(StoryState, 'caption', `${caption}  ${waiting} ${asked}`.replace(/\s+/g, ' ').trim());
   }
 
   private async poll(inbox: Entity): Promise<void> {
@@ -110,6 +114,12 @@ export class FamilyInboxSystem extends createSystem({
         if (!p.replyTo || p.giftsTaken || (!p.mo && !p.drawing)) continue;
         await receiveGifts(p);
         await saveRecording({ ...p, giftsTaken: true });
+      }
+      // The story the child asks for next waits in the journal; the child's taste learns from every goodnight.
+      for (const p of (await listRecordings<Performance & { learned?: boolean }>()).sort((a, b) => a.createdAt - b.createdAt)) {
+        if (!p.replyTo || p.learned) continue;
+        await learnFromGoodnight(p);
+        await saveRecording({ ...p, learned: true });
       }
       const fresh = (await listRecordings<Performance & { watched?: boolean }>())
         .filter((p) => p.replyTo && !p.watched)

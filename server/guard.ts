@@ -1,5 +1,5 @@
 import { decodeDrawing, isMoPalette } from '../src/child-gifts.ts';
-import { checkSharedStory } from '../src/story-checks.ts';
+import { checkAsk, checkSharedStory } from '../src/story-checks.ts';
 import type { IncomingMessage } from 'node:http';
 
 /**
@@ -141,6 +141,8 @@ export function checkPerformance(p: unknown, maxAudioChars: number): string | nu
   // A goodnight's gifts: one of Mo's palettes, and a small drawing.
   if (o.mo !== undefined && !isMoPalette(o.mo)) return 'Bad goodnight.';
   if (o.drawing !== undefined && !decodeDrawing(o.drawing)) return 'Bad drawing.';
+  // ...and the story the child asks for next (its words already softened on the phone).
+  if (o.ask !== undefined && !checkAsk(o.ask)) return 'Bad story request.';
   const dreamed = typeof o.script === 'string' && DREAMED_PATH.test(o.script);
   if (!(o.script === undefined || o.script === '' || dreamed || (typeof o.script === 'string' && SCRIPT_PATH.test(o.script)))) {
     return 'Unknown story.';

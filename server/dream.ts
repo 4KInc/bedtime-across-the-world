@@ -10,7 +10,7 @@
  *
  * On when the server has a model key (main.ts; DREAM_MODEL picks the model).
  */
-import { contentProblems } from '../src/story-checks.ts';
+import { contentProblems, softenIdea } from '../src/story-checks.ts';
 import { MAX_DREAM_SHAPES, MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
 import type { Llm } from './llm.ts';
 
@@ -105,6 +105,24 @@ export interface DreamRequest {
    * never stored, logged or put in the story.
    */
   wish?: string;
+  /**
+   * Where the idea happens inside the place, when the idea names somewhere the
+   * app has no scenery for ("at a little carnival in the meadow, under strings
+   * of lanterns"): chosen by the model when it plans (or by IDEA_PLACES), checked
+   * like a story line. The story is written there; the scenery stays the place's.
+   */
+  setting?: string;
+}
+
+/** A setting: one plain line of at most this many words. */
+const MAX_SETTING_WORDS = 14;
+
+/** A setting fit to write a story in, or ''. */
+export function cleanSetting(setting: unknown): string {
+  if (typeof setting !== 'string') return '';
+  const t = setting.trim().replace(/\s+/g, ' ').replace(/[.!]+$/, '');
+  if (!LINE.test(t) || NEVER.test(t) || t.split(' ').length > MAX_SETTING_WORDS || contentProblems(t).length) return '';
+  return t;
 }
 
 /** A wish's characters: plain words, as speech-to-text writes them. */
@@ -139,13 +157,15 @@ export function checkDream(body: unknown): DreamRequest | null {
     const theme = typeof b.theme === 'string' && Object.hasOwn(THEMES, b.theme) ? b.theme : read.theme;
     const given = Array.isArray(b.shapes) ? b.shapes.filter(isShape) : [];
     const shapes = [...new Set([...given, ...read.shapes])].slice(0, MAX_DREAM_SHAPES);
-    return { theme, shapes, ...(wish ? { wish } : {}) };
+    const setting = theme ? cleanSetting(b.setting) : '';
+    return { theme, shapes, ...(wish ? { wish } : {}), ...(setting ? { setting } : {}) };
   }
   if (typeof b.theme !== 'string' || !Object.hasOwn(THEMES, b.theme)) return null;
   if (!Array.isArray(b.shapes) || b.shapes.length < 2 || b.shapes.length > MAX_DREAM_SHAPES) return null;
   if (new Set(b.shapes).size !== b.shapes.length) return null;
   if (!b.shapes.every(isShape)) return null;
-  return { theme: b.theme, shapes: b.shapes as string[] };
+  const setting = cleanSetting(b.setting);
+  return { theme: b.theme, shapes: b.shapes as string[], ...(setting ? { setting } : {}) };
 }
 
 /** True when the request names a place and two to four shapes (ready to write). */
@@ -175,7 +195,8 @@ function pickPrompt(req: DreamRequest): string {
     req.shapes.length >= 2
       ? `The shapes are already chosen: ${req.shapes.join(', ')}.`
       : `Choose two or three shadow shapes that fit it best, from: ${req.theme ? picksFor(req.theme).join(', ') : `${PICK_SHAPES.join(', ')}; or for a story in space, ${THEME_PICKS.space.join(', ')}; by the sea, ${THEME_PICKS.sea.join(', ')}; on the road, ${THEME_PICKS.road.join(', ')}; with the dinosaurs, ${THEME_PICKS.dinosaurs.join(', ')}`} (cup means cupped hands holding something small, like a star or a firefly; trex is a T. rex, plane an aeroplane).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
-    'JSON: {"theme":"...","shapes":["...","..."]}',
+    'setting = where the idea happens inside that place, in at most 12 plain words, so the story can bring the idea to the place (like: at a little carnival in the meadow, under strings of lanterns; or: on a pirate boat on the quiet sea). Gentle, no names, no characters from shows. If the idea is simply the place, describe the place.',
+    'JSON: {"theme":"...","shapes":["...","..."],"setting":"..."}',
   ].join('\n');
 }
 
@@ -184,7 +205,7 @@ export function readPick(req: DreamRequest, reply: string): DreamRequest | null 
   const start = reply.indexOf('{');
   const end = reply.lastIndexOf('}');
   if (start < 0 || end <= start) return null;
-  let pick: { theme?: unknown; shapes?: unknown };
+  let pick: { theme?: unknown; shapes?: unknown; setting?: unknown };
   try {
     pick = JSON.parse(reply.slice(start, end + 1));
   } catch {
@@ -194,7 +215,8 @@ export function readPick(req: DreamRequest, reply: string): DreamRequest | null 
   const picked = Array.isArray(pick.shapes) ? pick.shapes.filter(isShape) : [];
   // Two or more named (a fish and a crocodile): exactly those; the model only tops up fewer.
   const shapes = req.shapes.length >= 2 ? req.shapes : [...new Set([...req.shapes, ...picked])].slice(0, 3);
-  const out = { ...req, theme, shapes };
+  const setting = cleanSetting(pick.setting);
+  const out = { ...req, theme, shapes, ...(setting ? { setting } : {}) };
   return complete(out) ? out : null;
 }
 
@@ -276,7 +298,7 @@ const SYSTEM = [
 function prompt(req: DreamRequest): string {
   const scenes = req.shapes.map((s) => `{"shape":"${s}","setup":"...","ask":"...","ride":"...","after":"...","bow":"..."}`).join(',');
   return [
-    `Write a new story set ${THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.join(', ')}.`,
+    `Write a new story set ${req.setting ? `${req.setting} (the place: ${THEMES[req.theme].words})` : THEMES[req.theme].words}. In order, the child makes these shadow shapes: ${req.shapes.join(', ')}.`,
     ...(req.wish
       ? [
           `The grown-up asked for it in their own words: ${req.wish}`,
@@ -391,17 +413,45 @@ export class Dreamer {
    * shapes; otherwise the model picks the rest from the wish, else at random.
    */
   async resolve(req: DreamRequest): Promise<DreamRequest> {
+    // Named in full: written as asked (a setting is planned only when asked for, /api/dream/plan).
     if (complete(req)) return req;
+    if (req.wish) return (await this.plan(req)).request;
+    return fillAtRandom(req);
+  }
+
+  /**
+   * What a story from this idea would be, before it is written: the place that
+   * fits it best (the closest one the app has scenery for), the shapes, and
+   * where in that place the idea happens. The model plans; without it, or if
+   * its plan will not do, IDEA_PLACES and a random pick.
+   */
+  async plan(req: DreamRequest): Promise<{ request: DreamRequest; by: 'ai' | 'words' }> {
     if (req.wish) {
       try {
-        const reply = await this.llm.text({ model: this.pickModel, system: PICK_SYSTEM, user: pickPrompt(req), maxTokens: 200, effort: 'low', timeoutMs: 15000 });
+        const reply = await this.llm.text({ model: this.pickModel, system: PICK_SYSTEM, user: pickPrompt(req), maxTokens: 250, effort: 'low', timeoutMs: 15000 });
         const picked = readPick(req, reply);
-        if (picked) return picked;
+        if (picked) return { request: picked, by: 'ai' };
       } catch {
-        // Picked at random instead.
+        // Planned from the words instead.
       }
     }
-    return fillAtRandom(req);
+    return { request: planByWords(req), by: 'words' };
+  }
+
+  /**
+   * Three stories a child would like, from their taste (what they asked for
+   * and made): the model suggests, every field is checked; without it, or if
+   * its ideas will not do, suggestByTaste.
+   */
+  async suggest(taste: Taste): Promise<{ ideas: Suggestion[]; by: 'ai' | 'taste' }> {
+    try {
+      const reply = await this.llm.text({ model: this.pickModel, system: SUGGEST_SYSTEM, user: suggestPrompt(taste), maxTokens: 700, effort: 'low', timeoutMs: 15000 });
+      const ideas = readSuggestions(reply);
+      if (ideas.length >= 2) return { ideas: ideas.slice(0, 3), by: 'ai' };
+    } catch {
+      // Suggested from the taste instead.
+    }
+    return { ideas: suggestByTaste(taste), by: 'taste' };
   }
 
   /** A new story, or null if the model's words did not pass (one retry). */
@@ -415,4 +465,183 @@ export class Dreamer {
     }
     return null;
   }
+}
+
+// ------------------------------------------------------------------ the closest place, without the model
+
+/**
+ * Places a child asks for that the app has no scenery for, and the closest one
+ * it has, with where in it the idea happens. The model does this better (any
+ * idea); these keep the common ones working without it.
+ */
+const IDEA_PLACES: readonly [RegExp, string, string][] = [
+  [/\b(carnival|fair|funfair|circus|carousel|merry go round|ferris wheel)\b/i, 'meadow', 'at a little carnival in the meadow, under strings of lanterns'],
+  [/\b(pirates?|ship|boat|island|treasure|mermaids?|beach)\b/i, 'sea', 'on a little boat on the quiet sea'],
+  [/\b(castle|king|queen|princess|prince|knights?|dragons?)\b/i, 'forest', 'by an old castle at the edge of the sleepy forest'],
+  [/\b(jungle|rainforest)\b/i, 'forest', 'deep in a warm, green jungle'],
+  [/\b(farm|tractor|barn|cows?|pigs?|sheep)\b/i, 'meadow', 'on a sleepy farm beside the meadow'],
+  [/\b(snow|snowy|winter|ice|icy|christmas)\b/i, 'meadow', 'in a meadow under the first soft snow'],
+  [/\b(birthday|party|picnic)\b/i, 'meadow', 'at a little party in the meadow'],
+  [/\b(garden|flowers?)\b/i, 'meadow', 'in a garden full of sleepy flowers'],
+  [/\b(zoo|safari)\b/i, 'meadow', 'at a quiet zoo where everyone is falling asleep'],
+  [/\b(trains?|city|town|bus)\b/i, 'road', 'on a long road to the twinkling lights of a town'],
+  [/\b(moon|stars?|planets?|astronauts?)\b/i, 'space', 'out among the stars, past the sleepy moon'],
+  [/\b(waterfall|lake|pond|bridge)\b/i, 'river', 'beside a little bridge over a quiet river'],
+  [/\b(clouds?|rainbow|kite|balloon)\b/i, 'sky', 'up among the clouds, near a sleepy rainbow'],
+];
+
+/** A plan from the words alone: the place an idea names (or the closest one), and shapes picked at random. */
+export function planByWords(req: DreamRequest, random = Math.random): DreamRequest {
+  const idea = req.wish ? IDEA_PLACES.find(([re]) => re.test(req.wish!)) : undefined;
+  const theme = Object.hasOwn(THEMES, req.theme) ? req.theme : (idea?.[1] ?? '');
+  // The idea's setting only where it was made for that place.
+  const setting = req.setting || (idea && idea[1] === theme ? idea[2] : '');
+  const out = fillAtRandom({ ...req, theme }, random);
+  return { ...out, ...(setting ? { setting } : {}) };
+}
+
+// ------------------------------------------------------------------ a child's taste, and stories they would like
+
+/**
+ * What the storyteller's headset knows a child likes (story-requests.ts), kept
+ * on that headset and sent only to ask for suggestions: how often each place
+ * and creature was asked for or made, and the last few ideas the child asked
+ * for in their own words. No names.
+ */
+export interface Taste {
+  places: Record<string, number>;
+  creatures: Record<string, number>;
+  ideas: string[];
+}
+
+export interface Suggestion {
+  title: string;
+  /** The story idea, as a grown-up would say it (dreamed like "Say your idea"). */
+  idea: string;
+  theme: string;
+  shapes: string[];
+  /** Why the child would like it, for the grown-up (no names). */
+  why: string;
+}
+
+const MAX_TASTE_IDEAS = 5;
+const count = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 9999;
+
+/** A taste from untrusted JSON, rebuilt from known places, creatures and softened ideas, or null. */
+export function checkTaste(body: unknown): Taste | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const b = body as Record<string, unknown>;
+  const table = (v: unknown, known: (k: string) => boolean): Record<string, number> | null => {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+    const out: Record<string, number> = {};
+    for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+      if (!known(k) || !count(n)) return null;
+      if (n > 0) out[k] = n;
+    }
+    return out;
+  };
+  const places = table(b.places, (k) => Object.hasOwn(THEMES, k));
+  const creatures = table(b.creatures, isShape);
+  if (!places || !creatures || !Array.isArray(b.ideas) || b.ideas.length > MAX_TASTE_IDEAS) return null;
+  const ideas: string[] = [];
+  for (const i of b.ideas) {
+    if (typeof i !== 'string') return null;
+    const soft = softenIdea(i).words;
+    if (soft && cleanWish(soft)) ideas.push(soft);
+  }
+  if (!Object.keys(places).length && !Object.keys(creatures).length && !ideas.length) return null;
+  return { places, creatures, ideas };
+}
+
+const SUGGEST_SYSTEM = [
+  'You suggest bedtime stories for a hand shadow-puppet game, for a child of 10 or younger, from what they have asked for and made before.',
+  'The hero of every story is Mo, a small moth (she, her). Gentle, calm, a little wonder; nothing scary; no names; no characters or brands from books, films or games.',
+  'Choose only from the lists given. Reply with JSON only.',
+].join(' ');
+
+const ranked = (t: Record<string, number>): string[] => Object.entries(t).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+
+function suggestPrompt(taste: Taste): string {
+  const list = (t: Record<string, number>) => ranked(t).map((k) => `${k} (${t[k]})`).join(', ') || 'none yet';
+  return [
+    `Places the child asked for or loved, most first: ${list(taste.places)}.`,
+    `Creatures the child asked for or made with their hands, most first: ${list(taste.creatures)}.`,
+    `Ideas the child asked for in their own words, newest first: ${taste.ideas.length ? taste.ideas.map((i) => `"${i}"`).join('; ') : 'none yet'}.`,
+    'Suggest three new stories this child would love, each different: one close to what they love most, one that mixes two things they love, and one gentle new thing near their taste.',
+    `For each: title = 2 to 5 words; idea = one sentence of at most 20 plain words that a grown-up could say to ask for the story; theme = one of: ${Object.keys(THEMES).join(', ')}; shapes = two or three from: ${DREAM_SHAPES.join(', ')} (cup means cupped hands holding something small; trex is a T. rex, plane an aeroplane), creatures that belong in that place; why = at most 10 words for the grown-up, starting with a verb like Loves or Asked for, no names and no he or she.`,
+    'JSON: {"ideas":[{"title":"...","idea":"...","theme":"...","shapes":["...","..."],"why":"..."}]}',
+  ].join('\n');
+}
+
+/** The model's suggestions (text), each checked; the ones that will not do are left out. */
+export function readSuggestions(reply: string): Suggestion[] {
+  const start = reply.indexOf('{');
+  const end = reply.lastIndexOf('}');
+  if (start < 0 || end <= start) return [];
+  let parsed: { ideas?: unknown };
+  try {
+    parsed = JSON.parse(reply.slice(start, end + 1));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed.ideas)) return [];
+  const out: Suggestion[] = [];
+  for (const raw of parsed.ideas.slice(0, 3)) {
+    const s = (raw ?? {}) as Record<string, unknown>;
+    const title = line(s.title);
+    const idea = typeof s.idea === 'string' ? cleanWish(softenIdea(s.idea).words) : '';
+    const why = line(s.why);
+    const theme = typeof s.theme === 'string' && Object.hasOwn(THEMES, s.theme) ? s.theme : '';
+    const shapes = Array.isArray(s.shapes) ? [...new Set(s.shapes.filter(isShape))].slice(0, 3) : [];
+    if (!title || title.split(' ').length > 6 || !idea || idea.split(' ').length > 24 || !why || why.split(' ').length > 12 || !theme || shapes.length < 2) continue;
+    if (/\b(he|she|him|his|her)\b/i.test(why)) continue;
+    out.push({ title, idea, theme, shapes, why });
+  }
+  return out;
+}
+
+const NAMES: Readonly<Record<string, string>> = { cup: 'firefly', trex: 'T. rex', plane: 'aeroplane' };
+const PLACE_NAMES: Readonly<Record<string, string>> = {
+  sea: 'the sea', forest: 'the forest', meadow: 'the meadow', river: 'the river', rain: 'the rain', sky: 'the sky',
+  space: 'space', road: 'the road', dinosaurs: 'dinosaur valley',
+};
+const named = (shape: string): string => NAMES[shape] ?? shape;
+const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** Three suggestions from the taste alone: more of what they love, their last idea again, and a new place near it. */
+export function suggestByTaste(taste: Taste): Suggestion[] {
+  const places = ranked(taste.places);
+  const loved = ranked(taste.creatures);
+  const top = places[0] ?? 'meadow';
+  const pair = (theme: string): string[] => {
+    const fits = loved.filter((c) => {
+      const f = FITS[c];
+      return !f || f.includes(THEMES[theme].scenery);
+    });
+    return [...new Set([...fits, ...picksFor(theme)])].slice(0, 2);
+  };
+  const out: Suggestion[] = [];
+  const a = pair(top);
+  out.push({
+    title: cap(`the ${named(a[0])} in ${PLACE_NAMES[top]}`),
+    idea: `a story in ${PLACE_NAMES[top]} with a ${named(a[0])} and a ${named(a[1])}`,
+    theme: top,
+    shapes: a,
+    why: `Loves ${PLACE_NAMES[top]} and the ${named(a[0])}`,
+  });
+  const idea = taste.ideas[0];
+  if (idea) {
+    const p = planByWords({ theme: '', shapes: [], wish: idea });
+    out.push({ title: 'Another one like that', idea, theme: p.theme, shapes: p.shapes, why: 'Asked for this in their own words' });
+  }
+  const fresh = Object.keys(THEMES).find((t) => !taste.places[t] && pair(t).some((c) => loved.includes(c))) ?? Object.keys(THEMES).find((t) => !taste.places[t]) ?? 'sky';
+  const b = pair(fresh);
+  out.push({
+    title: `Mo visits ${PLACE_NAMES[fresh]}`,
+    idea: `a story in ${PLACE_NAMES[fresh]} with a ${named(b[0])} and a ${named(b[1])}`,
+    theme: fresh,
+    shapes: b,
+    why: 'Somewhere new, with a creature they love',
+  });
+  return out.slice(0, 3);
 }

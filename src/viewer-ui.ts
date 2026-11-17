@@ -48,7 +48,7 @@ const CSS = `
   background: rgba(8, 6, 12, 0.6); padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   font: 16px/1.35 Georgia, 'Times New Roman', serif; color: #f6e3bd; }
 .sp-sheet * { box-sizing: border-box; }
-.sp-sheet .sp-panel { max-width: 520px; }
+.sp-sheet .sp-panel { max-width: 520px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
 .sp-sheet p { margin: 0 0 12px; }
 .sp-code { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .sp-code .sp-btn { flex: 1 0 auto; padding: 0 16px; white-space: nowrap; }

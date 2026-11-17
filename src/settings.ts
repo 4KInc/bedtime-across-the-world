@@ -14,6 +14,7 @@ import { playClick } from './sfx.js';
 import { palette } from './panel-palette.js';
 import { creatureName } from './creatures.js';
 import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
+import { answerAsk, hasTaste, loadStoryRequests, planAsk, refreshSuggestions, requestsRuntime } from './story-requests.js';
 import { MAX_DREAM_SHAPES } from './voice-commands.js';
 import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
 
@@ -96,6 +97,18 @@ const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
   dinosaurs: ['trex', 'pterodactyl'],
 };
 const WORLD_BUTTONS = ['dream-world-1', 'dream-world-2', 'dream-world-3'] as const;
+/** Mo's suggestions for the child, one per row. */
+const IDEA_BUTTONS = ['dream-idea-1', 'dream-idea-2', 'dream-idea-3'] as const;
+/** Where each place is, in a sentence. */
+const PLACE_WORDS: Readonly<Record<string, string>> = {
+  sea: 'by the sea', forest: 'in the forest', meadow: 'in the meadow', river: 'by the river', rain: 'in the rain', sky: 'in the sky',
+  space: 'in space', road: 'on the road', dinosaurs: 'with the dinosaurs',
+};
+/** "a dog, a bird and a swan" */
+const shapeList = (shapes: readonly string[]): string => {
+  const names = shapes.map((sh) => (sh === 'cup' ? 'cupped hands' : `a ${creatureName(sh).toLowerCase().replace('t. rex', 'T. rex')}`));
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? '');
+};
 /** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail', ...Object.values(PLACE_CREATURES).flat()]);
@@ -158,6 +171,16 @@ export class SettingsSystem extends createSystem({
   private dreamTheme: string = DREAM_THEMES[0];
   private dreamShapes: string[] = [];
   private dreams = 0;
+  /**
+   * A child's request or one of Mo's suggestions, taken into the chooser: its
+   * words (sent as the idea), where in the place it happens (planned for that
+   * place only), and the request it answers ('' for a suggestion).
+   */
+  private pendingWish = '';
+  private pendingSetting = '';
+  private pendingFor = '';
+  private pendingTheme = '';
+  private requestsShown = -1;
   /** Last unlock list shown on the chapter buttons. */
   private shownUnlocks: string | null = null;
   private quat = new Quaternion();
@@ -170,6 +193,7 @@ export class SettingsSystem extends createSystem({
     if (!this.panel) this.bind(settings);
     if (!this.loaded) return;
     this.showDreaming();
+    if (this.choosing && requestsRuntime.version !== this.requestsShown) this.refreshRequests();
 
     const tolerance = settings.getValue(Settings, 'tolerance') ?? ToleranceLevels.Normal;
     const hints = settings.getValue(Settings, 'hints') ?? HintModes.Delayed;
@@ -270,9 +294,97 @@ export class SettingsSystem extends createSystem({
     this.choosing = true;
     this.dreamTheme = DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
     this.dreamShapes = [...startingShapes(this.dreamTheme)].sort(() => Math.random() - 0.5).slice(0, 2);
+    this.clearPending();
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'flex' });
-    this.status?.setProperties({ text: 'Say your idea, or pick a place and two or three shapes, then Dream it.' });
+    const ask = requestsRuntime.pending;
+    this.say(ask
+        ? `${ask.from || 'Your family'} asked for a story. Press Dream ${possessive(ask.from)} story, or say your idea, or pick a place and shapes.`
+        : 'Say your idea, or pick a place and two or three shapes, then Dream it.',
+    );
     this.refreshDreamChooser();
+    this.requestsShown = -1;
+    void refreshSuggestions();
+  }
+
+  /** The child's request and Mo's suggestions for them, shown at the top of the chooser when there are any. */
+  private refreshRequests(): void {
+    this.requestsShown = requestsRuntime.version;
+    const p = palette();
+    const ask = requestsRuntime.pending;
+    const show = (id: string, on: boolean) => this.panel?.getElementById(id)?.setProperties({ display: on ? 'flex' : 'none' });
+    show('dream-ask-row', !!ask);
+    show('dream-ask-buttons', !!ask);
+    if (ask) {
+      const what = ask.words ? `"${ask.words}"` : `a story${ask.theme ? ` ${PLACE_WORDS[ask.theme] ?? ''}` : ''}${ask.shapes?.length ? ` with ${shapeList(ask.shapes)}` : ''}`;
+      dreamRuntime.shown.ask = `${ask.from || 'Your family'} asked: ${what}`;
+      dreamRuntime.shown.askButton = `Dream ${possessive(ask.from)} story`;
+      this.panel?.getElementById<UIKit.Text>('dream-ask-text')?.setProperties({ text: dreamRuntime.shown.ask, color: p.cream });
+      this.panel?.getElementById<UIKit.Text>('dream-ask-go-label')?.setProperties({ text: dreamRuntime.shown.askButton });
+    } else dreamRuntime.shown.ask = dreamRuntime.shown.askButton = '';
+    const ideas = requestsRuntime.ideas;
+    const child = requestsRuntime.child;
+    // While Mo thinks, the rows are already there (three, as the ideas will be), so nothing moves under a pointer.
+    const thinking = !ideas.length && (requestsRuntime.thinking || hasTaste());
+    const rows = ideas.length || (thinking ? IDEA_BUTTONS.length : 0);
+    const name = child && child !== 'your family' ? child : 'your child';
+    show('dream-ideas-label', rows > 0);
+    dreamRuntime.shown.ideasLabel = ideas.length ? `${cap(name)} might like` : thinking ? `Mo is thinking of stories ${name} would like...` : '';
+    dreamRuntime.shown.ideas = ideas.map((i) => i.title);
+    if (rows) this.panel?.getElementById<UIKit.Text>('dream-ideas-label')?.setProperties({ text: dreamRuntime.shown.ideasLabel });
+    IDEA_BUTTONS.forEach((id, i) => {
+      const idea = ideas[i];
+      show(`dream-idea-row-${i + 1}`, i < rows);
+      if (i < rows) this.panel?.getElementById<UIKit.Text>(`${id}-label`)?.setProperties({ text: idea?.title ?? '...', color: idea ? p.cream : p.muted });
+    });
+  }
+
+  /** "Dream Mia's story": Mo plans the request (the closest place the app has, its shapes, where in it the idea happens) into the chooser, to change or dream. */
+  private takeAsk(): void {
+    const ask = requestsRuntime.pending;
+    if (!ask || this.dreaming) return;
+    this.say(`Mo is thinking about ${possessive(ask.from)} idea...`);
+    void planAsk(ask).then((plan) => {
+      if (!this.choosing || requestsRuntime.pending?.id !== ask.id) return;
+      if (!plan) {
+        // No plan (offline): the request as it came, the rest picked when it is dreamed.
+        this.takeIntoChooser(ask.theme ?? this.dreamTheme, ask.shapes?.length ? ask.shapes : this.dreamShapes, ask.words ?? '', '', ask.id);
+        this.say(`${possessive(ask.from)} idea is ready. Change the place or shapes if you like, then Dream it.`);
+        return;
+      }
+      this.takeIntoChooser(plan.theme, plan.shapes, ask.words ?? '', plan.setting ?? '', ask.id);
+      const where = plan.setting || PLACE_WORDS[plan.theme] || plan.theme;
+      this.say(
+        `${ask.words ? `${possessive(ask.from)} idea` : 'This story'}, ${where}, with ${shapeList(plan.shapes)}. Change the place or shapes if you like, then Dream it.`,
+      );
+    });
+  }
+
+  /** One of Mo's suggestions, into the chooser. */
+  private takeIdea(i: number): void {
+    const idea = requestsRuntime.ideas[i];
+    if (!idea || this.dreaming) return;
+    this.takeIntoChooser(idea.theme, idea.shapes, idea.idea, '', '');
+    this.say(`${idea.title}: ${idea.why}. Dream it, or change the place or shapes first.`);
+  }
+
+  private takeIntoChooser(theme: string, shapes: readonly string[], wish: string, setting: string, askId: string): void {
+    this.dreamTheme = (DREAM_THEMES as readonly string[]).includes(theme) ? theme : this.dreamTheme;
+    this.dreamShapes = [...new Set(shapes.filter((x) => DREAM_ANY_SHAPE.has(x)))].slice(0, MAX_DREAM_SHAPES);
+    this.pendingWish = wish;
+    this.pendingSetting = setting;
+    this.pendingTheme = this.dreamTheme;
+    this.pendingFor = askId;
+    this.refreshDreamChooser();
+  }
+
+  /** The status line, for a request or a suggestion (also kept in dreamRuntime.shown for tests and diagnostics). */
+  private say(text: string): void {
+    dreamRuntime.shown.status = text;
+    this.status?.setProperties({ text });
+  }
+
+  private clearPending(): void {
+    this.pendingWish = this.pendingSetting = this.pendingFor = this.pendingTheme = '';
   }
 
   /**
@@ -337,6 +449,7 @@ export class SettingsSystem extends createSystem({
   private closeDreamChooser(): void {
     this.wishListening?.cancel();
     this.choosing = false;
+    this.clearPending();
     dreamRuntime.chooser = { ...dreamRuntime.chooser, open: false };
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'none' });
   }
@@ -371,8 +484,12 @@ export class SettingsSystem extends createSystem({
       this.status?.setProperties({ text: 'Pick at least two shapes.' });
       return;
     }
+    // A request or a suggestion keeps its words; its setting only in the place it was planned for.
+    const wish = this.pendingWish;
+    const setting = this.dreamTheme === this.pendingTheme ? this.pendingSetting : '';
+    const askId = this.pendingFor;
     this.closeDreamChooser();
-    this.dream(this.dreamTheme, this.dreamShapes);
+    this.dream(this.dreamTheme, this.dreamShapes, wish || undefined, setting || undefined, askId || undefined);
   }
 
   /**
@@ -380,7 +497,7 @@ export class SettingsSystem extends createSystem({
    * picked at random (a voice command may name only a place, or nothing), or,
    * with a `wish` (an idea said in plain words), by the server's model from it.
    */
-  dream(theme?: string, shapes: readonly string[] = [], wish?: string): void {
+  dream(theme?: string, shapes: readonly string[] = [], wish?: string, setting?: string, askId?: string): void {
     const story = first(this.queries.stories.entities);
     if (!story || this.dreaming || story.getValue(StoryState, 'followMode')) return;
     if (!this.dreamAvailable) {
@@ -389,10 +506,10 @@ export class SettingsSystem extends createSystem({
     }
     const known = theme && (DREAM_THEMES as readonly string[]).includes(theme) ? theme : '';
     const chosen = [...new Set(shapes.filter((x) => DREAM_ANY_SHAPE.has(x)))].slice(0, MAX_DREAM_SHAPES);
-    let body: { theme?: string; shapes: string[]; wish?: string };
+    let body: { theme?: string; shapes: string[]; wish?: string; setting?: string };
     if (wish) {
       // The server reads the place and shapes from the idea (its model picks what it leaves out).
-      body = { ...(known ? { theme: known } : {}), shapes: chosen, wish };
+      body = { ...(known ? { theme: known } : {}), shapes: chosen, wish, ...(known && setting ? { setting } : {}) };
     } else {
       const place = known || DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
       const rest = startingShapes(place).filter((x) => !chosen.includes(x)).sort(() => Math.random() - 0.5);
@@ -405,7 +522,7 @@ export class SettingsSystem extends createSystem({
     this.dreaming = true;
     accessRuntime.dreaming = true;
     this.status?.setProperties({ text: wish ? `Heard: "${wish}". Mo is dreaming it up...` : 'Mo is dreaming up a story...' });
-    dreamRuntime.asked = { theme: body.theme ?? '', shapes: [...body.shapes], ...(wish ? { wish } : {}) };
+    dreamRuntime.asked = { theme: body.theme ?? '', shapes: [...body.shapes], ...(wish ? { wish } : {}), ...(body.setting ? { setting: body.setting } : {}) };
     const t0 = performance.now();
     fetch('/api/dream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) })
       .then(async (r) => {
@@ -421,6 +538,8 @@ export class SettingsSystem extends createSystem({
         this.dreams = Math.max(this.dreams, isDreamed(current) ? Number(current.slice(8)) : 0) + 1;
         story.setValue(StoryState, 'script', `dreamed:${this.dreams}`);
         this.status?.setProperties({ text: `Mo dreamed "${script.title}"...` });
+        // A child's request, answered: it leaves the journal, and the story counts toward their taste.
+        if (askId) void answerAsk(askId, body.theme ?? '', body.shapes);
       })
       .catch(() => {
         dreamRuntime.failed++;
@@ -565,6 +684,9 @@ export class SettingsSystem extends createSystem({
     on('dream-go', () => this.dreamChosen());
     on('dream-cancel', () => this.closeDreamChooser());
     on('dream-say', () => this.sayWish());
+    on('dream-ask-go', () => this.takeAsk());
+    IDEA_BUTTONS.forEach((id, i) => on(id, () => this.takeIdea(i)));
+    void loadStoryRequests();
     this.sayLabel = panel.getElementById<UIKit.Text>('dream-say-label') ?? undefined;
     this.dreamLabel = panel.getElementById<UIKit.Text>('story-dream-label') ?? undefined;
     panel.getElementById('dream-section')?.setProperties({ display: 'none' });
@@ -679,18 +801,28 @@ export class SettingsSystem extends createSystem({
 
 /** For tests and diagnostics: the last dream asked for, and how dreaming has gone. */
 export const dreamRuntime = {
-  asked: null as { theme: string; shapes: string[]; wish?: string } | null,
+  asked: null as { theme: string; shapes: string[]; wish?: string; setting?: string } | null,
   /** A dream asked for elsewhere (a voice command): taken by the Settings system on its next update. */
   request: null as { theme: string; shapes: string[]; wish?: string } | null,
   /** "Say your idea": 'listening' while the microphone is on, 'understanding' while the words are worked out, else ''; and the last words heard. */
   wish: { state: '' as '' | 'listening' | 'understanding', label: 'Say your idea', heard: '', listen: wishListenRuntime },
   /** The chooser as shown (for tests and diagnostics). */
   chooser: { open: false, theme: '', shapes: [] as string[] },
+  /** A child's request and Mo's suggestions as shown on the panel, and the status line about them. */
+  shown: { status: '', ask: '', askButton: '', ideasLabel: '', ideas: [] as string[] },
   title: '',
   ms: 0,
   ok: 0,
   failed: 0,
 };
+
+const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** "Mia's", "James'", "your family's". */
+function possessive(name: string): string {
+  const n = name || 'your family';
+  return n.endsWith('s') ? `${n}'` : `${n}'s`;
+}
 
 function first<T>(set: Iterable<T>): T | undefined {
   for (const v of set) return v;

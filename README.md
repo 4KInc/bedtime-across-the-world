@@ -199,6 +199,18 @@ hand held still in front of you will do.
   steps aside for it); Mo takes the
   colours the child chose, and the creature they drew walks onto the wall at
   the start of the next story, then hops off.
+- **A story the child asked for**: a goodnight can ask for tomorrow's story
+  ("Dad, tell me a story about Mo at the carnival"). The journal's chooser
+  shows "Mia asked: ..." and **Dream Mia's story**: Mo plans it into the
+  closest place the app has scenery for (a carnival becomes "a little carnival
+  in the meadow, under strings of lanterns"), shows the plan, and the
+  storyteller can change the place or shapes before dreaming it. Mia's sample
+  goodnight asks for one, so it can be tried alone.
+- **Stories your child would like**: Mo keeps a small taste for each child on
+  the headset (the places and creatures they asked for, made in their
+  goodnights and were told, and their last few ideas) and suggests three new
+  stories from it under "Mia might like": one close to what they love, one
+  that mixes two of them, one gentle new thing.
 - **Dream a new one** (Tonight's story): Mo dreams up a new short story for a
   place (sea, forest, meadow, river, rain, sky, or the worlds' space, road and
   dinosaur valley, with their own creatures) and two or three shapes the
@@ -247,6 +259,10 @@ hand held still in front of you will do.
 - **Send a goodnight back**: twenty seconds of your shadow creature and, if a
   grown-up switches it on, your voice; choose colours for Mo, and draw a
   creature with your finger for the next story.
+- **Ask for tomorrow's story** with the goodnight: say it (**Say it**), type it,
+  or, for a child who cannot say it yet, pick a place and up to three
+  creatures in pictures. A character from a show or a scary word is left out,
+  and the grown-up sees what will be sent and why.
 
 ## How Shadowplay uses AI
 
@@ -256,6 +272,8 @@ never puts a word on the wall that the app has not checked.
 | | What it does | What it is given | Guardrails |
 | --- | --- | --- | --- |
 | **Mo the coach** (Gemini 3.5 Flash Lite) | When a hand is stuck on a shape, Mo gives one short, warm tip in about 0.7 s ("curl your ring finger down") | Only the shape's name and a few fixed facts the headset worked out from the hand's joints | The facts come from the app's own recognition, not from the model; the reply must fit them, pass the content checks (no brands, Mo is "she", no pose from another shape), or the app's own words are used |
+| **A child's request** (Gemini 3.5 Flash Lite) | Plans a story the child asked for into the closest place the app has ("the carnival" becomes a carnival in the meadow), with shapes that fit, shown to the storyteller before it is dreamed | The child's words (softened on the phone: characters from shows and scary words left out), a place and creature names | Only when the storyteller presses Dream; the place and shapes come from fixed lists; the setting is one checked plain line. Without the model, a table of common ideas (carnival, pirates, castle, snow...) does the same |
+| **Stories your child would like** (Gemini 3.5 Flash Lite) | Three story ideas from a child's taste, each with why they would like it | Counts of places and creatures, and the child's last few ideas (softened). Never a name | Every field is checked (fixed lists, plain lines, no characters, no he or she); ideas that fail are dropped; without the model, ideas made from the taste itself. The taste stays on the headset |
 | **Dream a new story** (Gemini 3.8 Flash) | A new bedtime story for the place and shapes the storyteller picks, or for an idea said in their own words ("a forest story with a dog and a rabbit"), in about 4 s | A theme and shape names; with **Say your idea**, the words said (plain words only, at most 30, checked first; brands and never-say words are dropped and not sent) | The model writes only lines of narration into a fixed shape; the app builds the story itself (scenes, requests, scenery that fits each creature), checks every line, and refuses anything off. Shared, it is checked again by the server and the family's device |
 | **A voice for every line** | The library is read by five narrators recorded offline with **Kokoro**, an open model (Apache-2.0); a dreamed story is read live by **Google Cloud Text-to-Speech**, saying the child's name | Story lines only | Only plain story lines that pass the content checks are spoken; each is cached and deleted after 30 days. When a parent records, *they* are the narrator |
 | **Voice commands** | Say the shape, "pause", "go on", "music off" | A spoken phrase of a second or two (the browser's own recognition, else **Google Cloud Speech-to-Text**) | Only on when switched on; the clip is forgotten; ignored while recording or talking live |
@@ -308,6 +326,15 @@ are private to the family and deleted after 30 days.
 - A goodnight's gifts travel with it, under the story's private code: Mo's
   colours as a palette name, and the child's drawing as finger strokes (a few
   kilobytes), both checked by the server.
+- A story request travels the same way: the child's words (softened on the
+  phone, checked again by the server), and any place and creatures picked in
+  pictures, deleted with the story after 30 days. **Say it** opens the
+  microphone only from the press until the idea is said, like Say your idea.
+  The words reach the AI only if the storyteller presses Dream, to plan and
+  write that story.
+- A child's taste (counts of places and creatures, their last five ideas) is
+  kept on the storyteller's headset only. To suggest stories, the counts and
+  ideas are sent, never a name; nothing is stored on the server.
 - Live rooms hold one storyteller and one family member. The server relays only
   protocol messages and stores nothing.
 - Uploads are strictly validated; rate limits and room limits are per client.
@@ -448,6 +475,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
+| `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste |
 | `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
 | `node scripts/sim/world-creatures.mjs`, `world-free-stage.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone; Free Stage wakes the creatures a child has met |
 | `node scripts/sim/playback-hands.mjs` | While a recording plays on the headset, your own pinches still pause it and open the Journal |

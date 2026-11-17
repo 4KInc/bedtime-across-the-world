@@ -60,7 +60,21 @@ before(async () => {
       let text: string;
       if (/grown-up's idea in their own words/.test(parsed.system)) {
         // Choosing the place and shapes for a wish: a meadow with a dog and a bird (nonsense for a "muddle").
-        text = content.includes('muddle') ? 'I am not sure.' : '{"theme":"meadow","shapes":["dog","bird"]}';
+        // A carnival is planned into the meadow, with where in it the story happens.
+        text = content.includes('muddle')
+          ? 'I am not sure.'
+          : content.includes('carnival')
+            ? '{"theme":"meadow","shapes":["dog","bird"],"setting":"at a little carnival in the meadow, under strings of lanterns"}'
+            : '{"theme":"meadow","shapes":["dog","bird"]}';
+      } else if (/You suggest bedtime stories/.test(parsed.system)) {
+        // Three suggestions, one of them spoiled (a character from a film).
+        text = JSON.stringify({
+          ideas: [
+            { title: 'Lanterns at the Fair', idea: 'Mo rides a dog through a little carnival at night', theme: 'meadow', shapes: ['dog', 'bird'], why: 'Asked for the carnival' },
+            { title: 'Nemo and Mo', idea: 'Mo finds Nemo by the sea', theme: 'sea', shapes: ['fish', 'whale'], why: 'Loves the sea' },
+            { title: 'The Whale Who Hummed', idea: 'a sleepy whale hums Mo to sleep', theme: 'sea', shapes: ['whale', 'fish'], why: 'Loves the whale and the dog' },
+          ],
+        });
       } else if (/shadow-puppet game/.test(parsed.system)) {
         // A new story: the shapes asked for, in order; a "river" story comes back without the shapes' names.
         const shapes = /shapes: ([a-z, ]+)\./.exec(content)![1].split(', ');
@@ -583,5 +597,56 @@ test('dream from a wish the model must not see (brands, never-say words, odd cha
     assert.equal(res.status, 200, String(wish));
     const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
     assert.ok(!/peppa|monster|<b>|xxxx/i.test(sent), `${wish} was not sent`);
+  }
+});
+
+test("a goodnight asks for tomorrow's story: the checked request is kept with it; anything off is refused", async () => {
+  const c = as();
+  const { code } = (await (await c.post('/api/stories', story())).json()) as { code: string };
+  const ask = { words: 'Dad, tell me a story about Mo at the carnival', theme: 'meadow', shapes: ['dog', 'whale'] };
+  assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'ask-1', performer: 'Mia', ask: { ...ask, extra: 'x' } }))).status, 201);
+  const list = (await (await c.get(`/api/stories/${code}/replies`)).json()) as { replies: { ask?: unknown }[] };
+  assert.deepEqual(list.replies[0].ask, ask);
+  for (const bad of [{ words: 'an Elsa story' }, { theme: 'mars' }, { shapes: ['dog', 'fish', 'bird', 'cup'] }, { shapes: ['unicorn'] }, 'a carnival', {}]) {
+    assert.equal((await as().post(`/api/stories/${code}/replies`, story({ id: 'ask-bad', ask: bad }))).status, 400, JSON.stringify(bad));
+  }
+});
+
+test("plan: a child's idea goes to the closest place the app has, with where in it the story happens", async () => {
+  const plan = await (await as().post('/api/dream/plan', { wish: 'Dad, tell me a story about Mo at the carnival' })).json();
+  assert.deepEqual(plan, { theme: 'meadow', shapes: ['dog', 'bird'], setting: 'at a little carnival in the meadow, under strings of lanterns', by: 'ai' });
+  // The model unsure: planned from the words (a circus is a carnival too).
+  const words = await (await as().post('/api/dream/plan', { wish: 'a muddle at the circus' })).json();
+  assert.equal(words.by, 'words');
+  assert.equal(words.theme, 'meadow');
+  assert.equal(words.setting, 'at a little carnival in the meadow, under strings of lanterns');
+  // Pictures only: a place and one creature, topped up.
+  const pictures = await (await as().post('/api/dream/plan', { theme: 'space', shapes: ['rocket'] })).json();
+  assert.equal(pictures.theme, 'space');
+  assert.equal(pictures.shapes[0], 'rocket');
+  assert.ok(pictures.shapes.length >= 2);
+  assert.equal((await as().post('/api/dream/plan', { theme: 'mars', shapes: ['rocket', 'rocket'] })).status, 200);
+  assert.equal((await as().post('/api/dream/plan', 'not json')).status, 400);
+});
+
+test('dream in a setting: the story is written at the carnival, in the meadow; a setting that will not do is left out', async () => {
+  const res = await as().post('/api/dream', { wish: 'a story about Mo at the carnival', theme: 'meadow', shapes: ['dog', 'bird'], setting: 'at a little carnival in the meadow, under strings of lanterns' });
+  assert.equal(res.status, 200);
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /set at a little carnival in the meadow, under strings of lanterns \(the place: in a meadow under the stars\)/);
+  await as().post('/api/dream', { wish: 'a story about a castle', theme: 'forest', shapes: ['deer', 'bird'], setting: 'where a monster lives' });
+  assert.doesNotMatch(claudeSeen.at(-1)!.body.messages?.[0].content ?? '', /monster/);
+});
+
+test("suggest: stories a child would like, from their taste (no names); the model's ideas are checked one by one", async () => {
+  const res = await as().post('/api/dream/suggest', { places: { meadow: 3 }, creatures: { dog: 4, whale: 1 }, ideas: ['a story about Mo at the carnival'] });
+  const body = (await res.json()) as { ideas: { title: string }[]; by: string };
+  assert.equal(body.by, 'ai');
+  assert.deepEqual(body.ideas.map((i) => i.title), ['Lanterns at the Fair', 'The Whale Who Hummed']);
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /meadow \(3\)/);
+  assert.match(sent, /a story about Mo at the carnival/);
+  for (const bad of [{}, { places: { mars: 1 }, creatures: {}, ideas: [] }, { places: {}, creatures: {}, ideas: [] }]) {
+    assert.equal((await as().post('/api/dream/suggest', bad)).status, 400, JSON.stringify(bad));
   }
 });

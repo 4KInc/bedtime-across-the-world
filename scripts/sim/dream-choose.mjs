@@ -10,7 +10,7 @@
 //   node scripts/sim/dream-choose.mjs [--gpu]
 // Needs the dev server (npm run dev) on https://localhost:8082.
 import { chromium } from 'playwright';
-import { assembleStory, checkDream } from '../../server/dream.ts';
+import { assembleStory, checkDream, suggestByTaste } from '../../server/dream.ts';
 import { cannedWords } from '../../tests/fixtures/dream-words.mjs';
 
 const APP = process.env.SIM_APP ?? 'https://localhost:8082';
@@ -27,6 +27,8 @@ const errors = [];
 const browser = await chromium.launch({ args: [...RENDER, '--ignore-certificate-errors', '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ignoreHTTPSErrors: true });
 const asked = [];
+// The server's suggestions for the sample family's child (story-requests.ts), from its own function.
+await context.route('**/api/dream/suggest', (route) => route.fulfill({ json: { ideas: suggestByTaste(JSON.parse(route.request().postData() ?? '{}')), by: 'taste' } }));
 await context.route('**/api/dream', async (route) => {
   const req = route.request();
   if (req.method() === 'GET') return route.fulfill({ json: { available: true } });
@@ -138,9 +140,10 @@ check('Space: its own creatures in the second row; a rocket and an alien, dreame
 
 // 7. By voice, a dinosaur story with a T. rex and a pterodactyl.
 await page.evaluate(() => window.__say('Dream about the dinosaurs with a T. rex and a pterodactyl'));
-await page.waitForFunction((n) => __sp.view().dream.ok > n, asked.length - 1, { timeout: 15000 }).catch(() => {});
+// (A new dream: one more than those already told.)
+await page.waitForFunction((n) => __sp.view().dream.ok > n, await page.evaluate(() => __sp.view().dream.ok), { timeout: 15000 }).catch(() => {});
 const dino = asked[asked.length - 1];
-check('by voice: "dream about the dinosaurs with a T. rex and a pterodactyl"', dino.theme === 'dinosaurs' && dino.shapes.join() === 'trex,pterodactyl', { asked: dino });
+check('by voice: "dream about the dinosaurs with a T. rex and a pterodactyl"', dino.theme === 'dinosaurs' && dino.shapes.join() === 'trex,pterodactyl', { asked: dino, voice: await page.evaluate(() => __sp.view().voice), dream: await page.evaluate(() => ({ ok: __sp.view().dream.ok, failed: __sp.view().dream.failed, script: __sp.get('StoryState', 'script') })) });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);
