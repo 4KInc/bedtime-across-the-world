@@ -136,7 +136,8 @@ try {
   await page.evaluate((t) => IWER_DEVICE.remote.dispatch('look_at', { device: 'headset', target: { x: t[0], y: t[1], z: t[2] } }), t);
   await sleep(800);
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
-  check('Send sends the chosen (older) recording, and the row shows it sent', Boolean(code) && fetched === chosen && sent.chosen === chosen && / · sent$/.test(sent.info), { status, fetched, chosen, sent });
+  // The row shows its family code, to give again (Nov 17: the codes were nowhere to be found).
+  check('Send sends the chosen (older) recording, and the row shows its family code', Boolean(code) && fetched === chosen && sent.chosen === chosen && sent.info.endsWith(` · family code ${code}`), { status, fetched, chosen, sent });
 
   // 4. Diagnostics: started, saved, sent; never the code.
   await page.evaluate(() => __sp.set('ShadowJournal', 'open', false));

@@ -159,8 +159,7 @@
       "id": "lane-digger-carry",
       "type": "carry",
       "toU": 0.3,
-      "text": "Scoop, scoop, and now the road is nice and dry.",
-      "minV": 0.12
+      "text": "Scoop, scoop, and now the road is nice and dry."
     },
     {
       "id": "lane-digger-land",

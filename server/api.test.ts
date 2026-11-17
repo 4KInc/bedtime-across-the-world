@@ -385,6 +385,17 @@ test('coach: Mo\'s tip from Claude, built only from the shape and fixed fact ids
   assert.equal(claudeSeen.length, before);
 });
 
+test('coach: a world creature\'s tip from the model, told how the creature is made (Quest 3, Nov 17: they fell back to fixed lines)', async () => {
+  const res = await as().post('/api/coach', { shape: 'alien', facts: ['pinky-straighten'], attempt: 0 });
+  assert.equal(res.status, 200);
+  assert.equal(((await res.json()) as { source: string }).source, 'ai');
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /Shape: alien \(made with the pointer finger and the little finger up/);
+  const rex = await as().post('/api/coach', { shape: 'trex', facts: ['hands-apart'], attempt: 0 });
+  assert.equal(rex.status, 200);
+  assert.match(claudeSeen.at(-1)!.body.messages?.[0].content ?? '', /Shape: T\. rex \(made with two flat hands/);
+});
+
 test('coach: an unusable reply becomes the fixed line; free text and unknown facts are refused', async () => {
   const c = as();
   const res = await (await c.post('/api/coach', { shape: 'dog', facts: ['thumb-out'], attempt: 1 })).json();
@@ -521,6 +532,34 @@ test('dream from a wish naming four shapes: all four, in the order said (Quest 3
   // Five named: the first four.
   const five = await (await as().post('/api/dream', { wish: 'a meadow story with a rabbit, a dog, a bird, a cup and a snail' })).json();
   assert.deepEqual(shapesOf(five).shapes, ['rabbit', 'dog', 'bird', 'cup']);
+});
+
+test('dream in the story worlds: space with a rocket and an alien, a T. rex wished for, a shark taken to the sea', async () => {
+  // The chooser's space place: the star port, the world's creatures told how to make, the fliers off the ground.
+  const space = (await (await as().post('/api/dream', { theme: 'space', shapes: ['rocket', 'alien'] })).json()) as {
+    beats: { id: string; type: string; shape?: string; set?: string; minV?: number }[];
+  };
+  assert.deepEqual(shapesOf(space), { shapes: ['rocket', 'alien'], scenery: 'star-port' });
+  assert.ok(space.beats.filter((b) => b.type === 'carry').every((b) => b.minV === 0.12), 'the rocket and the alien fly');
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /far out in space/);
+  assert.match(sent, /for the rocket: one finger pointing straight up/);
+  assert.ok(!sent.includes('for the shark'), 'only the creatures in the story');
+  // Said in words: the dinosaurs' valley, with a T. rex and a pterodactyl.
+  const dino = await (await as().post('/api/dream', { wish: 'I want a dinosaur story with a T. rex and a pterodactyl' })).json();
+  assert.deepEqual(shapesOf(dino), { shapes: ['trex', 'pterodactyl'], scenery: 'dino-valley' });
+  // A shark in a forest story swims in the sea; a fist (the asteroid) goes to the stars.
+  const forest = (await (await as().post('/api/dream', { theme: 'forest', shapes: ['rabbit', 'shark', 'asteroid'] })).json()) as { beats: { type: string; set?: string; shape?: string }[] };
+  let here = '';
+  const at: Record<string, string> = {};
+  for (const b of forest.beats) {
+    if (b.type === 'scenery') here = b.set!;
+    if (b.type === 'request') at[b.shape!] = here;
+  }
+  assert.deepEqual(at, { rabbit: 'forest', shark: 'sea', asteroid: 'star-port' });
+  // Topped up in a world's own place: its own creatures.
+  const road = (await (await as().post('/api/dream', { wish: 'a story on the road please' })).json()) as { beats: { type: string; set?: string; shape?: string }[] };
+  assert.equal(shapesOf(road).scenery, 'moon-road');
 });
 
 test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {

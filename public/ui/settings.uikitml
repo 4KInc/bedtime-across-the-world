@@ -243,6 +243,11 @@
       <button id="dream-theme-rain" class="option">Rain</button>
       <button id="dream-theme-sky" class="option">Sky</button>
     </div>
+    <div class="row">
+      <button id="dream-theme-space" class="option">Space</button>
+      <button id="dream-theme-road" class="option">Road</button>
+      <button id="dream-theme-dinosaurs" class="option">Dinosaurs</button>
+    </div>
     <div class="label">With these shapes (two or three, in story order)</div>
     <div class="row">
       <button id="dream-shape-rabbit" class="option">Rabbit</button>
@@ -250,6 +255,11 @@
       <button id="dream-shape-dog" class="option">Dog</button>
       <button id="dream-shape-bird" class="option">Bird</button>
       <button id="dream-shape-cup" class="option">Cup</button>
+    </div>
+    <div id="dream-world-row" class="row">
+      <button id="dream-world-1" class="option"><span id="dream-world-1-label">Shark</span></button>
+      <button id="dream-world-2" class="option"><span id="dream-world-2-label">Octopus</span></button>
+      <button id="dream-world-3" class="option"><span id="dream-world-3-label">Whale</span></button>
     </div>
     <div class="row">
       <button id="dream-go" class="family">

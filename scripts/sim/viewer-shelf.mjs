@@ -43,6 +43,18 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   page.on('pageerror', (e) => errors.push(`${device}: ${e}`));
   await page.goto(APP + '/?viewer', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__sp, null, { timeout: 60000 });
+  // Full screen, where the browser allows it (Nov 17): on, then off again.
+  const fsBtn = page.locator('.sp-small-row [data-act="fullscreen"]');
+  await fsBtn.waitFor({ timeout: 15000 }).catch(() => undefined);
+  // (Once the page has settled: a click while it is still starting can be lost.)
+  await page.waitForFunction(() => document.querySelector('.sp-card'), null, { timeout: 30000 }).catch(() => undefined);
+  await fsBtn.click();
+  const fsOn = await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
+  await fsBtn.click();
+  await sleep(600);
+  const fsOff = await page.evaluate(() => !document.fullscreenElement);
+  check(`${device}: Full screen goes full screen, and back`, fsOn && fsOff, { fsOn, fsOff });
+
   const card = page.getByRole('button', { name: /Watch A story from far away from Dad/ }).first();
   await card.waitFor({ timeout: 30000 });
   await card.click();
@@ -61,6 +73,10 @@ for (const [device, viewport] of [['tablet', { width: 1180, height: 820 }], ['ph
   const cw = c[2] - c[0];
   const drawn = [c[0] + cw * 0.08, c[1] + (c[3] - c[1]) * 0.25, c[2] - cw * 0.08, c[3] - (c[3] - c[1]) * 0.1];
   check(`${device}: the viewer's controls never cover the caption`, !overlap(drawn, layout.pill), { caption: drawn.map(Math.round), pill: layout.pill });
+
+  // No lamp hum on the viewer: there is no lamp on its screen (Nov 17: a constant buzz from the speakers).
+  const sound = await page.evaluate(() => __sp.view().sound);
+  check(`${device}: no lamp hum on the family viewer`, sound.hum === false && sound.lullabyNotes >= 0, sound);
 
   // The controls fade while the recording plays untouched (they sometimes covered the caption, Nov 16),
   // and come back on a mouse move or a tap.

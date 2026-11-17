@@ -57,6 +57,16 @@ test('a dreamed story shared on: the server-built story passes, and comes back a
   assert.equal('onclick' in clean.beats[3], false);
 });
 
+test('a dreamed story in a story world shared on: a T. rex and a pterodactyl in the dinosaur valley pass', async () => {
+  const { checkSharedStory } = await import('../src/story-checks.ts');
+  const req = { theme: 'dinosaurs', shapes: ['trex', 'pterodactyl', 'cup'] };
+  const built = assembleStory(req, cannedWords(req.shapes))!;
+  assert.ok(built, 'the server builds it');
+  const checked = checkSharedStory(built)!;
+  assert.ok(checked, 'and it can be shared');
+  assert.deepEqual(checked.beats.filter((b) => b.type === 'request').map((b) => b.shape), ['trex', 'pterodactyl', 'cup']);
+});
+
 test('a shared story is refused when anything is off', async () => {
   const { checkSharedStory } = await import('../src/story-checks.ts');
   const req = { theme: 'forest', shapes: ['dog', 'fish'] };

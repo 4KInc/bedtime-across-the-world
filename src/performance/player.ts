@@ -18,6 +18,7 @@ import {
 import { handOverride, JOINT_COUNT, stageRuntime } from '../stage-runtime.js';
 import { applyEvent, ApplyTargets, applyTargets } from './apply.js';
 import { decodeHands, FRAME_STRIDE, Performance, PerformanceEvent, readFrame } from './format.js';
+import { voiceGain } from '../sfx.js';
 
 /** Re-sync the voice when it drifts this far (s) from the performance clock. */
 const AUDIO_DRIFT = 0.25;
@@ -33,6 +34,9 @@ const LINE_TAIL_MS = 400;
  * creatures wake and release on cue, the lamp moves, and the performer's
  * voice plays in sync. Pause and resume keep everything together.
  */
+/** For tests: the recorded voice now (its loudness, whether paused, whether through a gain node). */
+export const playbackVoiceRuntime = { gain: 1, paused: true, routed: false };
+
 export class PerformancePlayerSystem extends createSystem({
   players: { required: [PerformancePlayer] },
   stories: { required: [StoryState] },
@@ -69,6 +73,12 @@ export class PerformancePlayerSystem extends createSystem({
   /** The voice's level now and where it is heading (0 or 1). */
   private gain = 1;
   private gainTarget = 1;
+  /**
+   * The voice's gain node (sfx.ts voiceGain): fades are done here and the voice is
+   * muted, never paused, between lines, so iOS never has to be asked to play it
+   * again without a tap (iPad, Nov 17: Join in lost the voice after the first shape).
+   */
+  private voiceNode: GainNode | null = null;
   /** Real time (ms) of the last fade step: fades run on the clock, not on frames (a slow device must not stretch them). */
   private fadeAt = 0;
   /** The live story beat whose line was last voiced during join-in. */
@@ -183,6 +193,7 @@ export class PerformancePlayerSystem extends createSystem({
     if (perf.audio) {
       this.audioUrl = URL.createObjectURL(perf.audio);
       this.audio = new Audio(this.audioUrl);
+      this.voiceNode = voiceGain(this.audio);
       void this.audio.play().catch(() => undefined);
     }
   }
@@ -222,6 +233,8 @@ export class PerformancePlayerSystem extends createSystem({
     // The performer finishes saying what to make (it is the child's instruction), then the voice fades.
     this.voicedBeat = requestIndex;
     this.voiceEndsAt = this.lineEnd(requestMs, requestIndex);
+    // Muted, the voice plays on through the child's turn: round and round, so it never ends and needs no new play().
+    if (this.audio && this.voiceNode) this.audio.loop = true;
     handOverride.cameraAllowed = true;
     if (handOverride.source === 'playback') handOverride.left = handOverride.right = null;
     first(this.queries.stories.entities)?.setValue(StoryState, 'joinIn', true);
@@ -254,6 +267,7 @@ export class PerformancePlayerSystem extends createSystem({
     this.clock = this.events[at].t / 1000;
     this.next = at + 1;
     if (this.audio) {
+      this.audio.loop = false;
       this.audio.currentTime = this.clock;
       this.voiceEndsAt = -1;
       this.fadeIn();
@@ -295,14 +309,23 @@ export class PerformancePlayerSystem extends createSystem({
     this.gain = 0;
     this.gainTarget = 1;
     this.fadeAt = performance.now();
-    this.audio.volume = 0;
-    void this.audio.play().catch(() => undefined);
+    this.setVoice(0);
+    if (this.audio.paused) void this.audio.play().catch(() => undefined);
+  }
+
+  /** The voice's loudness: on its gain node where there is one (iOS ignores an element's volume), else the element's. */
+  private setVoice(gain: number): void {
+    if (this.voiceNode) this.voiceNode.gain.value = gain;
+    else if (this.audio) this.audio.volume = gain;
   }
 
   /** Fade the voice toward its target; at a line's end, fade out and stop. */
   private updateVoice(): void {
     const audio = this.audio;
     if (!audio) return;
+    playbackVoiceRuntime.gain = Math.round(this.gain * 100) / 100;
+    playbackVoiceRuntime.paused = audio.paused;
+    playbackVoiceRuntime.routed = this.voiceNode !== null;
     const now = performance.now();
     const step = (now - this.fadeAt) / 1000 / VOICE_FADE;
     this.fadeAt = now;
@@ -310,14 +333,14 @@ export class PerformancePlayerSystem extends createSystem({
     // Well past the line's end (a long frame): stop now rather than run into the next line.
     if (this.gainTarget === 0 && this.voiceEndsAt >= 0 && audio.currentTime >= this.voiceEndsAt + VOICE_FADE) this.gain = 0;
     if (this.gain === this.gainTarget) {
-      if (this.gain === 0 && !audio.paused) audio.pause();
+      // Muted between lines: with a gain node it keeps playing (silently), so no new play() is needed later.
+      if (this.gain === 0 && !audio.paused && !this.voiceNode) audio.pause();
       return;
     }
     this.gain = this.gainTarget > this.gain ? Math.min(this.gainTarget, this.gain + step) : Math.max(this.gainTarget, this.gain - step);
-    // (iOS ignores volume: there the line simply stops at its end.)
-    audio.volume = this.gain;
+    this.setVoice(this.gain);
     if (this.gain === 0) {
-      audio.pause();
+      if (!this.voiceNode) audio.pause();
       this.voiceEndsAt = -1;
     }
   }
@@ -335,6 +358,8 @@ export class PerformancePlayerSystem extends createSystem({
   private teardown(): void {
     if (this.perf) family.borrow(null);
     this.audio?.pause();
+    this.voiceNode?.disconnect();
+    this.voiceNode = null;
     this.audio = null;
     if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
     this.audioUrl = '';

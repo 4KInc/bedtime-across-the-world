@@ -158,9 +158,8 @@
     {
       "id": "song-whale-carry",
       "type": "carry",
-      "toU": 0.3,
-      "text": "Together, they swim toward the lighthouse, where the whale family waits.",
-      "minV": 0.12
+      "toU": 0.22,
+      "text": "Together, they swim toward the lighthouse, where the whale family waits."
     },
     {
       "id": "song-whale-land",

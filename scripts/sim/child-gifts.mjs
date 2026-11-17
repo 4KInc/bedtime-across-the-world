@@ -96,6 +96,14 @@ await page.evaluate((t) => IWER_DEVICE.remote.dispatch('look_at', { device: 'hea
 await sleep(800);
 await page.screenshot({ path: join(OUT, 'wall.png') });
 console.log(`screenshot: ${join(OUT, 'wall.png')}`);
+// Then it hops back off, and does not come back in the next story (Nov 16: it stayed in every story, in the way).
+const left = await page.waitForFunction(() => __sp.view().gifts.drawn.phase === 'none', null, { timeout: 25000, polling: 250 }).then(() => true, () => false);
+await page.evaluate(() => __sp.set('StoryState', 'script', 'story/the-night-garden.story.json'));
+await sleep(3000);
+const nextStory = (await page.evaluate(() => __sp.view().gifts)).drawn.phase;
+await page.evaluate(() => __sp.set('StoryState', 'script', 'story/counting-stars.story.json'));
+await sleep(1500);
+check("then it hops off, and stays away in the next story (once for each drawing)", left && nextStory === 'none', { left, nextStory });
 
 // Mo at the finale glows in Rose (her wings are tinted all along).
 await page.waitForFunction(() => __sp.get('StoryState', 'beatId') === 'stars-end', null, { timeout: 360000, polling: 250 });

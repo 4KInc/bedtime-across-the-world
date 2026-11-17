@@ -2,6 +2,7 @@ import { createSystem, Entity } from '@iwsdk/core';
 import { openCredits } from './credits.js';
 import { listRecordings, loadRecording } from './journal-store.js';
 import type { Performance } from './performance/format.js';
+import { recordingName, storyNames } from './story-names.js';
 import { fetchStory } from './performance/sharing.js';
 import { LiveSession, PerformancePlayer, PerformanceRecorder, ShapeRecognizer, WebcamHands } from './shadowplay-components.js';
 import { ReplySheet } from './viewer-reply.js';
@@ -13,6 +14,8 @@ const CONSENT_KEY = 'shadowplay.cameraConsent';
 
 const CSS = `
 .sp-grownups { margin: 4px 0 2px; color: #9d8f78; font: 12px/1.4 Georgia, 'Times New Roman', serif; }
+.sp-small-row { gap: 8px; }
+.sp-viewer.playing .sp-small-row { display: none; }
 .sp-credits-btn { align-self: flex-start; min-height: 36px; margin: 2px 0 6px; padding: 0 12px; border-radius: 18px; border: 1px solid #4a3d5c;
   background: transparent; color: #bfae8e; font: 13px Georgia, 'Times New Roman', serif; cursor: pointer; }
 .sp-viewer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
@@ -174,7 +177,10 @@ export class ViewerUISystem extends createSystem({
         <div class="sp-note" aria-live="polite"></div>
         <p class="sp-grownups">For grown-ups: you set this up. Stories open only with your family's private code and are
         deleted after 30 days; there are no accounts. The camera and the voice for a goodnight start only when you allow them.</p>
-        <button class="sp-credits-btn" type="button" data-act="credits">Credits</button>
+        <div class="sp-row sp-small-row">
+          <button class="sp-credits-btn" type="button" data-act="credits">Credits</button>
+          <button class="sp-credits-btn sp-full" type="button" data-act="fullscreen" hidden>Full screen</button>
+        </div>
         <div class="sp-row sp-controls" hidden>
           <button class="sp-btn" data-act="pause" aria-label="Pause">Pause</button>
           <button class="sp-btn" data-act="join" aria-label="Join in with your hands">Join in</button>
@@ -204,6 +210,29 @@ export class ViewerUISystem extends createSystem({
     });
     this.joinBtn?.addEventListener('click', () => this.toggleJoin());
     root.querySelector('[data-act="credits"]')?.addEventListener('click', openCredits);
+    // Full screen where the browser allows it (computers, Android, iPadOS 16.4+; not iPhone), Nov 17. On the
+    // story list's panel: it stays on through the story (a button in the playback controls widened them over the shelf).
+    const doc = document as Document & { webkitFullscreenEnabled?: boolean; webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void };
+    const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+    const canFull = Boolean(document.fullscreenEnabled || doc.webkitFullscreenEnabled);
+    const isFull = () => Boolean(document.fullscreenElement || doc.webkitFullscreenElement);
+    const fullButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-act="fullscreen"]')];
+    const label = () => {
+      for (const b of fullButtons) {
+        b.hidden = !canFull;
+        b.textContent = isFull() ? 'Exit full screen' : 'Full screen';
+        b.setAttribute('aria-label', b.textContent);
+      }
+    };
+    for (const b of fullButtons) {
+      b.addEventListener('click', () => {
+        if (isFull()) void (document.exitFullscreen?.() ?? doc.webkitExitFullscreen?.());
+        else void (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch?.(() => undefined);
+      });
+    }
+    document.addEventListener('fullscreenchange', label);
+    document.addEventListener('webkitfullscreenchange', label);
+    label();
     this.liveControls = root.querySelector('.sp-live');
     this.liveStatus = root.querySelector('.sp-live-status');
     this.talkBtn = root.querySelector('[data-act="talk"]');
@@ -283,7 +312,8 @@ export class ViewerUISystem extends createSystem({
     try {
       const perf = await fetchStory(code);
       this.highlight = perf.id;
-      if (this.note) this.note.textContent = `"${perf.title}" is here. Tap it to watch.`;
+      // Called by the story told, not the recording's own title (usually "A bedtime story", Nov 17).
+      if (this.note) this.note.textContent = `"${recordingName(perf, await storyNames())}" is here. Tap it to watch.`;
       await this.refreshList();
     } catch (error) {
       if (this.note) this.note.textContent = (error as Error).message;
@@ -297,6 +327,7 @@ export class ViewerUISystem extends createSystem({
     const recordings = (await listRecordings<Performance>()).filter((r) => !r.replyTo).sort(
       (a, b) => Number(b.id === this.highlight) - Number(a.id === this.highlight) || b.createdAt - a.createdAt,
     );
+    const names = await storyNames();
     this.list.replaceChildren();
     if (recordings.length === 0) {
       const empty = document.createElement('p');
@@ -310,12 +341,13 @@ export class ViewerUISystem extends createSystem({
       card.className = 'sp-card';
       const minutes = Math.max(1, Math.round(r.durationMs / 60000));
       card.innerHTML = `<b></b><span></span><br><small></small>`;
-      card.querySelector('b')!.textContent = r.title;
+      const title = recordingName(r, names);
+      card.querySelector('b')!.textContent = title;
       card.querySelector('span')!.textContent = r.performer ? `from ${r.performer}` : '';
       card.querySelector('small')!.textContent = r.sample
         ? `${minutes} min · Sample story`
         : `${minutes} min · ${new Date(r.createdAt).toLocaleDateString()}`;
-      card.setAttribute('aria-label', `Watch ${r.title}${r.performer ? ` from ${r.performer}` : ''}`);
+      card.setAttribute('aria-label', `Watch ${title}${r.performer ? ` from ${r.performer}` : ''}`);
       if (r.id === this.highlight) card.classList.add('new');
       card.addEventListener('click', () => this.watch(r.id));
       this.list.appendChild(card);

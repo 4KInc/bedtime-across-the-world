@@ -14,8 +14,15 @@ import { contentProblems } from '../src/story-checks.ts';
 import { MAX_DREAM_SHAPES, MAX_WISH_WORDS, readWish } from '../src/voice-commands.ts';
 import type { Llm } from './llm.ts';
 
-/** Every shape a dreamed story can tell: the five the chooser offers, and the ones an idea can name ("a fish and a crocodile"). */
-export const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail'] as const;
+/**
+ * Every shape a dreamed story can tell: the five the chooser offers, the ones an idea can name ("a fish
+ * and a crocodile"), and the story worlds' creatures (src/world-creatures.ts), which the chooser offers
+ * for their own places.
+ */
+export const DREAM_SHAPES = [
+  ...['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail'],
+  ...['rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl'],
+] as const;
 /** What Mo picks from when an idea names no shapes, or tops up a request: the easiest five. */
 export const PICK_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 export const THEMES: Readonly<Record<string, { words: string; scenery: string }>> = {
@@ -25,7 +32,35 @@ export const THEMES: Readonly<Record<string, { words: string; scenery: string }>
   river: { words: 'along a slow, silver river', scenery: 'river' },
   rain: { words: 'on a night of soft, passing rain', scenery: 'storm' },
   sky: { words: 'high in the night sky among the clouds', scenery: 'none' },
+  // The story worlds' places, with their scenery.
+  space: { words: 'far out in space, among the stars and planets', scenery: 'star-port' },
+  road: { words: 'along a long, winding road under the moon', scenery: 'moon-road' },
+  dinosaurs: { words: 'in a valley of giant ferns, long, long ago, where the dinosaurs live', scenery: 'dino-valley' },
 };
+/** What Mo picks from in a story world's place: its own creatures (and the cup, which fits anywhere). */
+const THEME_PICKS: Readonly<Record<string, readonly string[]>> = {
+  space: ['rocket', 'alien', 'asteroid', 'cup'],
+  road: ['car', 'plane', 'digger', 'cup'],
+  dinosaurs: ['trex', 'pterodactyl', 'bird', 'cup'],
+  sea: ['fish', 'shark', 'octopus', 'whale', 'cup'],
+};
+const picksFor = (theme: string): readonly string[] => THEME_PICKS[theme] ?? PICK_SHAPES;
+/** How a child makes each world creature, for the writing prompt (only those in the story are listed). */
+const WORLD_HANDS: Readonly<Record<string, string>> = {
+  rocket: 'for the rocket: one finger pointing straight up, the others curled in',
+  alien: 'for the alien: the pointer finger and the little finger up, like antennae',
+  asteroid: 'for the asteroid: a fist, round and lumpy like a space rock',
+  shark: 'for the shark: a flat hand, fingers together, pointing up like a fin',
+  octopus: 'for the octopus: a hand hanging down, fingers spread, wiggling like arms',
+  whale: 'for the whale: a fist for its body, and the thumb up for its spout',
+  car: 'for the car: a fist, with two fingers pointing forward like headlights',
+  plane: 'for the aeroplane (shape plane): the thumb and the little finger stretched out, like wings',
+  digger: 'for the digger: a flat hand bent down at the wrist, like a scoop',
+  trex: 'for the T. rex (shape trex): two flat hands, one on top of the other, like a big mouth',
+  pterodactyl: 'for the pterodactyl: two hands side by side, like wide wings',
+};
+/** Creatures that fly: their ride stays up off the stage's ground (as the bird's does). */
+const FLIERS: ReadonlySet<string> = new Set(['bird', 'rocket', 'alien', 'plane', 'pterodactyl']);
 
 /**
  * The easier pose each shape also accepts, as in the library stories: two
@@ -48,6 +83,17 @@ const SHAPE_WORDS: Readonly<Record<string, RegExp>> = {
   crocodile: /\b(crocodile|croc)/i,
   deer: /\b(deer|reindeer)\b/i,
   snail: /\bsnail/i,
+  rocket: /\brocket/i,
+  alien: /\balien/i,
+  asteroid: /\b(asteroid|space rock)/i,
+  shark: /\bshark/i,
+  octopus: /\boctop/i,
+  whale: /\bwhale/i,
+  car: /\bcars?\b/i,
+  plane: /\b(aeroplane|airplane|plane)/i,
+  digger: /\bdigger/i,
+  trex: /\b(t\.? ?rex|tyrannosaur)/i,
+  pterodactyl: /\bpterodactyl/i,
 };
 
 export interface DreamRequest {
@@ -112,7 +158,7 @@ export function fillAtRandom(req: DreamRequest, random = Math.random): DreamRequ
   const themes = Object.keys(THEMES);
   const theme = Object.hasOwn(THEMES, req.theme) ? req.theme : themes[Math.floor(random() * themes.length)];
   const shapes = [...req.shapes];
-  const rest = PICK_SHAPES.filter((s) => !shapes.includes(s));
+  const rest = picksFor(theme).filter((s) => !shapes.includes(s));
   while (shapes.length < 2) shapes.push(rest.splice(Math.floor(random() * rest.length), 1)[0]);
   return { ...req, theme, shapes };
 }
@@ -128,7 +174,7 @@ function pickPrompt(req: DreamRequest): string {
     `Choose the place that fits it best, one of: ${Object.keys(THEMES).join(', ')}.${req.theme ? ` (Already chosen: ${req.theme}.)` : ''}`,
     req.shapes.length >= 2
       ? `The shapes are already chosen: ${req.shapes.join(', ')}.`
-      : `Choose two or three shadow shapes that fit it best, from: ${PICK_SHAPES.join(', ')} (cup means cupped hands holding something small, like a star or a firefly).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
+      : `Choose two or three shadow shapes that fit it best, from: ${req.theme ? picksFor(req.theme).join(', ') : `${PICK_SHAPES.join(', ')}; or for a story in space, ${THEME_PICKS.space.join(', ')}; by the sea, ${THEME_PICKS.sea.join(', ')}; on the road, ${THEME_PICKS.road.join(', ')}; with the dinosaurs, ${THEME_PICKS.dinosaurs.join(', ')}`} (cup means cupped hands holding something small, like a star or a firefly; trex is a T. rex, plane an aeroplane).${req.shapes.length ? ` Keep these, in this order, first: ${req.shapes.join(', ')}.` : ''}`,
     'JSON: {"theme":"...","shapes":["...","..."]}',
   ].join('\n');
 }
@@ -167,8 +213,23 @@ const FITS: Readonly<Record<string, readonly string[]>> = {
   snail: ['forest', 'field', 'storm'],
   rabbit: ['field', 'forest'],
   dog: ['field', 'forest', 'storm', 'none'],
+  // The story worlds' creatures keep to their worlds (the aeroplane flies anywhere).
+  rocket: ['star-port', 'none'],
+  alien: ['star-port', 'none'],
+  asteroid: ['star-port'],
+  shark: ['sea'],
+  octopus: ['sea'],
+  whale: ['sea'],
+  car: ['moon-road', 'field'],
+  digger: ['moon-road', 'field'],
+  trex: ['dino-valley'],
+  pterodactyl: ['dino-valley', 'none'],
 };
-const HOME: Readonly<Record<string, string>> = { fish: 'river', swan: 'river', crocodile: 'river', deer: 'forest', snail: 'forest', rabbit: 'field', dog: 'field' };
+const HOME: Readonly<Record<string, string>> = {
+  fish: 'river', swan: 'river', crocodile: 'river', deer: 'forest', snail: 'forest', rabbit: 'field', dog: 'field',
+  rocket: 'star-port', alien: 'star-port', asteroid: 'star-port', shark: 'sea', octopus: 'sea', whale: 'sea',
+  car: 'moon-road', digger: 'moon-road', trex: 'dino-valley', pterodactyl: 'dino-valley',
+};
 /** A place in the words given to the model. */
 const PLACE_WORDS: Readonly<Record<string, string>> = {
   sea: 'by the sea',
@@ -177,6 +238,9 @@ const PLACE_WORDS: Readonly<Record<string, string>> = {
   field: 'in a meadow',
   storm: 'in the soft rain',
   none: 'up in the night sky',
+  'star-port': 'out among the stars',
+  'moon-road': 'on the road across the moon',
+  'dino-valley': 'in the valley of the dinosaurs',
 };
 
 /**
@@ -222,7 +286,7 @@ function prompt(req: DreamRequest): string {
     `Where each scene happens, in order (the story travels there when the place changes; say so in that scene's setup): ${scenePlaces(req)
       .map((place, i) => `${req.shapes[i]} ${PLACE_WORDS[place]}`)
       .join(', ')}.`,
-    'For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together; for the swan: a flat hand bent down at the wrist; for the crocodile: two flat hands, one on top of the other, like a long mouth; for the deer: wrists together, fingers up and spread like antlers; for the snail: a fist for the shell and two fingers for its eyes); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.',
+    `For each scene: setup = why Mo needs that creature now; ask = tells the child to make it with their hands, naming the shape (for the bird: two hands side by side; for the cup: cupped hands; for the fish: a flat hand, fingers together; for the swan: a flat hand bent down at the wrist; for the crocodile: two flat hands, one on top of the other, like a long mouth; for the deer: wrists together, fingers up and spread like antlers; for the snail: a fist for the shell and two fingers for its eyes${req.shapes.filter((sh) => WORLD_HANDS[sh]).map((sh) => `; ${WORLD_HANDS[sh]}`).join('')}); ride = 2 to 6 words while Mo rides it across the stage; after = what they find; bow = the creature settles down to sleep.`,
     'opening = two lines that begin the story; ending = two lines that say goodnight. title = 2 to 5 words.',
     `JSON: {"title":"...","opening":["...","..."],"scenes":[${scenes}],"ending":["...","..."]}`,
   ].join('\n');
@@ -291,7 +355,7 @@ export function assembleStory(req: DreamRequest, reply: string): Record<string, 
       beats.push({ id: `dream-${n}-free`, type: 'release', text: bow });
     } else {
       beats.push({ id: `dream-${n}-ride`, type: 'moth', mode: 'riding' });
-      beats.push({ id: `dream-${n}-carry`, type: 'carry', toU: 0.3, ...(shape === 'bird' ? { minV: 0.12 } : {}), text: ride });
+      beats.push({ id: `dream-${n}-carry`, type: 'carry', toU: 0.3, ...(FLIERS.has(shape) ? { minV: 0.12 } : {}), text: ride });
       beats.push({ id: `dream-${n}-after`, type: 'narrate', text: after });
       beats.push({ id: `dream-${n}-bow`, type: 'release', text: bow });
     }

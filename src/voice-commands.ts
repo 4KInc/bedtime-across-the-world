@@ -29,6 +29,9 @@ export type VoiceCommand =
 
 export const MAX_WORDS = 6;
 
+/** A creature's name when it is not its id (world-creatures.ts CREATURE_NAMES; no imports here: the server reads this file too). */
+const NAMES: Readonly<Record<string, string>> = { plane: 'aeroplane', trex: 'T. rex' };
+
 /** Spoken names for each shape (story shapes and the hidden ones). */
 const SHAPES: Readonly<Record<string, readonly string[]>> = {
   rabbit: ['rabbit', 'bunny', 'hare'],
@@ -40,6 +43,18 @@ const SHAPES: Readonly<Record<string, readonly string[]>> = {
   swan: ['swan'],
   deer: ['deer', 'reindeer', 'antlers'],
   crocodile: ['crocodile', 'croc', 'alligator'],
+  // The story worlds' creatures (world-creatures.ts). Speech writes "T. rex" as "t rex".
+  rocket: ['rocket', 'rocket ship'],
+  alien: ['alien', 'flying saucer', 'ufo'],
+  asteroid: ['asteroid', 'space rock', 'meteor'],
+  shark: ['shark'],
+  octopus: ['octopus'],
+  whale: ['whale'],
+  car: ['car', 'race car', 'racing car'],
+  plane: ['aeroplane', 'airplane', 'plane', 'jet'],
+  digger: ['digger', 'excavator', 'bulldozer'],
+  trex: ['t rex', 'trex', 'tyrannosaurus'],
+  pterodactyl: ['pterodactyl', 'pteranodon', 'flying dinosaur'],
 };
 
 /** Phrase -> command, checked longest phrase first so "close the journal" beats "journal". */
@@ -127,14 +142,27 @@ const DREAM_THEMES: Readonly<Record<string, readonly string[]>> = {
   meadow: ['meadow', 'field', 'fields', 'grass'],
   river: ['river', 'stream', 'lake'],
   rain: ['rain', 'rainy', 'storm', 'puddles'],
-  sky: ['sky', 'stars', 'clouds', 'moon', 'space'],
+  sky: ['sky', 'stars', 'clouds', 'moon'],
+  // The story worlds' places.
+  space: ['space', 'outer space', 'planet', 'planets'],
+  road: ['road', 'roads', 'adventure', 'highway', 'traffic'],
+  dinosaurs: ['dinosaur', 'dinosaurs', 'dino', 'dinos', 'volcano'],
 };
 /** Hints for the speech service when a story is being asked for in plain words. */
 export function wishPhrases(): string[] {
-  return ['story', 'bedtime story', ...Object.values(DREAM_THEMES).flat(), ...['rabbit', 'bunny', 'fish', 'dog', 'puppy', 'bird', 'cup']];
+  return [
+    'story',
+    'bedtime story',
+    ...Object.values(DREAM_THEMES).flat(),
+    ...['rabbit', 'bunny', 'fish', 'dog', 'puppy', 'bird', 'cup'],
+    ...['rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'aeroplane', 'digger', 't rex', 'pterodactyl'],
+  ];
 }
 /** Shapes a dreamed story can ask for (server/dream.ts DREAM_SHAPES). */
-const DREAM_SHAPE_IDS = new Set(['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail']);
+const DREAM_SHAPE_IDS = new Set([
+  ...['rabbit', 'fish', 'dog', 'bird', 'cup', 'swan', 'crocodile', 'deer', 'snail'],
+  ...['rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'car', 'plane', 'digger', 'trex', 'pterodactyl'],
+]);
 /** Words in a "dream ..." command that add no idea of their own. */
 const FILLER = new Set('mo lets let s us can you please dream a an the about with and in at on of by story new one some little'.split(' '));
 /** A dream request may be a longer sentence: "dream a story about the river with a fish and a bird". */
@@ -179,7 +207,7 @@ function parseDream(said: string): VoiceCommand | null {
   if (!dream && !asking) return null;
   const read = readWish(said);
   // Words beyond the place and the shapes ("...and make it funny") are an idea for the model to use.
-  const named = new Set([...Object.values(DREAM_THEMES).flat(), ...read.shapes.flatMap((sh) => SHAPES[sh])]);
+  const named = new Set([...Object.values(DREAM_THEMES).flat(), ...read.shapes.flatMap((sh) => SHAPES[sh])].flatMap((n) => n.split(' ')));
   const idea = words.some((w) => !FILLER.has(w) && !named.has(w) && !named.has(w.replace(/(ies|s)$/, (m) => (m === 'ies' ? 'y' : ''))));
   return { kind: 'dream', ...read, ...(asking || idea ? { wish: said } : {}) };
 }
@@ -200,7 +228,7 @@ export function parseCommand(text: string): VoiceCommand | null {
 export function describe(command: VoiceCommand): string {
   switch (command.kind) {
     case 'shape':
-      return command.shape;
+      return NAMES[command.shape] ?? command.shape;
     case 'journal':
       return command.open === false ? 'close the journal' : command.open ? 'open the journal' : 'journal';
     case 'lamp':

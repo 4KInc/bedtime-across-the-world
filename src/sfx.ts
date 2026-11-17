@@ -34,6 +34,24 @@ export function wakeAudio(): void {
   audio();
 }
 
+/**
+ * A recorded voice through a gain node, so it can be faded where an audio
+ * element's volume does nothing (iOS) and muted without being paused (a paused
+ * element may not start again without a tap on iOS). Null when the audio
+ * context is not running yet: then the element plays on its own.
+ */
+export function voiceGain(el: HTMLMediaElement): GainNode | null {
+  const a = audio();
+  if (!a || a.state !== 'running') return null;
+  try {
+    const gain = a.createGain();
+    a.createMediaElementSource(el).connect(gain).connect(a.destination);
+    return gain;
+  } catch {
+    return null;
+  }
+}
+
 /** True once the browser lets audio play (after a user gesture such as entering XR). */
 export function audioRunning(): boolean {
   return ctx?.state === 'running';
@@ -180,6 +198,7 @@ export function startLampHum(): Hum | null {
     osc.connect(og).connect(amp);
     osc.start();
   }
+  soundRuntime.hum = true;
   return {
     setPosition(p) {
       const t = a.currentTime;
@@ -196,7 +215,7 @@ export function startLampHum(): Hum | null {
 // ------------------------------------------------------------------ creature voices
 
 /** For tests: creature voices played, by shape. */
-export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0 };
+export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0, hum: false };
 
 /** After the wake chime's first note, so the voice is not lost under it. */
 const AFTER_CHIME = 0.45;

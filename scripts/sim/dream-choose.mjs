@@ -2,7 +2,10 @@
 // place, two or three shapes in story order), all by hand-ray pinch; at most
 // three shapes, at least two to dream; the story asks for the chosen shapes in
 // the chosen order; Cancel closes it; and by voice, "dream a story about the
-// forest with a rabbit and a cup" dreams exactly that.
+// forest with a rabbit and a cup" dreams exactly that. The story worlds' places
+// (space, the road, the dinosaurs, and the sea) offer their own creatures in a
+// second row: a space story with a rocket and an alien, and by voice a dinosaur
+// story with a T. rex and a pterodactyl.
 //
 //   node scripts/sim/dream-choose.mjs [--gpu]
 // Needs the dev server (npm run dev) on https://localhost:8082.
@@ -54,6 +57,13 @@ async function pinch(id) {
   await remote('set_select_value', { device: 'hand-right', value: 0 });
   await sleep(400);
 }
+/** A chooser shape's button: the five's own, or the place's creatures' row (dream-world-1..3). */
+const PLACE_CREATURES = { sea: ['shark', 'octopus', 'whale'], space: ['rocket', 'alien', 'asteroid'], road: ['car', 'plane', 'digger'], dinosaurs: ['trex', 'pterodactyl'] };
+async function toggle(shape) {
+  const theme = (await chooser()).theme;
+  const i = (PLACE_CREATURES[theme] ?? []).indexOf(shape);
+  await pinch(i >= 0 ? `dream-world-${i + 1}` : `dream-shape-${shape}`);
+}
 async function openJournal() {
   await page.evaluate(() => __sp.set('ShadowJournal', 'open', true));
   await sleep(1000);
@@ -77,7 +87,8 @@ check('"Dream a new one" opens the chooser with a place and two shapes picked', 
 
 // 2. Choose: River; clear the picks, then fish, bird, cup; a fourth is refused; cup off again.
 await pinch('dream-theme-river');
-for (const s of first.shapes) await pinch(`dream-shape-${s}`);
+// (A place's own creatures come off when another place is picked.)
+for (const s of (await chooser()).shapes) await toggle(s);
 for (const s of ['fish', 'bird', 'cup', 'dog']) await pinch(`dream-shape-${s}`);
 const three = await chooser();
 await pinch('dream-shape-cup');
@@ -94,7 +105,7 @@ check('Dream it: Mo dreams exactly that, and the chooser closes', asked.length =
 await openJournal();
 await pinch('story-dream');
 const again = await chooser();
-await pinch(`dream-shape-${again.shapes[0]}`);
+await toggle(again.shapes[0]);
 await pinch('dream-go');
 const one = await chooser();
 await pinch('dream-cancel');
@@ -109,6 +120,27 @@ await page.evaluate(() => window.__say('Dream a story about the forest with a ra
 await page.waitForFunction(() => __sp.view().dream.ok >= 2, null, { timeout: 15000 }).catch(() => {});
 const last = asked[asked.length - 1];
 check('by voice: "dream a story about the forest with a rabbit and a cup"', asked.length === 2 && last.theme === 'forest' && last.shapes.join() === 'rabbit,cup', { asked: last, heard: await page.evaluate(() => __sp.view().voice.heard) });
+
+// 6. A story world's place: Space shows the rocket, the alien and the asteroid; pick two.
+await page.evaluate(() => __sp.set('ShadowJournal', 'open', true));
+await sleep(1000);
+await pinch('story-dream');
+await pinch('dream-theme-space');
+for (const s of (await chooser()).shapes) await toggle(s);
+const row = await page.evaluate(() => ['dream-world-1', 'dream-world-2', 'dream-world-3'].map((id) => __sp.where(id) !== null));
+for (const s of ['rocket', 'alien']) await toggle(s);
+const space = await chooser();
+if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
+await pinch('dream-go');
+await page.waitForFunction((n) => /^dreamed:/.test(__sp.get('StoryState', 'script')) && __sp.view().dream.ok >= n, asked.length, { timeout: 15000 }).catch(() => {});
+const spaceAsked = asked[asked.length - 1];
+check('Space: its own creatures in the second row; a rocket and an alien, dreamed', row.every(Boolean) && space.shapes.join() === 'rocket,alien' && spaceAsked?.theme === 'space' && spaceAsked.shapes.join() === 'rocket,alien', { space, asked: spaceAsked });
+
+// 7. By voice, a dinosaur story with a T. rex and a pterodactyl.
+await page.evaluate(() => window.__say('Dream about the dinosaurs with a T. rex and a pterodactyl'));
+await page.waitForFunction((n) => __sp.view().dream.ok > n, asked.length - 1, { timeout: 15000 }).catch(() => {});
+const dino = asked[asked.length - 1];
+check('by voice: "dream about the dinosaurs with a T. rex and a pterodactyl"', dino.theme === 'dinosaurs' && dino.shapes.join() === 'trex,pterodactyl', { asked: dino });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

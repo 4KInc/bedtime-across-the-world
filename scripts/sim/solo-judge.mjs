@@ -84,6 +84,10 @@ try {
     // The story arrives at the top of the list ("... is here. Tap it to watch."); tap it.
     const note = await v.waitForFunction(() => /is here/.test(document.querySelector('.sp-note')?.textContent ?? ''), null, { timeout: 20000 })
       .then(() => v.evaluate(() => document.querySelector('.sp-note').textContent), () => '');
+    // Called by the story told, not "A bedtime story" (Nov 17).
+    const cardTitle = await v.evaluate(() => document.querySelector('.sp-card b')?.textContent ?? '');
+    const told = await hs.evaluate(() => __sp.get('StoryState', 'script'));
+    check('viewer: the story just sent is called by the story told', note.includes(`"${cardTitle}"`) && cardTitle !== 'A bedtime story' && !/^A story for /.test(cardTitle), { cardTitle, note, told });
     await v.locator('.sp-card').first().click();
     const opened = await v.waitForFunction(() => __sp.get('PerformancePlayer', 'playing') && __sp.get('PerformancePlayer', 'position') > 2, null, { timeout: 30000 }).then(() => true, () => false);
     check('viewer: the story just sent opens by its code and plays', Boolean(note) && opened, { code, note });

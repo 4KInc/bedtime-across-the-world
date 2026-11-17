@@ -2,7 +2,7 @@ import { Entity, Group, World } from '@iwsdk/core';
 import { ShadowPuppet } from './shadowplay-components.js';
 import { WORLD_CREATURES } from './world-creatures.js';
 
-const WORLD_CREATURE_IDS: ReadonlySet<string> = new Set(Object.values(WORLD_CREATURES).flat());
+export const WORLD_CREATURE_IDS: ReadonlySet<string> = new Set(Object.values(WORLD_CREATURES).flat());
 
 /**
  * A world creature's puppet, made the first time it is needed: by a story that

@@ -25,6 +25,7 @@ import { coachRuntime } from './mo-coach.js';
 import { fireflyRuntime } from './fireflies.js';
 import { finaleLightsRuntime } from './finale-lights.js';
 import { captionRuntime } from './captions.js';
+import { playbackVoiceRuntime } from './performance/player.js';
 import { voiceRuntime } from './voice-control.js';
 import { twilightRuntime } from './twilight.js';
 import { moVisitRuntime } from './mo-visit.js';
@@ -283,6 +284,7 @@ export class AutomationSystem extends createSystem({
           finaleLights: { ...finaleLightsRuntime },
           dreaming: accessRuntime.dreaming,
           underStage: captionRuntime.nudge,
+          playbackVoice: { ...playbackVoiceRuntime },
           voiceCommands: { ...voiceRuntime },
           twilight: { ...twilightRuntime },
           moVisit: { ...moVisitRuntime },
@@ -294,7 +296,7 @@ export class AutomationSystem extends createSystem({
           recordings: { ...recordingsRuntime, made: { ...recordingRuntime } },
           shelf: { on: shelfRuntime.on, centre: shelfRuntime.centre.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
-          sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel },
+          sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel, hum: soundRuntime.hum },
           dream: { ...dreamRuntime },
           shadowOpacity: (scene.getObjectByName('shadow-surface') as import('@iwsdk/core').Mesh<import('@iwsdk/core').BufferGeometry, import('@iwsdk/core').ShadowMaterial> | undefined)?.material.opacity ?? null,
           desk: stageRuntime.desk,
