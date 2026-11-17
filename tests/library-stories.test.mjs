@@ -119,3 +119,14 @@ test('a digger also takes a scooped hand: every digger request has the cup as it
   const digger = dreamed.beats.find((b) => b.type === 'request' && b.shape === 'digger');
   assert.equal(digger?.alt, 'cup');
 });
+
+test('an octopus also takes a hanging hand read as cupped: every octopus request has the cup as its alt (an iPad joining in, Nov 17: 40 s)', async () => {
+  const asks = library.flatMap((s) => read(s.script).beats.filter((b) => b.type === 'request' && b.shape === 'octopus').map((b) => ({ story: s.id, alt: b.alt })));
+  assert.ok(asks.length >= 2, 'the sea stories ask for an octopus');
+  assert.deepEqual(asks.filter((a) => a.alt !== 'cup'), []);
+  const { assembleStory, checkDream } = await import('../server/dream.ts');
+  const { cannedWords } = await import('./fixtures/dream-words.mjs');
+  const req = checkDream({ theme: 'sea', shapes: ['shark', 'octopus'] });
+  const dreamed = assembleStory(req, cannedWords(req.shapes));
+  assert.equal(dreamed.beats.find((b) => b.type === 'request' && b.shape === 'octopus')?.alt, 'cup');
+});

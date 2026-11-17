@@ -69,7 +69,9 @@ const FLIERS: ReadonlySet<string> = new Set(['bird', 'rocket', 'alien', 'plane',
  */
 // The digger also takes a scooped (cupped) hand: people make the scoop the story asks for with curled
 // fingers, and the swan's pose it borrows wants them flat, the thumb tucked (Quest 3, Nov 17: 31 s).
-const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog', digger: 'cup' };
+// The octopus too: a hand hanging down, its fingers relaxed, reads as cupped to a phone's camera (an iPad
+// joining in, Nov 17: 40 s, the camera reading "cup" throughout, Mo's tips all "straighten your fingers").
+const ALTS: Readonly<Record<string, string>> = { rabbit: 'ears', dog: 'rabbit', fish: 'dog', digger: 'cup', octopus: 'cup' };
 
 const LINE = /^[A-Za-z0-9 ,.!?'’;:-]{2,160}$/;
 const MAX_LINE_WORDS = 24;

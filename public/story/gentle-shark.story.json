@@ -98,6 +98,7 @@
       "id": "shark-want-octopus",
       "type": "request",
       "shape": "octopus",
+      "alt": "cup",
       "text": "Make an octopus: let your hand hang down, fingers spread, and wiggle them like arms."
     },
     {
