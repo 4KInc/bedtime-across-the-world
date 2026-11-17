@@ -59,6 +59,8 @@ export const storyRuntime = {
   /** Each spoken beat's words (names filled in), in story order: for the narrator's voice on lines without a recorded clip. */
   lines: {} as Record<string, string>,
   order: [] as string[],
+  /** For tests: times Record, pressed before the first shape, started the story again from its title (story.ts). */
+  restartedForRecording: 0,
 };
 
 /** Comfortable caption reading time: ~3 words per second plus a pause. */

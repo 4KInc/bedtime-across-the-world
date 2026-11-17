@@ -7,6 +7,7 @@ import {
   Moth,
   PuppetStates,
   Scenery,
+  PerformanceRecorder,
   Settings,
   ShadowJournal,
   ShadowPuppet,
@@ -119,6 +120,7 @@ export class StorySystem extends createSystem({
   journals: { required: [ShadowJournal] },
   props: { required: [HiddenProp] },
   settings: { required: [Settings] },
+  recorders: { required: [PerformanceRecorder] },
 }) {
   private script: StoryScript | null = null;
   private beatTime = 0;
@@ -143,6 +145,8 @@ export class StorySystem extends createSystem({
   private wrist = new Vector3();
   /** Viewer's own beat when a replay began (restored to its chapter afterwards). */
   private beforeFollow = -2;
+  /** Recording, as of the last frame: a recording begun before the first shape restarts the story (below). */
+  private wasRecording = false;
   private endings = new Set<string>();
   private loading = false;
   private switching = false;
@@ -305,6 +309,18 @@ export class StorySystem extends createSystem({
       settings.setValue(Settings, 'replayRequested', false);
       this.restart(story, stage);
     }
+    // Record pressed before the story's first shape: the story starts again from its title, so the recording
+    // has all of it (Quest 3, Nov 17: a dreamed story begins at once, and Record came a few lines too late).
+    const recording = Boolean(first(this.queries.recorders.entities)?.getValue(PerformanceRecorder, 'recording'));
+    if (recording && !this.wasRecording && !story.getValue(StoryState, 'followMode') && this.script) {
+      const at = story.getValue(StoryState, 'beatIndex') ?? -1;
+      const firstAsk = this.script.beats.findIndex((b) => b.type === 'request' || b.type === 'choice');
+      if (at > 0 && firstAsk > 0 && at < firstAsk) {
+        this.restart(story, stage);
+        storyRuntime.restartedForRecording++;
+      }
+    }
+    this.wasRecording = recording;
     // Chapter select: jump straight to a chapter the player has reached.
     const jumpTo = story.getValue(StoryState, 'jumpTo') ?? '';
     if (jumpTo) {
