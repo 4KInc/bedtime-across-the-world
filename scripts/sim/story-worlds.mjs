@@ -3,7 +3,7 @@
 // the chosen world; "Tell this story" starts Cars and Adventure's first story,
 // Mo and the Midnight Moon Buggy, which the demo player then tells to The End:
 // the moon road appears, the buggy follows Mo along it and rolls home to its
-// garage at the finale. The first launch still opens Counting Stars.
+// garage at the finale. The first launch opens The Shy Little Shark.
 //
 //   node scripts/sim/story-worlds.mjs [--gpu] [--shot path.png]
 // Needs the dev server (npm run dev) on https://localhost:8082 (or SIM_APP).
@@ -64,7 +64,7 @@ await sleep(1500);
 await page.getByRole('button', { name: /Enter XR/i }).click();
 await page.waitForFunction(() => window.IWER_DEVICE?.activeSession && window.__sp.view().ready, null, { timeout: 30000 });
 await page.waitForFunction(() => __sp.get('StoryState', 'script'), null, { timeout: 30000 });
-check('the first launch still opens Counting Stars', (await get('StoryState', 'script')) === 'story/counting-stars.story.json', {
+check('the first launch opens The Shy Little Shark', (await get('StoryState', 'script')) === 'story/gentle-shark.story.json', {
   script: await get('StoryState', 'script'),
 });
 
@@ -74,7 +74,9 @@ await page.evaluate(() => __sp.set('ShadowJournal', 'open', true));
 await sleep(1200);
 await remote('set_input_mode', { mode: 'hand' });
 await sleep(800);
-await pinch('world-next');
+// The Journal opens on tonight's story's world: the Ocean on a first launch (The Shy Little Shark).
+// The worlds go Nature, Cars and Adventure, Ocean, ...: one back is Cars and Adventure.
+await pinch('world-prev');
 // Cars and Adventure has three stories, The Little Car's Long Way Home first (its own creatures lead,
 // Nov 17): the arrows go round them and stay in the world; one past the round is the Moon Buggy.
 for (let i = 0; i < 4; i++) await pinch('story-next');

@@ -143,8 +143,10 @@ id beside each in `DEVICE-TEST.md`.
   or the paper screen, no dead end. (The paper screen of Nov 15 was a room
   Room Setup had not scanned; the `placed` event now records why each wall was
   or was not used.)
-- **The opening of a first launch** (Counting Stars, the bird): time from Enter
-  XR to the first creature, since the real-hands fixes.
+- **The opening of a first launch** with The Shy Little Shark (first launches
+  open it since Nov 17): time from Enter XR to the shark. The last first launch
+  with Counting Stars was measured: `ufckcgf798` (Nov 17, the first visit to the
+  new address), the bird 32 s after Enter XR.
 - **The two-person loop on a real phone**: Go live, Talk, Take turns, a
   dropout (DEVICE-TEST D5 to D8). Watching a sent story on a computer and an
   iPad and sending a goodnight back were done (Nov 16 and 17, by family code;

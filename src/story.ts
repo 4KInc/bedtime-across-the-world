@@ -58,12 +58,15 @@ const CONTROLLER_GRACE_SECONDS = 1;
 /** The first story; progress saved before the library existed belongs to it. */
 const DEFAULT_SCRIPT = 'story/the-moth.story.json';
 /**
- * A first launch (nothing saved yet) opens with the shortest story: Counting
- * Stars, three minutes from the lamp to goodnight, so the first creature comes
- * quickly and a judge or a new family finishes a whole story in one sitting.
- * Returning players continue where they were; the journal lists every story.
+ * A first launch (nothing saved yet) opens with The Shy Little Shark: five
+ * minutes, and every shape in it one hand and easy (a shark, an octopus, a
+ * whale, then cupped hands), with a story world's own creatures and the
+ * finale's lights. On a Quest 3 (Nov 17) each woke in 2 to 7 seconds. It
+ * replaces Counting Stars (three minutes), which was quick but the plainest
+ * story to meet first. Returning players continue where they were; the
+ * journal lists every story.
  */
-const FIRST_LAUNCH_SCRIPT = 'story/counting-stars.story.json';
+const FIRST_LAUNCH_SCRIPT = 'story/gentle-shark.story.json';
 /** 'Never stuck' assist: seconds a player beat may wait before each assist level. */
 // (Quest 3, Nov 15: people gave up on a shape at about a minute, so the last assist comes at 45 s.)
 const ASSIST_AFTER = [15, 30, 45] as const;
