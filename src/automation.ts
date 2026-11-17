@@ -296,7 +296,7 @@ export class AutomationSystem extends createSystem({
           recordings: { ...recordingsRuntime, made: { ...recordingRuntime } },
           shelf: { on: shelfRuntime.on, centre: shelfRuntime.centre.toArray().map((n) => Math.round(n * 1000) / 1000) },
           keepsakes: { count: keepsakeRuntime.count, flying: keepsakeRuntime.flying, label: keepsakeRuntime.label, loaded: keepsakeRuntime.loaded, jar: keepsakeRuntime.jar.toArray().map((n) => Math.round(n * 1000) / 1000) },
-          sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel, hum: soundRuntime.hum },
+          sound: { creature: { ...soundRuntime.creature }, lullabyNotes: soundRuntime.lullabyNotes, lullabyLevel: soundRuntime.lullabyLevel, hum: soundRuntime.hum, creatureByBuffer: soundRuntime.creatureByBuffer, creatureSkipped: soundRuntime.creatureSkipped },
           dream: { ...dreamRuntime },
           shadowOpacity: (scene.getObjectByName('shadow-surface') as import('@iwsdk/core').Mesh<import('@iwsdk/core').BufferGeometry, import('@iwsdk/core').ShadowMaterial> | undefined)?.material.opacity ?? null,
           desk: stageRuntime.desk,

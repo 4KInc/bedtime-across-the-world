@@ -6,6 +6,7 @@
  * context is created lazily; entering XR counts as the required user gesture.
  */
 import { away, onAway } from './away.js';
+import { viewerMode } from './viewer-mode.js';
 
 export interface Point3 {
   x: number;
@@ -32,6 +33,8 @@ onAway((isAway) => {
 /** Creates (and asks to resume) the audio context, so music can start before the first sound effect. */
 export function wakeAudio(): void {
   audio();
+  // The family viewer decodes the creatures' voices once sound may start (see creatureBuffers).
+  if (viewerMode.on) preloadCreatureVoices();
 }
 
 /**
@@ -46,6 +49,7 @@ export function voiceGain(el: HTMLMediaElement): GainNode | null {
   try {
     const gain = a.createGain();
     a.createMediaElementSource(el).connect(gain).connect(a.destination);
+    if (viewerMode.on) preloadCreatureVoices();
     return gain;
   } catch {
     return null;
@@ -215,7 +219,15 @@ export function startLampHum(): Hum | null {
 // ------------------------------------------------------------------ creature voices
 
 /** For tests: creature voices played, by shape. */
-export const soundRuntime = { creature: {} as Record<string, number>, lullabyNotes: 0, lullabyLevel: 0, hum: false };
+export const soundRuntime = {
+  creature: {} as Record<string, number>,
+  lullabyNotes: 0,
+  lullabyLevel: 0,
+  hum: false,
+  /** Creature voices played through Web Audio (the family viewer), and those skipped while their sound was loading. */
+  creatureByBuffer: 0,
+  creatureSkipped: 0,
+};
 
 /** After the wake chime's first note, so the voice is not lost under it. */
 const AFTER_CHIME = 0.45;
@@ -252,14 +264,47 @@ function creatureClip(file: string): HTMLAudioElement | null {
   return el;
 }
 
+/**
+ * On the family viewer creature voices play through Web Audio, decoded from the
+ * same files: never as audio elements. On an iPad starting one audio element
+ * pauses another, so a creature's voice paused the storyteller's recorded voice,
+ * and iOS would not let it start again without a tap (Nov 17: after the first
+ * shape the narration went silent, the story going on). The headset keeps its
+ * elements (Web Audio voices went unheard on a Quest, Nov 15).
+ */
+const creatureBuffers = new Map<string, AudioBuffer | 'loading'>();
+
+function creatureBuffer(file: string): AudioBuffer | null {
+  const a = ctx;
+  if (!a) return null;
+  const got = creatureBuffers.get(file);
+  if (got && got !== 'loading') return got;
+  if (!got) {
+    creatureBuffers.set(file, 'loading');
+    fetch(`${import.meta.env.BASE_URL}sfx/creature-${file}.mp3`)
+      .then((r) => r.arrayBuffer())
+      .then((bytes) => a.decodeAudioData(bytes))
+      .then((buffer) => creatureBuffers.set(file, buffer))
+      .catch(() => creatureBuffers.delete(file));
+  }
+  return null;
+}
+
 /** Fetch every creature's voice ahead, so the first wake is heard at once. */
 export function preloadCreatureVoices(): void {
-  for (const file of new Set(Object.values(CREATURE_FILES))) creatureClip(file);
+  for (const file of new Set(Object.values(CREATURE_FILES))) {
+    if (viewerMode.on) creatureBuffer(file);
+    else creatureClip(file);
+  }
 }
 
 export function playCreature(shape: string, _pos?: Point3, quiet = false): void {
   const file = CREATURE_FILES[shape];
   if (!file) return;
+  if (viewerMode.on) {
+    playCreatureBuffer(shape, file, quiet);
+    return;
+  }
   const el = creatureClip(file);
   if (!el) return;
   const voice = el.cloneNode(true) as HTMLAudioElement;
@@ -268,6 +313,28 @@ export function playCreature(shape: string, _pos?: Point3, quiet = false): void 
   const a = ctx;
   if (a) duckUntil = Math.max(duckUntil, a.currentTime + (quiet ? 0 : AFTER_CHIME) + DUCK_SECONDS);
   soundRuntime.creature[shape] = (soundRuntime.creature[shape] ?? 0) + 1;
+}
+
+/** The family viewer's creature voice: a buffer through a gain node, never an element (see creatureBuffers). */
+function playCreatureBuffer(shape: string, file: string, quiet: boolean): void {
+  const a = audio();
+  const buffer = a && a.state === 'running' ? creatureBuffer(file) : null;
+  soundRuntime.creature[shape] = (soundRuntime.creature[shape] ?? 0) + 1;
+  if (!a || !buffer) {
+    // Not decoded yet (or no sound allowed yet): this one goes unheard rather than risk the narration.
+    soundRuntime.creatureSkipped++;
+    if (a) creatureBuffer(file);
+    return;
+  }
+  const delay = quiet ? 0 : AFTER_CHIME;
+  const source = a.createBufferSource();
+  source.buffer = buffer;
+  const gain = a.createGain();
+  gain.gain.value = quiet ? 0.55 : 1;
+  source.connect(gain).connect(a.destination);
+  source.start(a.currentTime + delay);
+  duckUntil = Math.max(duckUntil, a.currentTime + delay + DUCK_SECONDS);
+  soundRuntime.creatureByBuffer++;
 }
 
 // ------------------------------------------------------------------ lullaby
