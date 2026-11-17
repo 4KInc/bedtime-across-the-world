@@ -1,6 +1,6 @@
 // "Dream a new one" with the parent's choice: the button opens a chooser (a
-// place, two or three shapes in story order), all by hand-ray pinch; at most
-// three shapes, at least two to dream; the story asks for the chosen shapes in
+// place, two to four shapes in story order), all by hand-ray pinch; at most
+// four shapes, at least two to dream; the story asks for the chosen shapes in
 // the chosen order; Cancel closes it; and by voice, "dream a story about the
 // forest with a rabbit and a cup" dreams exactly that. The story worlds' places
 // (space, the road, the dinosaurs, and the sea) offer their own creatures in a
@@ -90,15 +90,16 @@ await pinch('story-dream');
 const first = await chooser();
 check('"Dream a new one" opens the chooser with a place and two shapes picked', first.open && first.theme && first.shapes.length === 2 && asked.length === 0, first);
 
-// 2. Choose: River; clear the picks, then fish, bird, cup; a fourth is refused; cup off again.
+// 2. Choose: River; clear the picks, then fish, bird, cup, dog; a fifth is refused; dog off again.
 await pinch('dream-theme-river');
 // (A place's own creatures come off when another place is picked.)
 for (const s of (await chooser()).shapes) await toggle(s);
-for (const s of ['fish', 'bird', 'cup', 'dog']) await pinch(`dream-shape-${s}`);
-const three = await chooser();
+for (const s of ['fish', 'bird', 'cup', 'dog', 'rabbit']) await pinch(`dream-shape-${s}`);
+const four = await chooser();
+await pinch('dream-shape-dog');
 await pinch('dream-shape-cup');
 const two = await chooser();
-check('a place and shapes in order; never more than three', three.theme === 'river' && three.shapes.join() === 'fish,bird,cup' && two.shapes.join() === 'fish,bird', { three, two });
+check('a place and shapes in order; never more than four', four.theme === 'river' && four.shapes.join() === 'fish,bird,cup,dog' && two.shapes.join() === 'fish,bird', { four, two });
 
 // 3. Dream it: exactly that, and the story asks for the fish first, then the bird.
 await pinch('dream-go');

@@ -269,7 +269,7 @@
       <button id="dream-theme-road" class="option">Road</button>
       <button id="dream-theme-dinosaurs" class="option">Dinosaurs</button>
     </div>
-    <div class="label">With these shapes (two or three, in story order)</div>
+    <div class="label">With these shapes (two to four, in story order)</div>
     <div class="row">
       <button id="dream-shape-rabbit" class="option">Rabbit</button>
       <button id="dream-shape-fish" class="option">Fish</button>
@@ -283,11 +283,56 @@
       <button id="dream-world-3" class="option"><span id="dream-world-3-label">Whale</span></button>
     </div>
     <div class="row">
+      <button id="dream-all-open" class="family">
+        <span id="dream-all-open-label" class="toggle-text">All shapes...</span>
+      </button>
+    </div>
+    <div class="row">
       <button id="dream-go" class="family">
         <span id="dream-go-label" class="toggle-text">Dream it</span>
       </button>
       <button id="dream-cancel" class="family">
         <span id="dream-cancel-label" class="toggle-text">Cancel</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="dream-all" class="section">
+    <div class="label">Every shape: pick two to four, in story order</div>
+    <div class="row">
+      <button id="dream-all-rabbit" class="option">Rabbit</button>
+      <button id="dream-all-fish" class="option">Fish</button>
+      <button id="dream-all-dog" class="option">Dog</button>
+      <button id="dream-all-bird" class="option">Bird</button>
+      <button id="dream-all-cup" class="option">Cup</button>
+    </div>
+    <div class="row">
+      <button id="dream-all-snail" class="option">Snail</button>
+      <button id="dream-all-swan" class="option">Swan</button>
+      <button id="dream-all-deer" class="option">Deer</button>
+      <button id="dream-all-crocodile" class="option">Crocodile</button>
+      <button id="dream-all-shark" class="option">Shark</button>
+    </div>
+    <div class="row">
+      <button id="dream-all-octopus" class="option">Octopus</button>
+      <button id="dream-all-whale" class="option">Whale</button>
+      <button id="dream-all-rocket" class="option">Rocket</button>
+      <button id="dream-all-alien" class="option">Alien</button>
+      <button id="dream-all-asteroid" class="option">Asteroid</button>
+    </div>
+    <div class="row">
+      <button id="dream-all-car" class="option">Car</button>
+      <button id="dream-all-plane" class="option">Aeroplane</button>
+      <button id="dream-all-digger" class="option">Digger</button>
+      <button id="dream-all-trex" class="option">T. rex</button>
+      <button id="dream-all-pterodactyl" class="option">Pterodactyl</button>
+    </div>
+    <div class="row">
+      <span id="dream-all-picked" class="story-blurb">Picked: none yet</span>
+    </div>
+    <div class="row">
+      <button id="dream-all-done" class="family">
+        <span id="dream-all-done-label" class="toggle-text">Done</span>
       </button>
     </div>
   </div>
