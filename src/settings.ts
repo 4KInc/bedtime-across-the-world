@@ -12,6 +12,7 @@ import {
 } from './shadowplay-components.js';
 import { playClick } from './sfx.js';
 import { palette } from './panel-palette.js';
+import { creatureName } from './creatures.js';
 import { canHearWishes, listenForWish, wishListenRuntime, type WishListening } from './wish-listener.js';
 import { MAX_DREAM_SHAPES } from './voice-commands.js';
 import { accessRuntime, gazeTargets, stageRuntime, uiPresses } from './stage-runtime.js';
@@ -86,12 +87,22 @@ interface StoryWorld {
 const DEFAULT_WORLD = 'nature';
 const MOTH_SCRIPT = 'story/the-moth.story.json';
 /** "Dream a new one": what the app asks Mo for (server/dream.ts accepts exactly these). */
-const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky'] as const;
+const DREAM_THEMES = ['sea', 'forest', 'meadow', 'river', 'rain', 'sky', 'space', 'road', 'dinosaurs'] as const;
+/** The story worlds' creatures the chooser offers in their own places (a second row of shapes; server/dream.ts). */
+const PLACE_CREATURES: Readonly<Record<string, readonly string[]>> = {
+  sea: ['shark', 'octopus', 'whale'],
+  space: ['rocket', 'alien', 'asteroid'],
+  road: ['car', 'plane', 'digger'],
+  dinosaurs: ['trex', 'pterodactyl'],
+};
+const WORLD_BUTTONS = ['dream-world-1', 'dream-world-2', 'dream-world-3'] as const;
 /** The chooser's shapes (an idea in words can also name the swan, crocodile, deer and snail). */
 const DREAM_SHAPES = ['rabbit', 'fish', 'dog', 'bird', 'cup'] as const;
 /** "Mo is dreaming", its dots coming and going. */
 const DREAMING_LABELS = ['Mo is dreaming', 'Mo is dreaming.', 'Mo is dreaming..', 'Mo is dreaming...'];
-const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail']);
+const DREAM_ANY_SHAPE: ReadonlySet<string> = new Set([...DREAM_SHAPES, 'swan', 'crocodile', 'deer', 'snail', ...Object.values(PLACE_CREATURES).flat()]);
+/** Shapes to start from, or top up with, in a place: its own creatures where it has them (and the cup). */
+const startingShapes = (theme: string): readonly string[] => (PLACE_CREATURES[theme] ? [...PLACE_CREATURES[theme], 'cup'] : DREAM_SHAPES);
 
 /** Buttons with their own look (the rest are options and toggles). */
 const REPLAY_BUTTONS = new Set(['replay-button']);
@@ -260,7 +271,7 @@ export class SettingsSystem extends createSystem({
     if (this.choosing) return this.closeDreamChooser();
     this.choosing = true;
     this.dreamTheme = DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
-    this.dreamShapes = [...DREAM_SHAPES].sort(() => Math.random() - 0.5).slice(0, 2);
+    this.dreamShapes = [...startingShapes(this.dreamTheme)].sort(() => Math.random() - 0.5).slice(0, 2);
     this.panel?.getElementById('dream-section')?.setProperties({ display: 'flex' });
     this.status?.setProperties({ text: 'Say your idea, or pick a place and two or three shapes, then Dream it.' });
     this.refreshDreamChooser();
@@ -345,6 +356,15 @@ export class SettingsSystem extends createSystem({
     const p = palette();
     for (const t of DREAM_THEMES) this.buttons.get(`dream-theme-${t}`)?.setProperties(t === this.dreamTheme ? p.selected : p.unselected);
     for (const sh of DREAM_SHAPES) this.buttons.get(`dream-shape-${sh}`)?.setProperties(this.dreamShapes.includes(sh) ? p.selected : p.unselected);
+    // The place's own creatures, if it has them (a shark by the sea, a rocket in space).
+    const own = PLACE_CREATURES[this.dreamTheme] ?? [];
+    this.panel?.getElementById('dream-world-row')?.setProperties({ display: own.length ? 'flex' : 'none' });
+    WORLD_BUTTONS.forEach((id, i) => {
+      const shape = own[i];
+      const on = !!shape && this.dreamShapes.includes(shape);
+      this.buttons.get(id)?.setProperties({ ...(on ? p.selected : p.unselected), display: shape ? 'flex' : 'none' });
+      if (shape) this.panel?.getElementById<UIKit.Text>(`${id}-label`)?.setProperties({ text: creatureName(shape), color: on ? p.ink : p.cream });
+    });
   }
 
   /** "Dream it" in the chooser. */
@@ -376,10 +396,11 @@ export class SettingsSystem extends createSystem({
       // The server reads the place and shapes from the idea (its model picks what it leaves out).
       body = { ...(known ? { theme: known } : {}), shapes: chosen, wish };
     } else {
-      const rest = DREAM_SHAPES.filter((x) => !chosen.includes(x)).sort(() => Math.random() - 0.5);
+      const place = known || DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)];
+      const rest = startingShapes(place).filter((x) => !chosen.includes(x)).sort(() => Math.random() - 0.5);
       // Two at least: a one-shape (or no-shape) request is topped up at random.
       body = {
-        theme: known || DREAM_THEMES[Math.floor(Math.random() * DREAM_THEMES.length)],
+        theme: place,
         shapes: chosen.length >= 2 ? chosen : [...chosen, ...rest].slice(0, chosen.length ? 2 : Math.random() < 0.5 ? 2 : 3),
       };
     }
@@ -528,11 +549,20 @@ export class SettingsSystem extends createSystem({
     on('story-dream', () => this.openDreamChooser());
     for (const t of DREAM_THEMES) {
       on(`dream-theme-${t}`, () => {
+        // Another place's own creatures are not on show here any more: they come off.
+        const others = Object.entries(PLACE_CREATURES).filter(([place]) => place !== t).flatMap(([, shapes]) => shapes);
+        this.dreamShapes = this.dreamShapes.filter((sh) => !others.includes(sh));
         this.dreamTheme = t;
         this.refreshDreamChooser();
       });
     }
     for (const sh of DREAM_SHAPES) on(`dream-shape-${sh}`, () => this.toggleDreamShape(sh));
+    WORLD_BUTTONS.forEach((id, i) =>
+      on(id, () => {
+        const shape = PLACE_CREATURES[this.dreamTheme]?.[i];
+        if (shape) this.toggleDreamShape(shape);
+      }),
+    );
     on('dream-go', () => this.dreamChosen());
     on('dream-cancel', () => this.closeDreamChooser());
     on('dream-say', () => this.sayWish());

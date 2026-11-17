@@ -1,9 +1,9 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
 import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore, worldPoses } from './hand-features.js';
-import { Hands, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
+import { Hands, ShadowJournal, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, palmUp, requested, stepHold } from './recognition-rules.js';
 import { handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
-import { poseOf, WORLD_POSES } from './world-creatures.js';
+import { poseOf, TWINS, WORLD_POSES } from './world-creatures.js';
 
 /** For device diagnostics: the two-hand measurements (wrist gap and height difference m, finger curl, thumb bend, spread, fingers up, in the light). */
 export const pairRuntime = { gap: 0, dy: 0, lCurl: 0, rCurl: 0, lThumb: 0, rThumb: 0, lSpread: 0, rSpread: 0, lUp: 0, rUp: 0, lPalm: 0, rPalm: 0, lLight: false, rLight: false };
@@ -38,7 +38,13 @@ interface HandEval {
  */
 export class ShapeMatchSystem extends createSystem({
   recognizers: { required: [ShapeRecognizer] },
+  journals: { required: [ShadowJournal] },
 }) {
+  /** Creatures in the Shadow Journal: the world creatures among them come to play in Free Stage. */
+  private met = new Set<string>();
+  private metFrom = '';
+  /** Free Stage: whose turn it is next on a shared pose (true: the world creature's). */
+  private turns = new Map<string, boolean>();
   private result: MatchResult = { id: ShapeIds.None, score: 0 };
   private palm = new Vector3();
   private hit = new Vector3();
@@ -63,7 +69,8 @@ export class ShapeMatchSystem extends createSystem({
         MAX_TOLERANCE,
         (entity.getValue(ShapeRecognizer, 'tolerance') ?? 0.3) + (entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0),
       );
-      // World poses (a rocket, a whale...) are only read while a story asks for one.
+      this.readJournal();
+      // World poses (a rocket, a whale...) are only read while a story asks for one (or in Free Stage, once met).
       this.askWorldPoses(entity);
       this.evaluate(handRuntime.left, tolerance, this.left);
       this.evaluate(handRuntime.right, tolerance, this.right);
@@ -119,7 +126,7 @@ export class ShapeMatchSystem extends createSystem({
       entity.setValue(ShapeRecognizer, 'heldFor', held);
       if (held >= (entity.getValue(ShapeRecognizer, 'holdSeconds') ?? 0.5)) {
         entity.setValue(ShapeRecognizer, 'matchedHand', rightTarget !== ShapeIds.None ? Hands.Right : Hands.Left);
-        entity.setValue(ShapeRecognizer, 'matchedShape', this.hold.candidate as never);
+        entity.setValue(ShapeRecognizer, 'matchedShape', (free ? this.takeTurns(this.hold.candidate) : this.hold.candidate) as never);
         entity.setValue(ShapeRecognizer, 'twoHanded', twoHanded && poseOf(this.hold.candidate) === pair);
       }
     }
@@ -135,10 +142,31 @@ export class ShapeMatchSystem extends createSystem({
     );
   }
 
+  /** The journal's creatures, re-read only when they change. */
+  private readJournal(): void {
+    const discovered = this.queries.journals.entities.values().next().value?.getValue(ShadowJournal, 'discovered') ?? '';
+    if (discovered === this.metFrom) return;
+    this.metFrom = discovered;
+    this.met.clear();
+    for (const id of discovered.split(',')) if (id) this.met.add(id);
+  }
+
+  /** Free Stage: a pose two creatures share wakes them in turn, once the world one has been met. */
+  private takeTurns(shape: string): string {
+    const twin = TWINS[shape];
+    if (!twin || !this.met.has(twin)) return shape;
+    const twinsTurn = this.turns.get(shape) ?? false;
+    this.turns.set(shape, !twinsTurn);
+    return twinsTurn ? twin : shape;
+  }
+
   /** The world poses the story asks for now, for classify (hand-features.ts); nothing allocated. */
   private askWorldPoses(entity: Entity): void {
     const asked = worldPoses.asked;
     asked.clear();
+    if (entity.getValue(ShapeRecognizer, 'freeMode')) {
+      for (const pose of WORLD_POSES) if (this.met.has(pose)) asked.add(pose);
+    }
     for (const field of TARGET_FIELDS) {
       const pose = poseOf(entity.getValue(ShapeRecognizer, field) ?? '');
       if (WORLD_POSES.has(pose)) asked.add(pose);
@@ -202,9 +230,9 @@ export class ShapeMatchSystem extends createSystem({
     free: boolean,
     oneHand: boolean,
   ): string {
-    const byJoints = requested(e.shape, t1, a1, t2, a2, free, oneHand);
+    const byJoints = requested(e.shape, t1, a1, t2, a2, free, oneHand, this.met);
     if (byJoints !== ShapeIds.None || e.silhouette === '') return byJoints;
-    return requested(e.silhouette, t1, a1, t2, a2, free, oneHand);
+    return requested(e.silhouette, t1, a1, t2, a2, free, oneHand, this.met);
   }
 
   /**

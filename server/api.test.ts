@@ -523,6 +523,34 @@ test('dream from a wish naming four shapes: all four, in the order said (Quest 3
   assert.deepEqual(shapesOf(five).shapes, ['rabbit', 'dog', 'bird', 'cup']);
 });
 
+test('dream in the story worlds: space with a rocket and an alien, a T. rex wished for, a shark taken to the sea', async () => {
+  // The chooser's space place: the star port, the world's creatures told how to make, the fliers off the ground.
+  const space = (await (await as().post('/api/dream', { theme: 'space', shapes: ['rocket', 'alien'] })).json()) as {
+    beats: { id: string; type: string; shape?: string; set?: string; minV?: number }[];
+  };
+  assert.deepEqual(shapesOf(space), { shapes: ['rocket', 'alien'], scenery: 'star-port' });
+  assert.ok(space.beats.filter((b) => b.type === 'carry').every((b) => b.minV === 0.12), 'the rocket and the alien fly');
+  const sent = claudeSeen.at(-1)!.body.messages?.[0].content ?? '';
+  assert.match(sent, /far out in space/);
+  assert.match(sent, /for the rocket: one finger pointing straight up/);
+  assert.ok(!sent.includes('for the shark'), 'only the creatures in the story');
+  // Said in words: the dinosaurs' valley, with a T. rex and a pterodactyl.
+  const dino = await (await as().post('/api/dream', { wish: 'I want a dinosaur story with a T. rex and a pterodactyl' })).json();
+  assert.deepEqual(shapesOf(dino), { shapes: ['trex', 'pterodactyl'], scenery: 'dino-valley' });
+  // A shark in a forest story swims in the sea; a fist (the asteroid) goes to the stars.
+  const forest = (await (await as().post('/api/dream', { theme: 'forest', shapes: ['rabbit', 'shark', 'asteroid'] })).json()) as { beats: { type: string; set?: string; shape?: string }[] };
+  let here = '';
+  const at: Record<string, string> = {};
+  for (const b of forest.beats) {
+    if (b.type === 'scenery') here = b.set!;
+    if (b.type === 'request') at[b.shape!] = here;
+  }
+  assert.deepEqual(at, { rabbit: 'forest', shark: 'sea', asteroid: 'star-port' });
+  // Topped up in a world's own place: its own creatures.
+  const road = (await (await as().post('/api/dream', { wish: 'a story on the road please' })).json()) as { beats: { type: string; set?: string; shape?: string }[] };
+  assert.equal(shapesOf(road).scenery, 'moon-road');
+});
+
 test('dream from a wish that names little: the model picks the place and shapes from it, else they are picked at random', async () => {
   const before = picks();
   const story = await (await as().post('/api/dream', { wish: 'Can you make a story about being brave' })).json();

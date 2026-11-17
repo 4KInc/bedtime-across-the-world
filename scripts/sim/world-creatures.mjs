@@ -4,7 +4,8 @@
 // road, and a T. rex and a pterodactyl with the dinosaurs. The demo player tells each
 // story to The End with the hand poses (a fist for the asteroid, the crocodile's jaws
 // for the T. rex); every creature asked for wakes as itself, carries Mo, and leaves
-// a lantern of itself on the desk. Saves a picture of each creature on the wall.
+// a lantern of itself on the desk, and joins the Shadow Journal. Saves a picture of
+// each creature on the wall.
 // With --viewer, the first story is recorded and sent, and a phone that has never
 // seen these creatures plays it: each wakes there too.
 //
@@ -106,6 +107,10 @@ for (const id of STORIES) {
   check(`${id}: every creature asked for woke as itself (${asked.join(', ')})`, wrong.length === 0, { woke });
   const missing = asked.filter((shape) => !lanterns.has(shape));
   check(`${id}: each left a lantern of itself on the desk`, missing.length === 0, { lanterns: [...lanterns] });
+  // Each world creature woken is in the Shadow Journal now (the first creatures join through The Moth).
+  const journal = (await page.evaluate(() => __sp.get('ShadowJournal', 'discovered'))).split(',');
+  const worldAsked = asked.filter((a) => !['rabbit', 'ears', 'fish', 'dog', 'bird', 'snail', 'swan', 'deer', 'crocodile'].includes(a));
+  check(`${id}: its world creatures are in the Shadow Journal (${worldAsked.join(', ')})`, worldAsked.every((a) => journal.includes(a)), { journal });
   if (recordIt) {
     await sleep(2000);
     await page.evaluate(() => __sp.set('PerformanceRecorder', 'recording', false));

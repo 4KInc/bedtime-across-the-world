@@ -543,6 +543,7 @@ const gate: [string, boolean][] = [
   ['nothing counts when nothing is asked', requested('fish', 'none', 'none', 'none', 'none', false, false) === 'none'],
   ['Free Stage accepts any creature', requested('swan', 'none', 'none', 'none', 'none', true, false) === 'swan'],
   ['Free Stage never accepts cup or fist', requested('cup', 'none', 'none', 'none', 'none', true, false) === 'none' && requested('fist', 'none', 'none', 'none', 'none', true, false) === 'none'],
+  ['Free Stage: a fist is the asteroid once it is met, a rocket the rocket', requested('fist', 'none', 'none', 'none', 'none', true, false, new Set(['asteroid'])) === 'asteroid' && requested('rocket', 'none', 'none', 'none', 'none', true, false, new Set(['rocket'])) === 'rocket'],
   ['one-hand mode: an open hand is a bird in Free Stage', requested('open', 'none', 'none', 'none', 'none', true, true) === 'bird'],
   ['one-hand mode: an open hand is the bird a story asks for', requested('open', 'bird', 'none', 'none', 'none', false, true) === 'bird'],
   ['one-hand mode: an open hand picks the bird in a dog-or-bird choice', requested('open', 'dog', 'none', 'bird', 'none', false, true) === 'bird'],
@@ -613,6 +614,75 @@ ask('');
   }
   const line = `   not asked for, hands read as a world pose: ${read}`;
   console.log(read > 0 ? fail(line) : line);
+}
+
+// ---------------------------------------------------------------- 9. Free Stage, worlds met
+
+// Free Stage once every world creature has been met (all of them in the Shadow Journal): every
+// one-hand pose wakes its own creature (all world poses read at once now), and resting hands do
+// not wake a world creature. With none met, nothing new comes (a fist stays nothing).
+{
+  const met: ReadonlySet<string> = new Set(['rocket', 'alien', 'asteroid', 'shark', 'octopus', 'whale', 'plane']);
+  const free = (shape: string, m: ReadonlySet<string> = met) => requested(shape, 'none', 'none', 'none', 'none', true, false, m);
+  worldPoses.asked.clear();
+  for (const pose of WORLD_POSES) worldPoses.asked.add(pose);
+  /** The creature that wakes first in 3 s of frames, as the app's hold does (none if none does). */
+  const firstAwake = (frames: (Frame | null)[]): string => {
+    const state: HoldState = { candidate: ShapeIds.None, sinceMatch: 0 };
+    let held = 0;
+    for (const f of frames) {
+      held = stepHold(state, held, f ? free(f.shape) : ShapeIds.None, 1 / HZ);
+      if (held >= HOLD) return state.candidate;
+    }
+    return ShapeIds.None;
+  };
+  // Judged with clean and jittered hands. With a hidden finger (Quest guesses it half open) some
+  // poses are another's: a fist hiding its index finger is a pointing finger (the rocket), a
+  // rocket hiding its middle finger two fingers up (the rabbit). In a story only the shape asked
+  // for counts, so that does not happen there (section 8); in Free Stage it can, so it is reported.
+  const JUDGED: Condition[] = ['clean', 'jitter 5 mm', 'jitter + occlusion'];
+  console.log(`\n9. Free Stage with every world met: the first creature to wake (3 s with dropouts, of ${N} people each; ${JUDGED.join(' / ')}, the last reported only):`);
+  const pointing = JSON.stringify(FIXTURES.find((f) => f.label === 'rocket')!.right);
+  for (const fx of oneHand) {
+    const want = free(fx.label);
+    if (want === ShapeIds.None) continue;
+    const salt = FIXTURES.indexOf(fx);
+    const seen: Record<string, number> = {};
+    const rates = JUDGED.map((c) => {
+      let ok = 0;
+      for (let s = 0; s < N; s++) {
+        const got = firstAwake(oneHandFrames(person(fx.right!, 'right', s, salt), fx.right!, c, s, salt));
+        if (got === want) ok++;
+        else if (c === 'jitter + occlusion') seen[got] = (seen[got] ?? 0) + 1;
+      }
+      return ok / N;
+    });
+    const line = `   ${fx.label.padEnd(10)} ${rates.map((r) => `${Math.round(r * 100)}%`.padStart(6)).join('')}${Object.keys(seen).length ? `  (hidden finger: ${Object.entries(seen).map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}`;
+    console.log(Math.min(rates[0], rates[1]) < TARGET_ACCURACY ? fail(line) : line);
+  }
+  // Resting hands (not the pointing hand: that is the rocket's own pose).
+  let frames = 0;
+  const woke: Record<string, number> = {};
+  for (const fx of negatives.filter((f) => JSON.stringify(f.right) !== pointing)) {
+    const salt = FIXTURES.indexOf(fx);
+    for (let s = 0; s < N; s++) {
+      const p = new HandPipeline();
+      const base = person(fx.right!, 'right', s, salt);
+      for (let i = 0; i < HZ; i++) {
+        const frame = p.step(track(base, fx.right!, 'right', cond, s, salt, i))!;
+        if (i < HZ / 5) continue;
+        frames++;
+        const got = free(frame.shape);
+        if (met.has(got)) woke[got] = (woke[got] ?? 0) + 1;
+      }
+    }
+  }
+  const worst = Math.max(0, ...Object.values(woke)) / frames;
+  const restLine = `   resting hands read as a world creature: ${Object.keys(woke).length ? Object.entries(woke).map(([k, v]) => `${k} ${((100 * v) / frames).toFixed(1)}%`).join(', ') : 'none'}`;
+  console.log(worst > MAX_NEGATIVE_RATE ? fail(restLine) : restLine);
+  worldPoses.asked.clear();
+  const none = ['fist', ...WORLD_POSES].every((sh) => free(sh, new Set()) === ShapeIds.None);
+  console.log(`   ${none ? 'ok  ' : 'FAIL'} none met: a fist and the world poses are nothing${none ? '' : ((failed = true), '')}`);
 }
 
 console.log(failed ? '\nRECOGNITION TARGETS NOT MET' : '\nAll recognition targets met.');

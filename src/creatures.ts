@@ -10,17 +10,40 @@ export const CREATURES: readonly { id: string; name: string; rig: string | null 
   { id: 'swan', name: 'Swan', rig: ShapeIds.Swan },
   { id: 'deer', name: 'Deer', rig: ShapeIds.Deer },
   { id: 'crocodile', name: 'Crocodile', rig: ShapeIds.Crocodile },
+  // The story worlds' creatures (world-creatures.ts), world by world.
+  { id: 'rocket', name: 'Rocket', rig: ShapeIds.Rocket },
+  { id: 'alien', name: 'Alien', rig: ShapeIds.Alien },
+  { id: 'asteroid', name: 'Asteroid', rig: ShapeIds.Asteroid },
+  { id: 'shark', name: 'Shark', rig: ShapeIds.Shark },
+  { id: 'octopus', name: 'Octopus', rig: ShapeIds.Octopus },
+  { id: 'whale', name: 'Whale', rig: ShapeIds.Whale },
+  { id: 'car', name: 'Car', rig: ShapeIds.Car },
+  { id: 'plane', name: 'Aeroplane', rig: ShapeIds.Plane },
+  { id: 'digger', name: 'Digger', rig: ShapeIds.Digger },
+  { id: 'trex', name: 'T. rex', rig: ShapeIds.Trex },
+  { id: 'pterodactyl', name: 'Pterodactyl', rig: ShapeIds.Pterodactyl },
 ];
+
+/** A creature's name on its page ('T. rex', not 'trex'); the id capitalised for any other shape. */
+export function creatureName(id: string): string {
+  return CREATURES.find((c) => c.id === id)?.name ?? id.charAt(0).toUpperCase() + id.slice(1);
+}
 
 export const PAGE_W = 1024;
 export const PAGE_H = 640;
-export const SLOT_COLUMNS = 4;
+/** Nineteen creatures, five to a row (four rows). */
+export const SLOT_COLUMNS = 5;
+/** Slot frame size and the gap between slot centres (page pixels). */
+const SLOT_W = 180;
+const SLOT_H = 104;
+const COL_STEP = 196;
+const ROW_STEP = 120;
 
 /** Slot centre in page pixels. */
 export function slotCenter(index: number): { x: number; y: number } {
   const col = index % SLOT_COLUMNS;
   const row = Math.floor(index / SLOT_COLUMNS);
-  return { x: 140 + col * 248, y: 215 + row * 230 };
+  return { x: PAGE_W / 2 + (col - (SLOT_COLUMNS - 1) / 2) * COL_STEP, y: 186 + row * ROW_STEP };
 }
 
 /** Paper page with title, slot frames and labels (silhouettes are 3D overlays). */
@@ -55,16 +78,16 @@ export function drawJournalPage(
     g.strokeStyle = 'rgba(42, 32, 54, 0.35)';
     g.lineWidth = 3;
     g.beginPath();
-    g.roundRect(x - 105, y - 80, 210, 160, 18);
+    g.roundRect(x - SLOT_W / 2, y - SLOT_H / 2 - 8, SLOT_W, SLOT_H, 14);
     g.stroke();
     const known = discovered.has(c.id);
     g.fillStyle = known ? '#2a2036' : 'rgba(42, 32, 54, 0.45)';
-    g.font = 'italic 500 30px Georgia, serif';
-    g.fillText(known ? c.name : '? ? ?', x, y + 112);
+    g.font = 'italic 500 24px Georgia, serif';
+    g.fillText(known ? c.name : '? ? ?', x, y + SLOT_H / 2 + 14);
     if (!known) {
-      g.font = '600 90px Georgia, serif';
+      g.font = '600 64px Georgia, serif';
       g.fillStyle = 'rgba(42, 32, 54, 0.22)';
-      g.fillText('?', x, y + 30);
+      g.fillText('?', x, y + 14);
     }
   });
 }

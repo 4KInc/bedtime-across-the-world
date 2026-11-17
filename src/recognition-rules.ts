@@ -1,5 +1,5 @@
 import { ShapeIds } from './shadowplay-components.js';
-import { poseOf } from './world-creatures.js';
+import { poseOf, WORLD_POSES } from './world-creatures.js';
 
 /**
  * Recognition decisions that do not depend on the ECS: which shape a request
@@ -148,6 +148,22 @@ export const FREE_ACCEPT: Readonly<Record<string, string>> = {
   [ShapeIds.Crocodile]: ShapeIds.Crocodile,
 };
 
+/** Nothing met yet (the default for callers outside Free Stage). */
+const NONE_MET: ReadonlySet<string> = new Set();
+
+/**
+ * Free Stage, for a world creature (world-creatures.ts): it comes to play once the
+ * child has met it in its world's stories (it is in the Shadow Journal). A world
+ * pose is itself; a fist is the asteroid (a fist is otherwise nothing here).
+ * Creatures that share a pose with a first one (a car and the snail) take turns:
+ * see ShapeMatchSystem.
+ */
+function freeCreature(shape: string, met: ReadonlySet<string>): string {
+  if (shape === ShapeIds.Fist) return met.has(ShapeIds.Asteroid) ? ShapeIds.Asteroid : ShapeIds.None;
+  if (WORLD_POSES.has(shape)) return met.has(shape) ? shape : ShapeIds.None;
+  return FREE_ACCEPT[shape] ?? ShapeIds.None;
+}
+
 export function isHiddenPair(shape: string | null | undefined): boolean {
   const pose = poseOf(shape ?? '');
   return pose === ShapeIds.Deer || pose === ShapeIds.Crocodile;
@@ -159,7 +175,7 @@ export function isHiddenPair(shape: string | null | undefined): boolean {
  * alternatives) count; anything else is ignored. Free Stage accepts every
  * performable creature.
  */
-export function requested(shape: string, t1: string, a1: string, t2: string, a2: string, free: boolean, oneHand: boolean): string {
+export function requested(shape: string, t1: string, a1: string, t2: string, a2: string, free: boolean, oneHand: boolean, met = NONE_MET): string {
   if (shape === ShapeIds.None) return ShapeIds.None;
   // A world creature is asked for by name and made with its pose (world-creatures.ts).
   if (shape === poseOf(t1) || (a1 !== ShapeIds.None && shape === poseOf(a1))) return t1;
@@ -171,7 +187,7 @@ export function requested(shape: string, t1: string, a1: string, t2: string, a2:
     if (free) return ShapeIds.Bird;
   }
   if (!free) return ShapeIds.None;
-  return FREE_ACCEPT[shape] ?? ShapeIds.None;
+  return freeCreature(shape, met);
 }
 
 export interface PairHand {

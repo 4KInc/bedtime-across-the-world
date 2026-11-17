@@ -88,3 +88,16 @@ test('readWish: places and shapes in any wording, plurals too, in the order said
   assert.deepEqual(readWish('a story with a fish and a crocodile'), { theme: '', shapes: ['fish', 'crocodile'] });
   assert.deepEqual(readWish('swans and a deer and a snail'), { theme: '', shapes: ['swan', 'deer', 'snail'] });
 });
+
+test('the story worlds\' creatures and places, said', () => {
+  assert.deepEqual(parseCommand('Make a rocket'), { kind: 'shape', shape: 'rocket' });
+  assert.deepEqual(parseCommand('T. rex!'), { kind: 'shape', shape: 'trex' });
+  assert.deepEqual(parseCommand('the aeroplane please'), { kind: 'shape', shape: 'plane' });
+  assert.deepEqual(parseCommand('carry on'), { kind: 'lamp', on: true }, 'a car is not in "carry"');
+  assert.equal(describe({ kind: 'shape', shape: 'trex' }), 'T. rex');
+  assert.deepEqual(readWish('a dinosaur story with a T. rex and a pterodactyl'), { theme: 'dinosaurs', shapes: ['trex', 'pterodactyl'] });
+  assert.deepEqual(readWish('dream about space with an alien and a rocket'), { theme: 'space', shapes: ['alien', 'rocket'] });
+  assert.deepEqual(readWish('a story with sharks and whales by the ocean'), { theme: 'sea', shapes: ['shark', 'whale'] });
+  assert.deepEqual(readWish('cars and diggers on the road'), { theme: 'road', shapes: ['car', 'digger'] });
+  assert.deepEqual(parseCommand('Dream about the dinosaurs with a T. rex and a pterodactyl'), { kind: 'dream', theme: 'dinosaurs', shapes: ['trex', 'pterodactyl'] }, 'no idea beyond the names');
+});
