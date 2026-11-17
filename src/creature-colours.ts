@@ -19,12 +19,12 @@ export const CREATURE_COLOURS: Readonly<Record<string, number>> = {
   open: 0xf08c2e, // amber (Free Stage)
   // World creatures (world-creatures.ts).
   rocket: 0xe2483b, // rocket red
-  alien: 0x7ccf3a, // lime
+  alien: 0x2fa04a, // alien green (lime vanished in the lamp light, as the yellow car did)
   asteroid: 0x8a7a6b, // stone
   shark: 0x5b7f9e, // slate blue
   octopus: 0xc2408f, // magenta
   whale: 0x3557c4, // deep blue
-  car: 0xe0a21b, // yellow
+  car: 0xd12f3f, // cherry red (Quest 3, Nov 17: yellow vanished in the lamp light)
   plane: 0x2fa6c9, // cyan
   digger: 0xe5832a, // orange
   trex: 0x4f9a3a, // forest green
