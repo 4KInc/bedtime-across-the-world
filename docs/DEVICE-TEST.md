@@ -146,7 +146,7 @@ and whether anything woke that you did not ask for (panel: `match`).
 | # | Check | Pass | Notes |
 | --- | --- | --- | --- |
 | F1 | Story-world creatures: rocket (one finger up), alien (pointer and little finger up), asteroid (fist), shark (flat hand, fingers up), octopus (hand hanging down), whale (fist, thumb up), car, aeroplane (thumb and little finger out), digger, T. rex, pterodactyl each wake when their story asks | [x] | every one woke: 4zp7d8t7yg |
-| F2 | Carry the whale and the snail toward the lighthouse: it finishes by hand (they are carried across, not up) | [ ] | took up to 45 s in 4zp7d8t7yg; eased since (#140) |
+| F2 | Carry the whale and the snail toward the lighthouse: it finishes by hand (they are carried across, not up) | [x] | took up to 45 s in 4zp7d8t7yg; eased (#140): the whale carried in 0.8 s, the snail in 1.4 s in ufckcgf798 |
 | F3 | Raise a flat palm (fingers together) to go on: goes on within a second | [ ] | fixed (#123); the go-on steps waited 8-21 s in fpxa7ky672 |
 | F4 | Lower your hands between shapes: no shadow on the wall; raise them and it comes back | [ ] | (#125) |
 | F5 | Say a shape with your hands relaxed: the creature crosses the wall and carries Mo before going to the desk | [ ] | (#112, #120) |

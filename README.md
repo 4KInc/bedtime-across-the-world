@@ -33,10 +33,10 @@ fixed, and checked again on the headset.
 
 **Meets the 60 fps minimum on both headsets.** Every session held the requested
 72 Hz: median 71.5 to 72 fps, frame-time 95th percentile 14.7 to 15.5 ms (under
-the 16.7 ms that 60 fps allows), across 14 sessions and 1,555 five-second
+the 16.7 ms that 60 fps allows), across 15 sessions and 1,754 five-second
 windows of the app running. One window was under 60 fps: the first five seconds
 of one session (47 fps), as it entered XR and the room loaded, before the story
-began. The 31 windows while the headset itself slept, woke or showed its system
+began. The 37 windows while the headset itself slept, woke or showed its system
 menu are counted apart; the lowest of those (47 fps) was a Quest 3 waking after
 three hours asleep and finding the room again.
 
@@ -61,6 +61,7 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | [`9f89mnu4ye`](docs/diag/2026-11-16/9f89mnu4ye.jsonl) | Quest 3S | Nov 16, 17:13 | 15.7 min | On the wall, the desk props on the real desk; a dreamed story, Moon Buggy, Little Lost Spaceship and Sleepy Little Dinosaur | 71.6, 63.5 | 14.9 ms |
 | [`v7sw83fr98`](docs/diag/2026-11-16/v7sw83fr98.jsonl) | Quest 3S | Nov 16, 18:44 | 11.2 min | Back on last time's wall; Moon Buggy, The Moth and a dreamed story | 71.8, 62.5 | 14.9 ms |
 | [`4zp7d8t7yg`](docs/diag/2026-11-17/4zp7d8t7yg.jsonl) | Quest 3 | Nov 17, 00:34 | 19.3 min | Every story-world creature woken with real hands: rocket, alien, asteroid, shark, octopus, whale, car, aeroplane, digger, T. rex and pterodactyl, across six stories and a dream; two recordings saved and sent | 71.6, 66.8 | 15.0 ms |
+| [`ufckcgf798`](docs/diag/2026-11-17/ufckcgf798.jsonl) | Quest 3 | Nov 17, 06:31 | 16.6 min | A first launch on the new address (Counting Stars: the bird 32 s after Enter XR); The Shy Little Shark, every shape in 2 to 7 s and the whale carried to the lighthouse in under a second; The Sleepy T. rex; a dreamed story with four creatures; The Little Car's Long Way Home, recorded with the voice and sent | 71.6, 67.2 | 14.9 ms |
 
 **What real hands and real rooms taught us** (things an emulator cannot show):
 
@@ -86,6 +87,14 @@ number here with `node scripts/diag/summarize.mjs docs/diag`.
 | On an iPad, Join in lost the recorded voice after the first shape: iOS would not start it again without a tap | The voice is muted, never paused, between lines, so it comes back |
 | A child's drawing from a goodnight stayed on the wall in every story, over the creatures | It walks on once, stays a moment, and hops off |
 | Most endings let the light go onto a wall that did not change (only the lighthouse lit up) | The released light comes home into the scene: stars come out, fireflies rise, the river's moon lays a silver path |
+| The car woke but could not be seen: its yellow vanished in the lamp's orange light | The car is red; a test checks every creature's colour against the lamp light (it also caught the alien's lime) |
+| The digger took 31 s: the story asks for "a scoop", and people make one with curled fingers, which read as cupped hands | A scooped hand counts while a digger is asked for |
+| A dreamed story's fourth creature pushed the first off the desk | Four places, on the desk and on the family's shelf |
+| Send to family looked stuck on a long story, so it was pressed again: sent twice, with two family codes | The button says "Sending...", a second press is ignored, and the voice is recorded at speech quality (about a quarter of the size) |
+| On a phone or tablet, joining in to a recording made straight after another story went back to its start after the child's turn | The story goes on from the turn |
+| A parent reading the lines aloud was cut off mid-sentence: the next caption came on reading time alone, and the recording kept the cut | Recording with your voice, each line waits until you pause |
+| A dreamed story began at once, with no moment to press Record | It waits on its title: **Tell it**, or **Record and tell it** |
+| On an iPad a creature's voice silenced the storyteller's recorded voice, and full screen while joining in turned the camera off | Creature voices on the family viewer no longer stop the recorded voice; the camera carries on through full screen |
 
 The room side works on real Room Setup data: the stage finds a labelled wall
 (or falls back to a floating paper screen) and the desk props stand on the
@@ -108,6 +117,9 @@ were in the light, whether sound was running.
 | --- | --- |
 | In a Meta Quest browser | https://bedtime-across-the-world-1031148889398.us-central1.run.app (press **Enter XR**, or install it as an app from the browser menu: it then opens straight into the headset view) |
 | Family viewer (phone, tablet, desktop) | https://bedtime-across-the-world-1031148889398.us-central1.run.app/?viewer |
+
+A first launch opens *The Shy Little Shark*: every shape in it is one easy
+hand (a shark, an octopus, a whale), then cupped hands.
 
 On first launch both sides come with a labelled sample family, so you can try
 everything alone: the viewer has a story *from Dad* to watch and join in, and the
@@ -191,7 +203,10 @@ hand held still in front of you will do.
   recording is kept on the headset and listed in the journal with its family
   code once sent, to replay on the wall or pick which one to send. While a
   recording plays, your own hands still pinch the lamp switch to pause and the
-  journal to stop.
+  journal to stop. Read the captions aloud at your own pace: while you record
+  with your voice, each line waits until you pause. Record pressed before the
+  story's first shape starts the story again from its title, so the recording
+  has all of it; Send shows "Sending..." while it uploads.
 - **Go live**: your family joins with the code and sees your shadows on their
   screen in real time; talk to each other; **Take turns** so the child makes
   every other creature, which wakes in the child's own colour with their name.
@@ -232,6 +247,8 @@ hand held still in front of you will do.
   captions and a narrator's voice that says the child's name. A dreamed story
   can be recorded and sent, or told live, like any other: its words travel with
   it, and the server and the family's device check them again before it plays.
+  Once dreamed, it waits on its title with the journal open, at "Mo dreamed
+  ...": **Tell it**, or **Record and tell it** (or say either).
 - Accessibility: recognition tolerance, show-me hints, one-hand mode and a
   high-contrast mode (black-and-white panels and captions, solid shadows on the
   wall), and **Look to press** for limited hand mobility: rest the centre of
@@ -255,11 +272,11 @@ hand held still in front of you will do.
   What steps off the wall lands on a little shelf under the stage, as on the
   storyteller's desk: the glowing creatures, the keepsake jar, and Mo asleep
   at the end. Each story is listed by its name; **Full screen** where the
-  browser allows it (computers, Android, iPad); the controls fade away while
-  the story plays.
+  browser allows it (computers, Android, iPad), and while a story plays from
+  an icon in the top-left corner; the controls fade away while the story plays.
 - **Join in**: at each shape the story waits for *your* hands (camera, after a
   grown-up allows it); the storyteller's recorded voice carries on around your
-  turn, on iPads too.
+  turn, on iPads too, and the camera keeps going through full screen.
 - **Join live** with a family code; talk, show your hands, take turns.
 - **Send a goodnight back**: twenty seconds of your shadow creature and, if a
   grown-up switches it on, your voice; choose colours for Mo, and draw a
@@ -269,8 +286,9 @@ hand held still in front of you will do.
   creatures in pictures. A character from a show or a scary word is left out,
   and the grown-up sees what will be sent and why.
 - **Night light**: at the end of a story (or once the goodnight is sent), the
-  phone becomes a night light: Mo asleep on the moon, "Goodnight, Mia. Love,
-  Dad", and the lullaby, softly. Over ten minutes the light and the music
+  phone becomes a night light: Mo asleep on the moon under twinkling stars, a
+  glow swelling around her, "Goodnight, Mia. Love, Dad", and the lullaby,
+  softly. Over ten minutes the light and the music
   fade, then the screen goes dark and the phone may sleep (it is kept awake
   until then). A tap only shows a Close button, so a sleepy hand does not end
   it.
@@ -491,7 +509,7 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
 | `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste; across time zones (the viewer in India, the headset in Chicago), the journal shows the child's time |
-| `node scripts/sim/night-light.mjs` | The end of Dad's story on a phone: Night light, a tap shows only Close, the light and the lullaby fade, lights out, Close |
+| `node scripts/sim/night-light.mjs` | The end of Dad's story on a phone: Night light, stars twinkling and a glow around Mo (and nothing moving with Reduce Motion), a tap shows only Close, the light and the lullaby fade, lights out, Close |
 | `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
 | `node scripts/sim/world-creatures.mjs`, `world-free-stage.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone; Free Stage wakes the creatures a child has met |
 | `node scripts/sim/playback-hands.mjs` | While a recording plays on the headset, your own pinches still pause it and open the Journal |
@@ -499,6 +517,10 @@ headless browsers, the IWSDK emulator and Chrome's fake camera and microphone
 | `node scripts/sim/finale-lights.mjs` | The light let go comes home into each scene (stars, fireflies, the moon's path), and Counting Stars ends under a sky of stars |
 | `node scripts/sim/raise-hand.mjs`, `grow.mjs`, `resting-hands.mjs` | Hands as people hold them: a flat raised palm goes on, a 12 cm pull grows a creature, a lowered hand casts no shadow |
 | `node scripts/sim/viewer-shelf.mjs`, `recordings.mjs` | The shelf under the stage on a phone and tablet (creatures, jar, Mo at the end, controls that fade); every recording kept, replayed and sent |
+| `node scripts/sim/app-name.mjs`, `story-worlds.mjs` | The app's name wherever a person reads it; a first launch opens The Shy Little Shark |
+| `node scripts/sim/send-once.mjs`, `desk-four.mjs` | Send to family: "Sending...", one upload for two presses, the voice at speech quality; a four-creature story leaves all four on the desk |
+| `node scripts/sim/dream-tell.mjs`, `record-from-start.mjs`, `wait-for-reader.mjs` | A dreamed story waits for Tell it or Record and tell it (by hand or voice); Record before the first shape starts the story from its title; recording with a voice, each line waits for the reader to pause |
+| `node scripts/sim/join-in-rejoin.mjs`, `viewer-ios-voice.mjs`, `viewer-ios-audio.mjs`, `camera-fullscreen.mjs`, `viewer-fullscreen.mjs` | The family viewer with iOS's audio rules: after the child's turn the story goes on (not from its start) and the storyteller's voice plays on; the camera through full screen; the full-screen icon while a story plays |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls
