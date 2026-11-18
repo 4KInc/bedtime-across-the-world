@@ -317,7 +317,8 @@ flowchart LR
   grown-up allows it); the storyteller's recorded voice carries on around your
   turn, on iPads too, and the camera keeps going through full screen.
 - **Join live** with a family code; talk, show your hands, take turns.
-- **Send a goodnight back**: twenty seconds of your shadow creature and, if a
+- **Send a goodnight back**: twenty seconds of your shadow creature (a classic
+  shape, or one of the creatures from tonight's story, like the shark or the car) and, if a
   grown-up switches it on, your voice; choose colours for Mo, and draw a
   creature with your finger for the next story.
 - **Ask for tomorrow's story** with the goodnight: say it (**Say it**), type it,
