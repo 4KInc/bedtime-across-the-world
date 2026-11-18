@@ -595,3 +595,8 @@ Quest emulator, in simulation, on Meta Quest 3 and Quest 3S (15 `?diag`
 sessions, November 14 to 17, 2026), and for the family side on an iPad, a
 computer and an iPhone, with recognition, the lamp, the stage on the
 wall, narration, sound and voice tuned from those sessions.
+
+## Videos
+
+- [Meta Quest 3](https://youtu.be/EhNuxp9DMbg)
+- [Meta Quest 3S](https://youtu.be/DgxNFKGEG5c)
