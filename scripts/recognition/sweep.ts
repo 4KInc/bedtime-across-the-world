@@ -18,7 +18,7 @@
  * sessions, the recognition lab) and use this to catch regressions.
  */
 import { Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures, rescuesRequested, worldPoses } from '../../src/hand-features';
+import { acceptScore, classify, computeFeatures, FREE_PLAY_BIRD, freePlayShape, rescuesRequested, worldPoses } from '../../src/hand-features';
 import { FIXTURES, HandPose, localJoints, toWorld } from '../../src/hand-poses';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, requested, stepHold } from '../../src/recognition-rules';
 import { ShapeIds } from '../../src/shadowplay-components';
@@ -147,6 +147,31 @@ function twoHands(l: Frame, r: Frame, hidden: boolean, target: string): string {
   const pair = classifyPair(l, r, hidden, target === 'bird', pairAssist, target === 'deer', target === 'crocodile', target === 'cup');
   if (pair) return pair;
   return r.shape === target || l.shape === target ? target : ShapeIds.None;
+}
+
+/** One hand in free play, as in the app (nothing asked for). */
+function freeShape(f: Frame): string {
+  return freePlayShape(f.shape, { id: f.best as never, score: f.score }, tolerance, f.features);
+}
+
+/** Two hands in free play, as in the app: the pair's shape (hidden pairs too), else the right hand's. */
+function freePairFrames(
+  rb: Float32Array, rPose: HandPose, rAt: [number, number],
+  lb: Float32Array, lPose: HandPose, lAt: [number, number],
+  cond: Condition, s: number, salt: number,
+): string[] {
+  const pr = new HandPipeline();
+  const pl = new HandPipeline();
+  return Array.from({ length: HZ * 3 }, (_, i) => {
+    if (dropped(i)) {
+      pr.step(null);
+      pl.step(null);
+      return ShapeIds.None;
+    }
+    const r = pr.step(track(rb, rPose, 'right', cond, s, salt, i, rAt))!;
+    const l = pl.step(track(lb, lPose, 'left', cond, s, salt + 9, i, lAt))!;
+    return classifyPair(l, r, true, FREE_PLAY_BIRD, 0) ?? freeShape(r);
+  });
 }
 
 /** One second of one person holding a pose through the pipeline; the shape at the end. */
@@ -633,7 +658,7 @@ ask('');
     const state: HoldState = { candidate: ShapeIds.None, sinceMatch: 0 };
     let held = 0;
     for (const f of frames) {
-      held = stepHold(state, held, f ? free(f.shape) : ShapeIds.None, 1 / HZ);
+      held = stepHold(state, held, f ? free(freeShape(f)) : ShapeIds.None, 1 / HZ);
       if (held >= HOLD) return state.candidate;
     }
     return ShapeIds.None;
@@ -674,7 +699,7 @@ ask('');
         const frame = p.step(track(base, fx.right!, 'right', cond, s, salt, i))!;
         if (i < HZ / 5) continue;
         frames++;
-        const got = free(frame.shape);
+        const got = free(freeShape(frame));
         if (met.has(got)) woke[got] = (woke[got] ?? 0) + 1;
       }
     }
@@ -685,6 +710,91 @@ ask('');
   worldPoses.asked.clear();
   const none = ['fist', ...WORLD_POSES].every((sh) => free(sh, new Set()) === ShapeIds.None);
   console.log(`   ${none ? 'ok  ' : 'FAIL'} none met: a fist and the world poses are nothing${none ? '' : ((failed = true), '')}`);
+}
+
+// ---------------------------------------------------------------- 10. free play with real hands
+
+// Free play: nothing is asked for (Free Stage, or a child's goodnight back on a phone). On an
+// iPad (Nov 17) the rabbit woke easily but a dog or a bird made by a child hardly ever did: a
+// story gives real hands room for the shape it asks for (the close-enough rescue, the assist,
+// the looser bird), free play gave none. Each free one-hand shape and the bird, varied as real
+// hands make them, over 3 s with jitter, a hidden finger and dropouts: the creature that wakes.
+{
+  const free = (shape: string) => requested(shape, 'none', 'none', 'none', 'none', true, false);
+  const FREE_SHAPES = ['rabbit', 'dog', 'fish', 'swan', 'snail'];
+  const wakes = (frames: (string | null)[]): string => {
+    const state: HoldState = { candidate: ShapeIds.None, sinceMatch: 0 };
+    let held = 0;
+    for (const f of frames) {
+      held = stepHold(state, held, f ? free(f) : ShapeIds.None, 1 / HZ);
+      if (held >= HOLD) return state.candidate;
+    }
+    return ShapeIds.None;
+  };
+  ask('');
+  console.log(`\n10. Free play (a goodnight back, Free Stage) with real hands: the shape wakes as itself (3 s, of ${NV} people):`);
+  const rows: number[] = [];
+  const missed: Record<string, string> = {};
+  let relaxedOk = 0;
+  let relaxedAll = 0;
+  for (const label of [...FREE_SHAPES, 'bird']) {
+    const fx = label === 'bird' ? pairFixtures.find((f) => f.label === 'bird')! : null;
+    const one = FIXTURES.find((f) => f.label === label && !f.left)?.right;
+    const cells = VARIANTS.filter((v) => !v.apart || fx).map((v) => {
+      let ok = 0;
+      for (let s = 0; s < NV; s++) {
+        const salt = 300 + VARIANTS.indexOf(v) * 7;
+        let frames: (string | null)[];
+        if (fx) {
+          const rp = v.pose(fx.right);
+          const lp = v.pose(fx.left);
+          const ra: [number, number] = [fx.rightAt[0] + (v.apart ?? 0), fx.rightAt[1]];
+          const la: [number, number] = [fx.leftAt[0] - (v.apart ?? 0), fx.leftAt[1]];
+          frames = freePairFrames(person(rp, 'right', s, salt, ra), rp, ra, person(lp, 'left', s, salt + 9, la), lp, la, cond, s, salt);
+        } else {
+          const p = v.pose(one!);
+          frames = oneHandFrames(person(p, 'right', s, salt), p, cond, s, salt).map((f) => (f ? freeShape(f) : null));
+        }
+        const got = wakes(frames);
+        if (got === label) ok++;
+        if (['dog', 'fish', 'swan', 'bird'].includes(label) && v.name.startsWith('relaxed')) {
+          relaxedAll++;
+          if (got === label) relaxedOk++;
+        }
+        else if (process.env.FREE_DEBUG) missed[`${label} ${v.name}`] = `${missed[`${label} ${v.name}`] ?? ''} ${got}`;
+      }
+      rows.push(ok / NV);
+      return `${Math.round((ok / NV) * 100)}%`.padStart(7);
+    });
+    console.log(`   ${label.padEnd(10)}${cells.join('')}`);
+  }
+  for (const [k, v] of Object.entries(missed)) console.log(`     ${k}:${v}`);
+  const mean = rows.reduce((a, b) => a + b, 0) / rows.length;
+  console.log(`   mean ${Math.round(mean * 100)}% (${VARIANTS.filter((v) => !v.apart).map((v) => v.name).join(' / ')}; the bird also apart +6 cm)`);
+  // The iPad report: relaxed hands (a dog, a fish, a swan, the bird) wake as themselves. A snail tilted
+  // upright is a rabbit's pose, and a bird with fingers tilted up a deer's antlers: with nothing asked
+  // for, those are reported only.
+  const relaxedRate = relaxedOk / relaxedAll;
+  const line = `   relaxed dog, fish, swan and bird (relaxed, relaxed + tilted) wake as themselves: ${Math.round(relaxedRate * 100)}%`;
+  console.log(relaxedRate < 0.9 ? fail(line) : line);
+  // Resting and half-closed hands in free play wake nothing.
+  let frames = 0;
+  let woke = 0;
+  for (const fx of negatives) {
+    const salt = FIXTURES.indexOf(fx);
+    for (let s = 0; s < N; s++) {
+      const p = new HandPipeline();
+      const base = person(fx.right!, 'right', s, salt);
+      for (let i = 0; i < HZ; i++) {
+        const frame = p.step(track(base, fx.right!, 'right', cond, s, salt, i))!;
+        if (i < HZ / 5) continue;
+        frames++;
+        if (free(freeShape(frame)) !== ShapeIds.None) woke++;
+      }
+    }
+  }
+  const restLine = `   resting and half-closed hands read as a creature: ${((100 * woke) / frames).toFixed(1)}% of frames`;
+  console.log(woke / frames > MAX_NEGATIVE_RATE ? fail(restLine) : restLine);
 }
 
 console.log(failed ? '\nRECOGNITION TARGETS NOT MET' : '\nAll recognition targets met.');
