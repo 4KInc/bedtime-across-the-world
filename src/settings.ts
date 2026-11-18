@@ -426,8 +426,10 @@ export class SettingsSystem extends createSystem({
   private takeIdea(i: number): void {
     const idea = requestsRuntime.ideas[i];
     if (!idea || this.dreaming) return;
+    // One press dreams it (Quest, Nov 18: a suggestion pressed seemed to do nothing, waiting for Dream it).
     this.takeIntoChooser(idea.theme, idea.shapes, idea.idea, '', '');
-    this.say(`${idea.title}: ${idea.why}. Dream it, or change the place or shapes first.`);
+    this.say(`${idea.title}: ${idea.why}.`);
+    this.dreamChosen();
   }
 
   private takeIntoChooser(theme: string, shapes: readonly string[], wish: string, setting: string, askId: string): void {
@@ -557,7 +559,8 @@ export class SettingsSystem extends createSystem({
 
   /** "Dream it" in the chooser. */
   private dreamChosen(): void {
-    if (this.dreamShapes.length < 2) {
+    // With words (a request or a suggestion), Mo picks any shapes left out.
+    if (this.dreamShapes.length < 2 && !this.pendingWish) {
       this.status?.setProperties({ text: 'Pick at least two shapes.' });
       return;
     }
@@ -576,7 +579,9 @@ export class SettingsSystem extends createSystem({
    */
   dream(theme?: string, shapes: readonly string[] = [], wish?: string, setting?: string, askId?: string): void {
     const story = first(this.queries.stories.entities);
-    if (!story || this.dreaming || story.getValue(StoryState, 'followMode')) return;
+    if (!story) return;
+    if (this.dreaming) return this.say('Mo is already dreaming a story...');
+    if (story.getValue(StoryState, 'followMode')) return this.say('A recording is playing: stop it first, then Dream.');
     if (!this.dreamAvailable) {
       this.status?.setProperties({ text: 'Mo can dream up new stories only where the app has AI.' });
       return;

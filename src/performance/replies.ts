@@ -33,6 +33,9 @@ export class FamilyInboxSystem extends createSystem({
   private polling = false;
   /** Goodnight ids waiting to be watched, oldest first. */
   private unwatched: { id: string; from: string }[] = [];
+  /** The newest goodnight on this device, watched or not, and how many there are (Quest, Nov 18: once watched, a goodnight could never be played again). */
+  private newest = '';
+  private received = 0;
   private playing = '';
 
   update(): void {
@@ -46,7 +49,7 @@ export class FamilyInboxSystem extends createSystem({
     }
     if (inbox.getValue(FamilyInbox, 'playRequested')) {
       inbox.setValue(FamilyInbox, 'playRequested', false);
-      const next = this.unwatched[0];
+      const next = this.unwatched[0] ?? (this.newest ? { id: this.newest, from: '' } : undefined);
       if (next && !player.getValue(PerformancePlayer, 'playing')) {
         this.playing = next.id;
         player.setValue(PerformancePlayer, 'recordingId', next.id);
@@ -121,9 +124,12 @@ export class FamilyInboxSystem extends createSystem({
         await learnFromGoodnight(p);
         await saveRecording({ ...p, learned: true });
       }
-      const fresh = (await listRecordings<Performance & { watched?: boolean }>())
-        .filter((p) => p.replyTo && !p.watched)
+      const goodnights = (await listRecordings<Performance & { watched?: boolean }>())
+        .filter((p) => p.replyTo)
         .sort((a, b) => a.createdAt - b.createdAt);
+      this.newest = goodnights[goodnights.length - 1]?.id ?? '';
+      this.received = goodnights.length;
+      const fresh = goodnights.filter((p) => !p.watched);
       this.unwatched = fresh.map((p) => ({ id: p.id, from: p.performer }));
       this.publish(inbox);
     } catch {
@@ -135,6 +141,7 @@ export class FamilyInboxSystem extends createSystem({
 
   private publish(inbox: Entity): void {
     inbox.setValue(FamilyInbox, 'unwatched', this.unwatched.length);
+    inbox.setValue(FamilyInbox, 'received', Math.min(127, this.received));
     inbox.setValue(FamilyInbox, 'latestFrom', this.unwatched[this.unwatched.length - 1]?.from ?? '');
   }
 

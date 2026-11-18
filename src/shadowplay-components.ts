@@ -462,8 +462,10 @@ export const LiveSession = createComponent('LiveSession', {
 export const FamilyInbox = createComponent('FamilyInbox', {
   /** Goodnights received and not yet watched. */
   unwatched: { type: Types.Int8, default: 0 },
+  /** Goodnights on this device (watched or not): with none unwatched, Goodnights plays the newest again. */
+  received: { type: Types.Int8, default: 0 },
   /** Who sent the newest unwatched one. */
   latestFrom: { type: Types.String, default: '' },
-  /** Set to play the oldest unwatched goodnight on the stage. */
+  /** Set to play the oldest unwatched goodnight on the stage (or, with none unwatched, the newest again). */
   playRequested: { type: Types.Boolean, default: false },
 });
