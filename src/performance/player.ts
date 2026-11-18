@@ -424,6 +424,13 @@ export class PerformancePlayerSystem extends createSystem({
     // The recording's creatures took the hands' shadows; give them back (Quest, Nov 18: after Goodnights the
     // right hand cast no shadow and its shapes were never accepted until a reload).
     handRuntime.left.hideCasters = handRuntime.right.hideCasters = false;
+    // ...and no hand is left holding a creature the goodnight woke (Quest, Nov 18: after Goodnights the
+    // car's snail pose was seen in the light for 20 s and never accepted: a free-play rabbit still held the hand).
+    for (const r of this.queries.recognizers.entities) {
+      r.setValue(ShapeRecognizer, 'matchedHand', 'none');
+      r.setValue(ShapeRecognizer, 'matchedShape', 'none');
+      r.setValue(ShapeRecognizer, 'twoHanded', false);
+    }
     if (handOverride.source === 'playback') {
       handOverride.active = false;
       handOverride.left = handOverride.right = null;
