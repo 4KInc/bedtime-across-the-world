@@ -526,6 +526,12 @@ export class StorySystem extends createSystem({
     this.endAssist(story, stage);
     story.setValue(StoryState, 'beatIndex', index);
     story.setValue(StoryState, 'beatId', beat.id);
+    // A story told from its title asks for its own shapes: free play (a goodnight's, or Free Stage's) is over
+    // (Quest, Nov 18: after Goodnights, a dreamed story and The Bumpy Road stayed in free play; the car never woke).
+    if (index === 0) {
+      stage.setValue(ShapeRecognizer, 'freeMode', false);
+      story.setValue(StoryState, 'freeStage', false);
+    }
     if ('text' in beat) this.setCaption(story, beat.text);
     switch (beat.type) {
       case 'chapter':

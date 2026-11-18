@@ -70,6 +70,8 @@ export class PerformancePlayerSystem extends createSystem({
   props: { required: [HiddenProp] },
 }) {
   private perf: Performance | null = null;
+  /** Free play as it was before a goodnight switched it on (null: not switched); set back when the goodnight ends. */
+  private freeBefore: boolean | null = null;
   private frames: Int16Array | null = null;
   private loading = false;
   private clock = 0;
@@ -209,7 +211,10 @@ export class PerformancePlayerSystem extends createSystem({
     if (perf.script && !perf.replyTo) story?.setValue(StoryState, 'script', perf.script);
     if (!perf.script && !perf.replyTo) story?.setValue(StoryState, 'caption', perf.title || 'A bedtime story');
     if (perf.replyTo) {
-      for (const r of this.queries.recognizers.entities) r.setValue(ShapeRecognizer, 'freeMode', true);
+      for (const r of this.queries.recognizers.entities) {
+        this.freeBefore ??= Boolean(r.getValue(ShapeRecognizer, 'freeMode'));
+        r.setValue(ShapeRecognizer, 'freeMode', true);
+      }
       story?.setValue(StoryState, 'caption', perf.title || 'A goodnight for you');
     }
     if (perf.audio) {
@@ -398,6 +403,11 @@ export class PerformancePlayerSystem extends createSystem({
 
   private teardown(): void {
     if (this.perf) family.borrow(null);
+    // A goodnight's free play ends with it (Quest, Nov 18: after Goodnights, every story stayed in free play and the car never woke).
+    if (this.freeBefore !== null) {
+      for (const r of this.queries.recognizers.entities) r.setValue(ShapeRecognizer, 'freeMode', this.freeBefore);
+      this.freeBefore = null;
+    }
     this.audio?.pause();
     this.voiceNode?.disconnect();
     this.voiceNode = null;
