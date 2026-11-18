@@ -533,6 +533,9 @@ export class StorySystem extends createSystem({
       story.setValue(StoryState, 'freeStage', false);
       // A new story starts with both hands casting shadows (a creature from before may have kept one).
       handRuntime.left.hideCasters = handRuntime.right.hideCasters = false;
+      stage.setValue(ShapeRecognizer, 'matchedHand', 'none');
+      stage.setValue(ShapeRecognizer, 'matchedShape', 'none');
+      stage.setValue(ShapeRecognizer, 'twoHanded', false);
     }
     if ('text' in beat) this.setCaption(story, beat.text);
     switch (beat.type) {

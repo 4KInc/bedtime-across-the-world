@@ -42,12 +42,18 @@ try {
   await p.waitForFunction(() => !__sp.get('PerformancePlayer', 'playing'), null, { timeout: 60000 });
 
   // As on the Quest: the goodnight was left with the right hand still without its shadow.
-  await p.evaluate(() => (__rt.handRuntime.right.hideCasters = true));
+  await p.evaluate(() => {
+    __rt.handRuntime.right.hideCasters = true;
+    __sp.set('ShapeRecognizer', 'matchedHand', 'right');
+    __sp.set('ShapeRecognizer', 'matchedShape', 'rabbit');
+  });
   await p.evaluate(() => __sp.set('StoryState', 'script', 'story/bumpy-road.story.json'));
   await p.waitForFunction(() => String(__sp.get('StoryState', 'beatId')).startsWith('bump-'), null, { timeout: 30000 });
   await sleep(500);
   const next = await hands();
   check('the next story starts with both hands casting shadows', !next.left && !next.right, next);
+  const held = await p.evaluate(() => __sp.get('ShapeRecognizer', 'matchedHand'));
+  check('...and with no hand still holding a creature from before (so its shapes are heard)', held === 'none', { held });
 } finally {
   await browser.close();
 }
