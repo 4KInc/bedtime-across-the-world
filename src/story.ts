@@ -1,6 +1,6 @@
 import { createSystem, Entity, Vector3, VisibilityState } from '@iwsdk/core';
 import { away, setAway } from './away.js';
-import { nameInDream, personalise } from './family.js';
+import { family, nameInDream, NARRATOR_NAMES, personalise } from './family.js';
 import { loadProgress, loadUnlocks, saveProgress, saveUnlocks } from './journal-store.js';
 import {
   HiddenProp,
@@ -487,7 +487,7 @@ export class StorySystem extends createSystem({
   }
 
   private setCaption(story: Entity, text: string): void {
-    text = personalise(text);
+    text = personalise(text, captionNames(this.scriptPath));
     if (isDreamed(this.scriptPath)) text = nameInDream(text);
     this.beatCaption = text;
     story.setValue(StoryState, 'caption', text);
@@ -893,6 +893,16 @@ const OPEN_MAX_CURL = 0.3;
 
 const isDreamed = (path: string) => path.startsWith('dreamed');
 
+/**
+ * The names a line is shown with. A library story's narrator was recorded ahead of
+ * time and says "little one", so its captions say that too (Quest, Nov 18: the
+ * caption said "Mia" while the voice said "little one"). A dreamed story's voice
+ * says the name, and a replay or live story comes with its own names and voice.
+ */
+function captionNames(path: string): typeof NARRATOR_NAMES | undefined {
+  return isDreamed(path) || family.borrowing ? undefined : NARRATOR_NAMES;
+}
+
 /** The script's spoken words, names filled in, for the narrator (narration.ts). */
 function publishLines(script: StoryScript): void {
   storyRuntime.lines = {};
@@ -900,7 +910,7 @@ function publishLines(script: StoryScript): void {
   for (const beat of script.beats) {
     const text = 'text' in beat && typeof beat.text === 'string' ? beat.text : '';
     if (!text || beat.type === 'journal') continue;
-    const words = personalise(text);
+    const words = personalise(text, captionNames(storyRuntime.script));
     storyRuntime.lines[beat.id] = isDreamed(storyRuntime.script) ? nameInDream(words) : words;
     storyRuntime.order.push(beat.id);
   }

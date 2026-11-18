@@ -580,6 +580,7 @@ Alongside the device testing, 72 browser simulations check each fix without a he
 | `node scripts/sim/goodnight-shapes.mjs` | A child's goodnight back (free play) wakes the shape made with relaxed, real hands: a dog, a fish, a swan and the bird, not only the rabbit; a resting hand wakes nothing |
 | `node scripts/sim/goodnight-tonight.mjs` | A goodnight back can answer with tonight's creatures: after a story that woke a shark and a car, the shark's fin wakes the shark and the snail's two fingers the car |
 | `node scripts/sim/say-it-ipad.mjs` | Say it hears a child's story wish on an iPad (Safari's own recognition ending with no words): through the server at once, as WAV where WebM cannot be recorded; elsewhere a recognition that hears nothing hands over to the server |
+| `node scripts/sim/narrator-names.mjs` | A library story's caption says what its recorded narrator says ("little one"), even with the child's name saved; dreamed stories and replays keep the name |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls
