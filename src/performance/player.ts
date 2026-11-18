@@ -15,7 +15,7 @@ import {
   StageActor,
   StoryState,
 } from '../shadowplay-components.js';
-import { handOverride, JOINT_COUNT, stageRuntime } from '../stage-runtime.js';
+import { handOverride, handRuntime, JOINT_COUNT, stageRuntime } from '../stage-runtime.js';
 import { applyEvent, ApplyTargets, applyTargets } from './apply.js';
 import { decodeHands, FRAME_STRIDE, Performance, PerformanceEvent, readFrame } from './format.js';
 import { audioRunning, voiceGain } from '../sfx.js';
@@ -421,6 +421,9 @@ export class PerformancePlayerSystem extends createSystem({
     this.gain = this.gainTarget = 1;
     this.voicedBeat = -1;
     handOverride.cameraAllowed = true;
+    // The recording's creatures took the hands' shadows; give them back (Quest, Nov 18: after Goodnights the
+    // right hand cast no shadow and its shapes were never accepted until a reload).
+    handRuntime.left.hideCasters = handRuntime.right.hideCasters = false;
     if (handOverride.source === 'playback') {
       handOverride.active = false;
       handOverride.left = handOverride.right = null;
