@@ -317,3 +317,10 @@ export function isOnStage(p: Vector3, margin = 0.15): boolean {
   const hh = stageRuntime.height * (0.5 + margin);
   return Math.abs(u) <= hw && Math.abs(v) <= hh;
 }
+
+/**
+ * A goodnight back: the creatures of the story the child just watched (comma-separated; '' when
+ * none). In that free play they wake as if met, so the child can answer with the story's own shark
+ * or car, besides the classic shapes; a pose shared with a classic creature wakes tonight's first.
+ */
+export const tonightRuntime = { creatures: '' };
