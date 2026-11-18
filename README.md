@@ -598,6 +598,9 @@ wall, narration, sound and voice tuned from those sessions.
 
 ## Videos
 
+[The demo](https://youtu.be/dBqZwepmkCY), under 3 minutes: the story told in a Quest 3, Mia joining in on her
+iPad, and her goodnight landing back on Dad's wall.
+
 Full sessions, unedited:
 
 - [Meta Quest 3](https://youtu.be/EhNuxp9DMbg), with the family side on an iPad
