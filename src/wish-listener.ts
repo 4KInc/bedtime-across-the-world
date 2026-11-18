@@ -4,10 +4,16 @@
  * only from the press until the idea is said (it stops after a pause, after
  * MAX_SECONDS, or on a second press), never otherwise.
  *
- * Uses the browser's own speech recognition where it has one; otherwise
- * records the idea and the server turns it into words (/api/voice?for=wish,
- * Cloud Speech-to-Text; nothing is stored).
+ * Uses the browser's own speech recognition where it has one and it works;
+ * otherwise records the idea and the server turns it into words
+ * (/api/voice?for=wish, Cloud Speech-to-Text; nothing is stored). On an iPad
+ * (Nov 18) Safari's own recognition ended with no words every time ("Mo did not
+ * hear that"), so on iPads and iPhones the server is used from the start, and
+ * elsewhere a browser recognition that hears nothing hands over to the server
+ * for the next try.
  */
+import { downsample, encodeWav, joinParts } from './voice-clip.js';
+
 
 /** Long enough for a sentence or two; a pause this long after speaking ends it. */
 const MAX_SECONDS = 10;
@@ -18,6 +24,9 @@ const SPEECH_RMS = 0.025;
 /** Shorter than this, a press and a second press is not an idea. */
 const MIN_SECONDS = 0.6;
 const TICK_MS = 50;
+/** WAV (where the browser cannot record WebM/Opus) is 32 KB a second: kept under the server's 224 KB. */
+const MAX_WAV_SECONDS = 6.5;
+const WEBM = 'audio/webm;codecs=opus';
 
 type Recognition = {
   continuous: boolean;
@@ -32,8 +41,26 @@ type Recognition = {
 };
 type RecognitionClass = new () => Recognition;
 
-/** The last listen, for tests and diagnostics: how long, how loud at most, whether speech was heard, bytes sent. */
-export const wishListenRuntime = { seconds: 0, peak: 0, heard: false, bytes: 0, how: '' as '' | 'browser' | 'server' };
+/**
+ * The last listen, for tests and diagnostics (never the words): how long, how loud at most, whether
+ * speech was heard, bytes sent, how, the browser's error, whether words came back; and the count.
+ */
+export const wishListenRuntime = {
+  seconds: 0,
+  peak: 0,
+  heard: false,
+  bytes: 0,
+  how: '' as '' | 'browser' | 'server',
+  format: '' as '' | 'webm' | 'wav',
+  error: '',
+  understood: false,
+  tries: 0,
+  /** Listens whose outcome is known (words or none). */
+  finished: 0,
+};
+
+/** The browser's own recognition heard nothing here once: the server listens from then on. */
+let browserFailed = false;
 
 export interface WishListening {
   /** The words said ('' when nothing was understood); rejects when the microphone could not be used. */
@@ -48,8 +75,21 @@ export interface WishListening {
 
 /** Whether there is any way to hear an idea here (the browser's own, or the server's). */
 export async function canHearWishes(): Promise<boolean> {
+  // Asked as the Say it button is shown, so the first press already knows whether the server can hear.
+  const server = serverHears().then((ok) => (serverHearing = ok));
   if (browserRecognition()) return true;
-  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return false;
+  return server;
+}
+
+let serverAnswer: Promise<boolean> | null = null;
+/** Whether the server can turn speech into words (asked once). */
+function serverHears(): Promise<boolean> {
+  serverAnswer ??= askServer();
+  return serverAnswer;
+}
+
+async function askServer(): Promise<boolean> {
+  if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === 'undefined') return false;
   try {
     const r = await fetch('/api/voice');
     return r.ok && Boolean(((await r.json()) as { available?: boolean }).available);
@@ -63,32 +103,60 @@ function browserRecognition(): RecognitionClass | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
+/**
+ * An iPad or iPhone: every browser there is Safari's WebKit (vendor Apple), and an iPad says it is a
+ * Mac, so it is told apart by its touch screen.
+ */
+function appleTouch(): boolean {
+  return (navigator.vendor === 'Apple Computer, Inc.' || /iPad|iPhone|iPod/.test(navigator.userAgent)) && navigator.maxTouchPoints > 1;
+}
+
 export function listenForWish(): WishListening {
   const Recognition = browserRecognition();
-  return Recognition ? withBrowser(Recognition) : withServer();
+  // The server when the browser's own recognition is missing, unreliable here (an iPad: unless the
+  // server is known not to hear), or has failed once (when the server is known to hear).
+  const useServer = !Recognition || (appleTouch() && serverHearing !== false) || (browserFailed && serverHearing === true);
+  wishListenRuntime.tries++;
+  return useServer ? withServer() : withBrowser(Recognition);
 }
+
+/** Whether the server can hear (canHearWishes asks as the Say it button is shown; undefined until it answers). */
+let serverHearing: boolean | undefined;
 
 function withBrowser(Recognition: RecognitionClass): WishListening {
   const r = new Recognition();
   r.continuous = false;
-  r.interimResults = false;
+  // Interim results too: some browsers end without a final one (the last words heard are kept).
+  r.interimResults = true;
   r.lang = 'en-US';
   let said = '';
   let cancelled = false;
-  Object.assign(wishListenRuntime, { seconds: 0, peak: 0, heard: false, bytes: 0, how: 'browser' });
+  Object.assign(wishListenRuntime, { seconds: 0, peak: 0, heard: false, bytes: 0, how: 'browser', format: '', error: '', understood: false });
+  const started = performance.now();
   const words = new Promise<string>((resolve, reject) => {
     const timer = setTimeout(() => r.stop(), MAX_SECONDS * 1000);
     r.onresult = (e) => {
       said = Array.from(e.results, (res) => res[0]?.transcript ?? '').join(' ').trim();
     };
     r.onerror = (e) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') reject(new Error('microphone'));
+      wishListenRuntime.error = e.error;
+      if (e.error === 'not-allowed') reject(new Error('microphone'));
     };
     r.onend = () => {
       clearTimeout(timer);
+      wishListenRuntime.seconds = (performance.now() - started) / 1000;
+      wishListenRuntime.understood = !cancelled && said !== '';
+      // Nothing heard (an error, or no words at all): the server listens next time, if it can.
+      if (!cancelled && said === '') browserFailed = true;
+      wishListenRuntime.finished++;
       resolve(cancelled ? '' : said);
     };
-    r.start();
+    try {
+      r.start();
+    } catch {
+      browserFailed = true;
+      resolve('');
+    }
   });
   return {
     words,
@@ -115,22 +183,46 @@ function withServer(): WishListening {
     void audio.resume();
     const analyser = audio.createAnalyser();
     analyser.fftSize = 1024;
-    audio.createMediaStreamSource(stream).connect(analyser);
+    const source = audio.createMediaStreamSource(stream);
+    source.connect(analyser);
     const samples = new Float32Array(analyser.fftSize);
-    // Speech needs little: 32 kbit/s keeps ten seconds well under the server's limit (MAX_CLIP_BYTES, 224 KB).
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
+    // WebM/Opus where the browser records it (speech needs little: 32 kbit/s keeps ten seconds well under
+    // the server's limit, MAX_CLIP_BYTES, 224 KB); otherwise the raw audio, sent as 16 kHz WAV.
+    const webm = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(WEBM);
+    const maxSeconds = webm ? MAX_SECONDS : MAX_WAV_SECONDS;
     const chunks: Blob[] = [];
-    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const parts: Float32Array[] = [];
+    let recorder: MediaRecorder | null = null;
+    let capture: ScriptProcessorNode | null = null;
+    let ended = () => {};
+    const stopped = new Promise<void>((resolve) => (ended = resolve));
+    if (webm) {
+      recorder = new MediaRecorder(stream, { mimeType: WEBM, audioBitsPerSecond: 32000 });
+      recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      recorder.onstop = () => ended();
+      recorder.start();
+    } else {
+      capture = audio.createScriptProcessor(2048, 1, 1);
+      capture.onaudioprocess = (e) => parts.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+      source.connect(capture);
+      // (It only runs while connected to an output; it writes silence.)
+      capture.connect(audio.destination);
+    }
     let heard = false;
     let cancelled = false;
-    Object.assign(wishListenRuntime, { seconds: 0, peak: 0, heard: false, bytes: 0, how: 'server' });
-    const stopped = new Promise<void>((resolve) => (recorder.onstop = () => resolve()));
-    recorder.start();
+    let done = false;
+    Object.assign(wishListenRuntime, { seconds: 0, peak: 0, heard: false, bytes: 0, how: 'server', format: webm ? 'webm' : 'wav', error: '', understood: false });
     // Real time (a busy frame can delay the ticks).
     const started = performance.now();
     let last = started;
     let quiet = 0;
     let byHand = false;
+    const stop = () => {
+      if (done) return;
+      done = true;
+      if (recorder) recorder.state !== 'inactive' ? recorder.stop() : ended();
+      else ended();
+    };
     const tick = setInterval(() => {
       const now = performance.now();
       const t = (now - started) / 1000;
@@ -144,9 +236,8 @@ function withServer(): WishListening {
       wishListenRuntime.peak = Math.max(wishListenRuntime.peak, rms);
       heard ||= speaking;
       quiet = speaking ? 0 : quiet + dt;
-      if (t >= MAX_SECONDS || (heard && quiet >= END_SILENCE_SECONDS) || (!heard && t >= NO_SPEECH_SECONDS)) stop();
+      if (t >= maxSeconds || (heard && quiet >= END_SILENCE_SECONDS) || (!heard && t >= NO_SPEECH_SECONDS)) stop();
     }, TICK_MS);
-    const stop = () => recorder.state !== 'inactive' && recorder.stop();
     finish = () => {
       byHand = true;
       stop();
@@ -158,15 +249,25 @@ function withServer(): WishListening {
     await stopped;
     micStopped();
     clearInterval(tick);
+    capture?.disconnect();
     wishListenRuntime.seconds = (performance.now() - started) / 1000;
     stream.getTracks().forEach((track) => track.stop());
+    const rate = audio.sampleRate;
     void audio.close();
     wishListenRuntime.heard = heard;
     // Ended by hand, the speech service decides whether anything was said; on its own, only when it heard speech.
-    if (cancelled || !(heard || (byHand && wishListenRuntime.seconds >= MIN_SECONDS))) return '';
-    wishListenRuntime.bytes = chunks.reduce((n, c) => n + c.size, 0);
-    const res = await fetch('/api/voice?for=wish', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: new Blob(chunks, { type: 'audio/webm' }) });
-    return res.ok ? (((await res.json()) as { text?: string }).text ?? '').trim() : '';
+    if (cancelled || !(heard || (byHand && wishListenRuntime.seconds >= MIN_SECONDS))) {
+      wishListenRuntime.finished++;
+      return '';
+    }
+    const body = webm ? new Blob(chunks, { type: 'audio/webm' }) : new Blob([encodeWav(downsample(joinParts(parts), rate)) as BlobPart], { type: 'audio/wav' });
+    wishListenRuntime.bytes = body.size;
+    const res = await fetch('/api/voice?for=wish', { method: 'POST', headers: { 'Content-Type': body.type }, body });
+    const text = res.ok ? (((await res.json()) as { text?: string }).text ?? '').trim() : '';
+    if (!res.ok) wishListenRuntime.error = `server ${res.status}`;
+    wishListenRuntime.understood = text !== '';
+    wishListenRuntime.finished++;
+    return text;
   })();
   // A microphone that never started counts as stopped too.
   words.catch(() => micStopped());

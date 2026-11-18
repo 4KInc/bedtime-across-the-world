@@ -441,7 +441,7 @@ flowchart LR
   subgraph AI["AI services"]
     GEM["Gemini: Mo's tips, dreamed stories"]
     TTS["Cloud Text-to-Speech: dreamed narration"]
-    STT["Cloud Speech-to-Text: voice commands"]
+    STT["Cloud Speech-to-Text: voice commands, spoken wishes"]
   end
   KK["Kokoro, offline: library narration"] -.-> NAR
   ST -- "record, send" --> API
@@ -500,7 +500,7 @@ recordings; the models are built in code). It uses:
 | [Kokoro-82M](https://github.com/hexgrad/kokoro) (hexgrad) | the storyteller voice, generated offline into `public/narration/` | Apache-2.0 |
 | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Google) | camera hands in the family viewer, on the device; see `public/models/NOTICE.md` | Apache-2.0 |
 | [Gemini API](https://ai.google.dev/gemini-api) (Google) | words Mo's tips and dreamed stories, on the server (shape names, fixed hand facts, and a spoken story idea when Say your idea is used) | Gemini API Terms of Service |
-| [Cloud Speech-to-Text](https://cloud.google.com/speech-to-text) (Google) | voice commands when the headset browser has no speech recognition (short clips, not stored) | Google Cloud Terms of Service |
+| [Cloud Speech-to-Text](https://cloud.google.com/speech-to-text) (Google) | voice commands when the headset browser has no speech recognition, and a spoken story wish (Say it) on iPads and iPhones or wherever the browser's own recognition hears nothing (short clips, not stored) | Google Cloud Terms of Service |
 | [Cloud Text-to-Speech](https://cloud.google.com/text-to-speech) (Google) | the narrator's voice for dreamed stories, on the server | Google Cloud Terms of Service |
 | [Inter](https://rsms.me/inter/) (The Inter Project Authors) | typeface of the headset panels (via `@pmndrs/msdfonts`) | SIL OFL 1.1 |
 | [Lucide](https://lucide.dev) (Lucide Contributors) | two interface icons | ISC |
@@ -578,6 +578,7 @@ Alongside the device testing, 72 browser simulations check each fix without a he
 | `node scripts/sim/join-in-rejoin.mjs`, `viewer-ios-voice.mjs`, `viewer-ios-audio.mjs`, `camera-fullscreen.mjs`, `viewer-fullscreen.mjs` | The family viewer with iOS's audio rules: after the child's turn the story goes on (not from its start) and the storyteller's voice plays on; the camera through full screen; the full-screen icon while a story plays |
 | `node scripts/sim/goodnight-shapes.mjs` | A child's goodnight back (free play) wakes the shape made with relaxed, real hands: a dog, a fish, a swan and the bird, not only the rabbit; a resting hand wakes nothing |
 | `node scripts/sim/goodnight-tonight.mjs` | A goodnight back can answer with tonight's creatures: after a story that woke a shark and a car, the shark's fin wakes the shark and the snail's two fingers the car |
+| `node scripts/sim/say-it-ipad.mjs` | Say it hears a child's story wish on an iPad (Safari's own recognition ending with no words): through the server at once, as WAV where WebM cannot be recorded; elsewhere a recognition that hears nothing hands over to the server |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls
