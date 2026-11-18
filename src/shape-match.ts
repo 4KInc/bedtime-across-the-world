@@ -1,5 +1,5 @@
 import { createSystem, Entity, Vector3 } from '@iwsdk/core';
-import { acceptScore, classify, computeFeatures, MatchResult, rescuesRequested, templateScore, worldPoses } from './hand-features.js';
+import { acceptScore, classify, computeFeatures, FREE_PLAY_BIRD, freePlayShape, MatchResult, rescuesRequested, templateScore, worldPoses } from './hand-features.js';
 import { Hands, ShadowJournal, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, palmUp, requested, stepHold } from './recognition-rules.js';
 import { handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
@@ -61,6 +61,8 @@ export class ShapeMatchSystem extends createSystem({
   private lastNudge = 'none';
   private left: HandEval = { shape: ShapeIds.None, inLight: false, curl: 1, score: 0, silhouette: '' };
   private right: HandEval = { shape: ShapeIds.None, inLight: false, curl: 1, score: 0, silhouette: '' };
+  /** This frame's recognizer is in free play (Free Stage, a goodnight back). */
+  private free = false;
 
   update(delta: number): void {
     for (const entity of this.queries.recognizers.entities) {
@@ -70,6 +72,8 @@ export class ShapeMatchSystem extends createSystem({
         (entity.getValue(ShapeRecognizer, 'tolerance') ?? 0.3) + (entity.getValue(ShapeRecognizer, 'assistTolerance') ?? 0),
       );
       this.readJournal();
+      // Free play (nothing asked for): real hands get the room a story gives its requested shape (hand-features.ts).
+      this.free = Boolean(entity.getValue(ShapeRecognizer, 'freeMode'));
       // World poses (a rocket, a whale...) are only read while a story asks for one (or in Free Stage, once met).
       this.askWorldPoses(entity);
       this.evaluate(handRuntime.left, tolerance, this.left);
@@ -82,7 +86,7 @@ export class ShapeMatchSystem extends createSystem({
         isHiddenPair(entity.getValue(ShapeRecognizer, 'target2')) ||
         isHiddenPair(entity.getValue(ShapeRecognizer, 'altTarget2'));
       // By pose: a pterodactyl is asked for as a bird, a T. rex as a crocodile (world-creatures.ts).
-      const birdWanted = this.wants(entity, ShapeIds.Bird, true);
+      const birdWanted = this.wants(entity, ShapeIds.Bird, true) || (this.free && FREE_PLAY_BIRD);
       const deerWanted = this.wants(entity, ShapeIds.Deer, false);
       const crocWanted = this.wants(entity, ShapeIds.Crocodile, false);
       const cupWanted = this.wants(entity, ShapeIds.Cup, true);
@@ -190,6 +194,7 @@ export class ShapeMatchSystem extends createSystem({
     hand.jointScore = this.result.score;
     out.curl = (f[1] + f[2] + f[3] + f[4]) / 4;
     if (this.result.score >= acceptScore(this.result.id, tolerance)) out.shape = this.result.id;
+    if (this.free) out.shape = freePlayShape(out.shape, this.result, tolerance, f) as typeof out.shape;
     hand.jointShape = out.shape === ShapeIds.None ? '' : out.shape;
     out.score = this.result.score;
     // Method 2: any pose whose shadow matches a template counts, even when the

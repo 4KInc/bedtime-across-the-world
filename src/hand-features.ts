@@ -307,3 +307,38 @@ export function rescuesRequested(features: Float32Array, best: MatchResult, targ
   const score = templateScore(features, target);
   return score >= acceptScore(target, tolerance) && score >= best.score - (REQUEST_MARGIN + assist * 0.5);
 }
+
+/**
+ * Free play (nothing asked for: Free Stage, a child's goodnight back): real hands get the room a
+ * story gives the shape it asks for. On an iPad (Nov 17) a child's rabbit woke at once but a dog
+ * or a bird hardly ever did: a story widens its requested shape (the close-enough rescue, the
+ * assist, the looser bird), and free play had none of that. Without a request there is no shape to
+ * rescue towards, so the best-fitting shape counts at the story's first assist (15 s), and the bird
+ * gets the room it has when asked for. A resting hand still fits the resting template best, and
+ * counts as nothing.
+ */
+export const FREE_PLAY_ASSIST = 0.1;
+export const FREE_PLAY_BIRD = true;
+
+/** The flat-hand shapes free play tries when a relaxed hand fits the resting template best. */
+const FREE_FLAT = [ShapeIds.Dog, ShapeIds.Fish, ShapeIds.Swan] as const;
+
+/** Free play: the shape one hand makes (its own, or the best fit at the free-play room), before the free-play gate (recognition-rules.ts). */
+export function freePlayShape(shape: string, best: MatchResult, tolerance: number, features: Float32Array): string {
+  if (shape !== ShapeIds.None || best.id === ShapeIds.Cup) return shape;
+  const tol = tolerance + FREE_PLAY_ASSIST;
+  if (best.id !== ShapeIds.None) return best.score >= acceptScore(best.id, tol) ? best.id : ShapeIds.None;
+  // A relaxed flat hand (a dog, a fish, a swan) can fit the resting template best; its fingers are
+  // still straighter than a resting hand's, as when a story asks for a flat shape (rescuesRequested).
+  if ((features[1] + features[2] + features[3] + features[4]) / 4 > FLATTER_THAN_REST + FREE_PLAY_ASSIST * 0.3) return ShapeIds.None;
+  let id: string = ShapeIds.None;
+  let score = 0;
+  for (const flat of FREE_FLAT) {
+    const sc = templateScore(features, flat);
+    if (sc > score) {
+      score = sc;
+      id = flat;
+    }
+  }
+  return score >= acceptScore(id, tol) && score >= best.score - REQUEST_MARGIN ? id : ShapeIds.None;
+}
