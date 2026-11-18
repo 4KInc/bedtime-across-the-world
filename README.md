@@ -598,5 +598,7 @@ wall, narration, sound and voice tuned from those sessions.
 
 ## Videos
 
-- [Meta Quest 3](https://youtu.be/EhNuxp9DMbg)
-- [Meta Quest 3S](https://youtu.be/DgxNFKGEG5c)
+Full sessions, unedited:
+
+- [Meta Quest 3](https://youtu.be/EhNuxp9DMbg), with the family side on an iPad
+- [Meta Quest 3S](https://youtu.be/DgxNFKGEG5c), with the family side on a laptop
