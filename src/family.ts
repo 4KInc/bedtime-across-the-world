@@ -34,6 +34,10 @@ export const family = {
     Object.assign(own, clean(names));
     await saveFamily({ ...own });
   },
+  /** Whether a replay's or live host's names are in use (their story comes with their own voice). */
+  get borrowing(): boolean {
+    return borrowed !== null;
+  },
   /** Use someone else's names while their story plays (null to stop). */
   borrow(names: FamilyNames | null): void {
     borrowed = names ? clean(names) : null;
@@ -44,6 +48,9 @@ function clean(names: Partial<FamilyNames>): FamilyNames {
   const tidy = (s: unknown) => (typeof s === 'string' ? s.replace(/[{}<>]/g, '').trim().slice(0, 24) : '');
   return { child: tidy(names.child), performer: tidy(names.performer) };
 }
+
+/** No names: the fallbacks, as the library's recorded narrator says them ("little one"). */
+export const NARRATOR_NAMES: FamilyNames = Object.freeze({ child: '', performer: '' });
 
 /** Fill `{child|fallback}` and `{performer|fallback}` placeholders. */
 export function personalise(text: string, names: FamilyNames = family.current): string {
