@@ -205,8 +205,9 @@ export class FamilyControlsSystem extends createSystem({
     const recStatus = rec.getValue(PerformanceRecorder, 'status') ?? '';
     const inbox = this.queries.inboxes.entities.values().next().value;
     const unwatched = inbox?.getValue(FamilyInbox, 'unwatched') ?? 0;
+    const received = inbox?.getValue(FamilyInbox, 'received') ?? 0;
     const from = inbox?.getValue(FamilyInbox, 'latestFrom') ?? '';
-    const key = `${accessRuntime.highContrast}|${recording}|${seconds}|${hasStory}|${role}|${talk}|${duet}|${turn}|${unwatched}|${liveStatus}|${recStatus}|${this.index}|${this.recordings.length}|${this.playing}`;
+    const key = `${accessRuntime.highContrast}|${recording}|${seconds}|${hasStory}|${role}|${talk}|${duet}|${turn}|${unwatched}|${received}|${liveStatus}|${recStatus}|${this.index}|${this.recordings.length}|${this.playing}`;
     if (key === this.shown) return;
     this.shown = key;
 
@@ -214,7 +215,8 @@ export class FamilyControlsSystem extends createSystem({
     this.set('record-button', recording ? `Stop recording ${clock(seconds)}` : 'Record a story', recording ? 'on' : isLive ? 'dim' : 'off');
     recordingsRuntime.send = recordingRuntime.sending ? 'Sending...' : 'Send to family';
     this.set('send-button', recordingsRuntime.send, hasStory && !recording && !recordingRuntime.sending ? 'off' : 'dim');
-    this.set('inbox-button', unwatched ? `Goodnights (${unwatched})` : 'Goodnights', unwatched && !recording && !isLive ? 'on' : 'dim');
+    // New ones light it up; watched ones can be played again.
+    this.set('inbox-button', unwatched ? `Goodnights (${unwatched})` : 'Goodnights', recording || isLive || !received ? 'dim' : unwatched ? 'on' : 'off');
     this.showRecordings(recording || isLive);
     this.set('live-button', isLive ? 'End live story' : 'Go live', isLive ? 'on' : recording ? 'dim' : 'off');
     this.set('talk-button', `Talk: ${talk ? 'On' : 'Off'}`, talk ? 'on' : isLive ? 'off' : 'dim');

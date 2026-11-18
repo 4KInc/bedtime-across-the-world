@@ -564,7 +564,7 @@ Alongside the device testing, 72 browser simulations check each fix without a he
 | `node scripts/sim/sound.mjs` | The lullaby under the story (quieter under the narrator, silent while recording with voice), each creature's voice |
 | `node scripts/sim/keepsakes.mjs`, `lanterns.mjs`, `wall-window.mjs`, `mo-visit.mjs` | The star jar kept from night to night, creatures on the desk, the window at the finale, Mo on the fingertip |
 | `node scripts/sim/child-gifts.mjs` | A goodnight's gifts: Mo's colours and a drawn creature, from the family viewer to the wall |
-| `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste; across time zones (the viewer in India, the headset in Chicago), the journal shows the child's time |
+| `node scripts/sim/story-request.mjs` | A child asks for tomorrow's story on the viewer (a character left out, a creature in pictures); on the headset "Dream Mia's story" plans it into the closest place and dreams it there; Mo's suggestions from the child's taste, one press dreaming one; across time zones (the viewer in India, the headset in Chicago), the journal shows the child's time |
 | `node scripts/sim/night-light.mjs` | The end of Dad's story on a phone: Night light, stars twinkling and a glow around Mo (and nothing moving with Reduce Motion), a tap shows only Close, the light and the lullaby fade, lights out, Close |
 | `node scripts/sim/pwa.mjs` | The web app manifest and icons; installed, it opens straight into XR |
 | `node scripts/sim/world-creatures.mjs`, `world-free-stage.mjs` | The eight world-creature stories told to The End: every creature wakes as itself and leaves its lantern; a sent one plays on a phone; Free Stage wakes the creatures a child has met |
@@ -580,6 +580,7 @@ Alongside the device testing, 72 browser simulations check each fix without a he
 | `node scripts/sim/goodnight-shapes.mjs` | A child's goodnight back (free play) wakes the shape made with relaxed, real hands: a dog, a fish, a swan and the bird, not only the rabbit; a resting hand wakes nothing |
 | `node scripts/sim/goodnight-tonight.mjs` | A goodnight back can answer with tonight's creatures: after a story that woke a shark and a car, the shark's fin wakes the shark and the snail's two fingers the car |
 | `node scripts/sim/say-it-ipad.mjs` | Say it hears a child's story wish on an iPad (Safari's own recognition ending with no words): through the server at once, as WAV where WebM cannot be recorded; elsewhere a recognition that hears nothing hands over to the server |
+| `node scripts/sim/journal-replay.mjs` | A goodnight already watched can be played again: with none unwatched, the journal's Goodnights plays the newest on the wall |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls

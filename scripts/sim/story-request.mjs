@@ -6,7 +6,7 @@
 // the journal's chooser shows "Sam asked: ..." and "Dream Sam's story", which
 // plans it into the closest place the app has (the carnival, in the meadow)
 // and dreams it there; the request is then answered. Mo's suggestions for Sam,
-// from Sam's taste, are on the panel, and one goes into the chooser.
+// from Sam's taste, are on the panel, and one press on one dreams it.
 // Mia's sample goodnight asks for a carnival story too (for someone alone).
 // Across the world: the viewer is in India, the headset in Chicago; Sam's
 // goodnight carries only the phone's offset (UTC+5:30), and the headset's
@@ -201,13 +201,13 @@ await sleep(1200);
 await openChooser();
 await page.waitForFunction(() => window.__req.ideas.length > 0, null, { timeout: 15000, polling: 300 }).catch(() => undefined);
 await sleep(800);
+// One press on a suggestion dreams it (Quest, Nov 18: pressed, it seemed to do nothing, waiting for Dream it).
+const first = (await req()).ideas[0];
+const before = dreams.length;
 await pinch('dream-idea-1');
+await page.waitForFunction((n) => /^dreamed:/.test(__sp.get('StoryState', 'script') ?? '') && !__sp.view().dream.chooser.open, before, { timeout: 15000 }).catch(() => undefined);
 await sleep(500);
-const idea = { status: await status(), chooser: await page.evaluate(() => __sp.view().dream.chooser), first: (await req()).ideas[0] };
-check("one of Mo's suggestions goes into the chooser (its place and shapes), with why Sam would like it", idea.chooser.theme === idea.first.theme && idea.chooser.shapes.join() === idea.first.shapes.join() && idea.status.includes(idea.first.why), idea);
-await pinch('dream-go');
-await sleep(1500);
-check('a suggestion dreams with its idea as the words (and leaves Sam\'s request waiting)', dreams.at(-1)?.wish === idea.first.idea && (await req()).pending?.from === 'Sam', { dreamed: dreams.at(-1) });
+check("one press on one of Mo's suggestions dreams it, its idea as the words, in its place (and leaves Sam's request waiting)", dreams.length === before + 1 && dreams.at(-1)?.wish === first.idea && dreams.at(-1)?.theme === first.theme && (await req()).pending?.from === 'Sam', { dreamed: dreams.at(-1), first });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);
