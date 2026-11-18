@@ -17,6 +17,7 @@ import { pauseRuntime } from '../story.js';
 import { accessRuntime, handRuntime, stageRuntime } from '../stage-runtime.js';
 import { coachRuntime } from '../mo-coach.js';
 import { voiceRuntime } from '../voice-control.js';
+import { wishListenRuntime } from '../wish-listener.js';
 import { dreamRuntime } from '../settings.js';
 import { FrameStats, TransitionGate } from './frame-stats.js';
 import { shadowMapSize } from '../quality-levels.js';
@@ -92,7 +93,7 @@ export class DiagSystem extends createSystem({
   private visibility = 'non-immersive';
   private xrAt = 0;
   private placedAt = 0;
-  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '', rec: '', playVoice: '' };
+  private last = { mode: '', quality: -1, beat: '', matched: '', anchor: '', fixes: 0, tips: 0, dreams: 0, audio: '', voices: 0, lock: 0, voice: '', settings: '', pause: '', rec: '', playVoice: '', wishes: 0 };
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   private texture = new CanvasTexture(this.canvas);
@@ -241,6 +242,12 @@ export class DiagSystem extends createSystem({
     if (voice !== this.last.voice) {
       this.last.voice = voice;
       this.event({ e: 'voice', state: accessRuntime.voiceState, audio: v.audio, resumes: v.resumes, short: v.short, clips: v.clips, understood: v.understood, empty: v.empty, failed: v.failed, acted: v.acted, refused: v.refused, notCommands: v.notCommands, ignored: v.ignored });
+    }
+    // A spoken story wish (Say it): how it listened and what came of it (never the words or the audio).
+    if (wishListenRuntime.finished !== this.last.wishes) {
+      this.last.wishes = wishListenRuntime.finished;
+      const w = wishListenRuntime;
+      this.event({ e: 'wish', how: w.how, format: w.format, seconds: Math.round(w.seconds * 10) / 10, peak: Math.round(w.peak * 1000) / 1000, heard: w.heard, bytes: w.bytes, error: w.error, understood: w.understood });
     }
     // The player's settings (accessibility and comfort), at the start and whenever one changes.
     const set = this.queries.settings.entities.values().next().value;
