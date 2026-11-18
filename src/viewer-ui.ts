@@ -1,3 +1,4 @@
+import { tonightRuntime } from './stage-runtime.js';
 import { createSystem, Entity } from '@iwsdk/core';
 import { openCredits } from './credits.js';
 import { listRecordings, loadRecording } from './journal-store.js';
@@ -596,7 +597,9 @@ export class ViewerUISystem extends createSystem({
       reply.addEventListener('click', (e) => {
         e.stopPropagation();
         close();
-        this.openReply(perf.shareCode!, names);
+        // Tonight's creatures: the ones this story woke, for the child to answer with.
+        const tonight = [...new Set(perf.events.filter((e) => e.type === 'wake').map((e) => String(e.data.shape)))];
+        this.openReply(perf.shareCode!, names, tonight);
       });
       night.before(reply);
       if (timer) clearTimeout(timer);
@@ -604,7 +607,7 @@ export class ViewerUISystem extends createSystem({
     });
   }
 
-  private openReply(code: string, names: FamilyNames): void {
+  private openReply(code: string, names: FamilyNames, tonight: string[]): void {
     new ReplySheet(
       {
         recorder: () => first(this.queries.recorders.entities),
@@ -621,6 +624,7 @@ export class ViewerUISystem extends createSystem({
           else this.askConsent(go);
         },
         freeMode: (on) => {
+          tonightRuntime.creatures = on ? tonight.join(',') : '';
           for (const r of this.queries.recognizers.entities) r.setValue(ShapeRecognizer, 'freeMode', on);
         },
       },

@@ -2,7 +2,7 @@ import { createSystem, Entity, Vector3 } from '@iwsdk/core';
 import { acceptScore, classify, computeFeatures, FREE_PLAY_BIRD, freePlayShape, MatchResult, rescuesRequested, templateScore, worldPoses } from './hand-features.js';
 import { Hands, ShadowJournal, ShapeIds, ShapeRecognizer } from './shadowplay-components.js';
 import { classifyPair, HoldState, isHiddenPair, JointSmoother, PairHand, palmUp, requested, stepHold } from './recognition-rules.js';
-import { handRuntime, HandSample, reachStage, stageRuntime } from './stage-runtime.js';
+import { handRuntime, HandSample, reachStage, stageRuntime, tonightRuntime } from './stage-runtime.js';
 import { poseOf, TWINS, WORLD_POSES } from './world-creatures.js';
 
 /** For device diagnostics: the two-hand measurements (wrist gap and height difference m, finger curl, thumb bend, spread, fingers up, in the light). */
@@ -43,6 +43,7 @@ export class ShapeMatchSystem extends createSystem({
   /** Creatures in the Shadow Journal: the world creatures among them come to play in Free Stage. */
   private met = new Set<string>();
   private metFrom = '';
+  private tonightFrom = '';
   /** Free Stage: whose turn it is next on a shared pose (true: the world creature's). */
   private turns = new Map<string, boolean>();
   private result: MatchResult = { id: ShapeIds.None, score: 0 };
@@ -146,13 +147,23 @@ export class ShapeMatchSystem extends createSystem({
     );
   }
 
-  /** The journal's creatures, re-read only when they change. */
+  /** The journal's creatures and tonight's (a goodnight back), re-read only when they change. */
   private readJournal(): void {
     const discovered = this.queries.journals.entities.values().next().value?.getValue(ShadowJournal, 'discovered') ?? '';
-    if (discovered === this.metFrom) return;
+    const tonight = tonightRuntime.creatures;
+    if (discovered === this.metFrom && tonight === this.tonightFrom) return;
+    if (tonight !== this.tonightFrom) {
+      // A pose shared with one of tonight's creatures wakes tonight's first (the car before the snail).
+      for (const pose in TWINS) {
+        if (tonight.split(',').includes(TWINS[pose])) this.turns.set(pose, true);
+        else if (this.tonightFrom.split(',').includes(TWINS[pose])) this.turns.delete(pose);
+      }
+    }
     this.metFrom = discovered;
+    this.tonightFrom = tonight;
     this.met.clear();
     for (const id of discovered.split(',')) if (id) this.met.add(id);
+    for (const id of tonight.split(',')) if (id) this.met.add(id);
   }
 
   /** Free Stage: a pose two creatures share wakes them in turn, once the world one has been met. */

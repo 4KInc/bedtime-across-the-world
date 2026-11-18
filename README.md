@@ -577,6 +577,7 @@ Alongside the device testing, 72 browser simulations check each fix without a he
 | `node scripts/sim/dream-tell.mjs`, `record-from-start.mjs`, `wait-for-reader.mjs` | A dreamed story waits for Tell it or Record and tell it (by hand or voice); Record before the first shape starts the story from its title; recording with a voice, each line waits for the reader to pause |
 | `node scripts/sim/join-in-rejoin.mjs`, `viewer-ios-voice.mjs`, `viewer-ios-audio.mjs`, `camera-fullscreen.mjs`, `viewer-fullscreen.mjs` | The family viewer with iOS's audio rules: after the child's turn the story goes on (not from its start) and the storyteller's voice plays on; the camera through full screen; the full-screen icon while a story plays |
 | `node scripts/sim/goodnight-shapes.mjs` | A child's goodnight back (free play) wakes the shape made with relaxed, real hands: a dog, a fish, a swan and the bird, not only the rabbit; a resting hand wakes nothing |
+| `node scripts/sim/goodnight-tonight.mjs` | A goodnight back can answer with tonight's creatures: after a story that woke a shark and a car, the shark's fin wakes the shark and the snail's two fingers the car |
 | `node scripts/sim/smoke.mjs <url>` | A deployed site end to end, including the family viewer and diagnostics in a browser |
 
 Peak load measured through a whole story at full quality: about 95 draw calls
